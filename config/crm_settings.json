@@ -1,0 +1,19 @@
+{
+    "university_name": "Apex Global University",
+    "portal_title": "Admissions CRM Portal 2026",
+    "campus_location": "London & Oxford Campuses",
+    "academic_intake": "Fall 2026 \/ Spring 2027",
+    "default_currency": "USD ($)",
+    "system_timezone": "UTC+00:00 (Europe\/London)",
+    "date_format": "M d, Y",
+    "lead_assignment": "Caseload Balancing",
+    "auto_assign_enquiries": "1",
+    "priority_score_threshold": "75",
+    "followup_sla_hours": "24",
+    "max_caseload_per_counsellor": "30",
+    "notify_new_enquiry": "1",
+    "notify_whatsapp_alerts": "1",
+    "escalate_overdue_hours": "48",
+    "session_timeout_mins": "60",
+    "audit_log_retention_days": "365"
+}
