@@ -32,7 +32,13 @@ $options = [
     PDO::ATTR_EMULATE_PREPARES   => false,
 ];
 
-// Optional SSL CA configuration for cloud-managed databases (e.g. TiDB, Aiven, PlanetScale)
+// Automatic SSL/TLS encryption for cloud-hosted databases (TiDB, Aiven, PlanetScale, Railway)
+if ($dbHost !== 'localhost' && $dbHost !== '127.0.0.1') {
+    $options[PDO::MYSQL_ATTR_SSL_CA] = true;
+    $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+}
+
+// Custom CA certificate bundle if explicitly specified
 $sslCa = getenv('MYSQL_ATTR_SSL_CA') ?: ($_ENV['MYSQL_ATTR_SSL_CA'] ?? null);
 if ($sslCa && file_exists($sslCa)) {
     $options[PDO::MYSQL_ATTR_SSL_CA] = $sslCa;
