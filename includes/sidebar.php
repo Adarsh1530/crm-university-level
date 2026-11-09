@@ -329,6 +329,15 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
         </a>
       <?php endif; ?>
 
+      <?php if (can('branches', 'view')): ?>
+        <a href="<?= base_url('organization/branches.php') ?>" id="sidebar-nav-branches" class="nav-item <?= ($activePage === 'branches') ? 'active' : '' ?>">
+          <div class="nav-item-content">
+            <i class="fa-solid fa-building nav-icon"></i>
+            <span class="nav-label">Campus Branches</span>
+          </div>
+        </a>
+      <?php endif; ?>
+
       <?php if (is_super_admin()): ?>
         <a href="<?= base_url('organization/roles.php') ?>" id="sidebar-nav-roles" class="nav-item <?= ($activePage === 'roles') ? 'active' : '' ?>">
           <div class="nav-item-content">
@@ -352,6 +361,13 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
           <div class="nav-item-content">
             <i class="fa-solid fa-sliders nav-icon"></i>
             <span class="nav-label">System Settings</span>
+          </div>
+        </a>
+
+        <a href="<?= base_url('system/activity_logs.php') ?>" id="sidebar-nav-logs" class="nav-item <?= ($activePage === 'activity_logs') ? 'active' : '' ?>">
+          <div class="nav-item-content">
+            <i class="fa-solid fa-clock-rotate-left nav-icon"></i>
+            <span class="nav-label">Audit Activity Trail</span>
           </div>
         </a>
       <?php endif; ?>

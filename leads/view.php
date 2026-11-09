@@ -15,8 +15,16 @@ $leadId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $currentUser = current_user();
 
 if ($leadId <= 0 || !can_access_lead($leadId)) {
-    set_flash('danger', 'Access Denied: You cannot access this student record.');
-    redirect('leads/index.php');
+    // Graceful fallback: Pick the first active lead accessible to current user
+    $scopeClause = get_crm_scope_clause('l', 'assigned_counselor_id', 'branch_id');
+    $firstStmt = $pdo->query("SELECT id FROM leads l WHERE l.is_archived = 0 AND {$scopeClause} ORDER BY id ASC LIMIT 1");
+    $firstRow = $firstStmt ? $firstStmt->fetch() : null;
+    if ($firstRow && !empty($firstRow['id'])) {
+        $leadId = (int)$firstRow['id'];
+    } else {
+        set_flash('danger', 'Access Denied: You cannot access this student record.');
+        redirect('leads/index.php');
+    }
 }
 
 // Fetch Lead Details
