@@ -2544,6 +2544,41 @@ textarea.form-control {
   line-height: 1.25;
 }
 
+.tutorial-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 0.55rem;
+}
+
+.tutorial-module-tag {
+  background: rgba(112, 8, 231, 0.08);
+  color: var(--primary);
+  border: 1px solid rgba(112, 8, 231, 0.2);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tutorial-section-tag {
+  background: #F1F5F9;
+  color: var(--text-muted);
+  border: 1px solid #E2E8F0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+}
+
 .tutorial-step-description {
   font-size: 0.85rem;
   color: var(--text-main);
@@ -2650,6 +2685,89 @@ textarea.form-control {
   opacity: 0.94;
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(112, 8, 231, 0.4);
+}
+
+.tutorial-btn-pause {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 6px 11px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+
+.tutorial-btn-pause:hover {
+  background: #F1F5F9;
+  color: var(--text-heading);
+  border-color: #CBD5E1;
+}
+
+/* Floating Resume Pill (When Tutorial is Paused) */
+#tutorial-resume-pill {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10006;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #FFFFFF;
+  padding: 10px 20px;
+  border-radius: 9999px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.45);
+  display: none;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: tutorialBounceIn 0.35s ease;
+}
+
+#tutorial-resume-pill:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 14px 30px rgba(16, 185, 129, 0.55);
+}
+
+#tutorial-resume-pill i {
+  font-size: 0.9rem;
+}
+
+/* Page Navigation Transition Banner */
+#tutorial-nav-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10008;
+  background: #0F172A;
+  color: #FFFFFF;
+  padding: 10px 22px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: tutorialSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes tutorialSlideDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -18px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 /* Completion Modal */
