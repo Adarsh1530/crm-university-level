@@ -3338,6 +3338,22 @@
 ]
   };
 
+  // State Management
+  let activeRoleKey = 'super_admin';
+  let activeSteps = [];
+  let currentStepIndex = 0;
+  let isTourActive = false;
+  let isTourPaused = false;
+  let currentHighlightedElement = null;
+
+  // DOM Elements cache
+  let overlayEl = null;
+  let spotlightEl = null;
+  let popoverEl = null;
+  let resumePillEl = null;
+  let navToastEl = null;
+  let completionModalEl = null;
+
   function ensureTutorialDOM() {
     if (!overlayEl) {
       overlayEl = document.getElementById('tutorial-overlay');
