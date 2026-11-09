@@ -46,6 +46,30 @@ if ($sslCa && file_exists($sslCa)) {
 
 try {
     $pdo = new PDO($dsn, $dbUser, $dbPass, $options);
+    
+    // Auto-initialize tables on first deployment if tables do not exist
+    try {
+        $hasUsers = false;
+        $checkTbl = $pdo->query("SHOW TABLES LIKE 'users'");
+        if ($checkTbl && $checkTbl->fetch()) {
+            $hasUsers = true;
+        }
+        
+        if (!$hasUsers) {
+            $sqlPath = __DIR__ . '/../database/tidb_import.sql';
+            if (!file_exists($sqlPath)) {
+                $sqlPath = __DIR__ . '/../database/university_crm.sql';
+            }
+            if (file_exists($sqlPath)) {
+                $pdo->setAttribute(PDO::MYSQL_ATTR_MULTI_STATEMENTS, true);
+                $initSql = file_get_contents($sqlPath);
+                $initSql = preg_replace('/^\s*USE\s+[^;]+;\s*/mi', '', $initSql);
+                $pdo->exec($initSql);
+            }
+        }
+    } catch (Exception $autoEx) {
+        // Silently continue if schema exists or driver restricts auto-exec
+    }
 } catch (PDOException $e) {
     $isVercel = !empty(getenv('VERCEL')) || !empty($_ENV['VERCEL']);
     
