@@ -27,6 +27,9 @@ if ($userId > 0) {
         $_SESSION['user'] = $user;
         $GLOBALS['currentUser'] = $user;
         $GLOBALS['crm_perm_cache'] = [];
+        unset($_SESSION['current_user_cache']);
+        unset($_SESSION['sidebar_cache']);
+        unset($_SESSION['crm_role_perms']);
 
         set_flash('info', 'Active session switched to <strong>' . htmlspecialchars($user['name']) . '</strong> (' . htmlspecialchars($user['role_label']) . ').');
 

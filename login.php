@@ -29,6 +29,9 @@ if (isset($_GET['demo_as'])) {
         $_SESSION['user'] = $demoUser;
         $GLOBALS['currentUser'] = $demoUser;
         $GLOBALS['crm_perm_cache'] = [];
+        unset($_SESSION['current_user_cache']);
+        unset($_SESSION['sidebar_cache']);
+        unset($_SESSION['crm_role_perms']);
 
         log_activity($demoUser['id'], null, 'Demo User Login', 'Logged in via demo quick switcher as ' . $demoUser['role_label']);
         set_flash('success', 'Welcome, ' . htmlspecialchars($demoUser['name']) . '! You are logged in as <strong>' . htmlspecialchars($demoUser['role_label']) . '</strong>.');
@@ -63,6 +66,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $_SESSION['user'] = $user;
                 $GLOBALS['currentUser'] = $user;
                 $GLOBALS['crm_perm_cache'] = [];
+                unset($_SESSION['current_user_cache']);
+                unset($_SESSION['sidebar_cache']);
+                unset($_SESSION['crm_role_perms']);
 
                 log_activity($user['id'], null, 'User Login', 'User signed into University CRM portal');
                 set_flash('success', 'Welcome back, ' . htmlspecialchars($user['name']) . '!');

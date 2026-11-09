@@ -22,56 +22,83 @@ $sidebarUnreadNotifs = 0;
 
 try {
     if ($pdo && $currentUser) {
-        $scopeLeads = get_crm_scope_clause('l', 'assigned_counselor_id', 'branch_id');
+        $now = time();
+        $useSidebarCache = !empty($_SESSION['sidebar_cache']) && ($now - ($_SESSION['sidebar_cache_time'] ?? 0) < 30);
         
-        // Active Leads count
-        $stmtActive = $pdo->query("SELECT COUNT(*) FROM leads l WHERE l.is_archived = 0 AND {$scopeLeads}");
-        $sidebarActiveLeadsCount = (int)$stmtActive->fetchColumn();
+        if ($useSidebarCache) {
+            $sc = $_SESSION['sidebar_cache'];
+            $sidebarActiveLeadsCount = $sc['active_leads'] ?? 0;
+            $sidebarWebLeadsCount    = $sc['web_leads'] ?? 0;
+            $sidebarScheduledCount   = $sc['scheduled'] ?? 0;
+            $sidebarOverdueCount     = $sc['overdue'] ?? 0;
+            $sidebarTodayLeadsCount  = $sc['today_leads'] ?? 0;
+            $sidebarPendingLeadsCount= $sc['pending_leads'] ?? 0;
+            $sidebarTotalTasks       = $sc['total_tasks'] ?? 0;
+            $sidebarUnreadNotifs     = $sc['unread_notifs'] ?? 0;
+        } else {
+            $scopeLeads = get_crm_scope_clause('l', 'assigned_counselor_id', 'branch_id');
+            
+            // Active Leads count
+            $stmtActive = $pdo->query("SELECT COUNT(*) FROM leads l WHERE l.is_archived = 0 AND {$scopeLeads}");
+            $sidebarActiveLeadsCount = (int)$stmtActive->fetchColumn();
 
-        // Web leads pending staging count
-        if (can('web_leads', 'view')) {
-            if (is_super_admin()) {
-                $sidebarWebLeadsCount = (int)$pdo->query("SELECT COUNT(*) FROM web_leads WHERE status = 'Pending'")->fetchColumn();
-            } else {
-                $bId = (int)($currentUser['branch_id'] ?? 0);
-                $wStmt = $pdo->prepare("SELECT COUNT(*) FROM web_leads WHERE status = 'Pending' AND (branch_id = ? OR branch_id IS NULL)");
-                $wStmt->execute([$bId]);
-                $sidebarWebLeadsCount = (int)$wStmt->fetchColumn();
+            // Web leads pending staging count
+            if (can('web_leads', 'view')) {
+                if (is_super_admin()) {
+                    $sidebarWebLeadsCount = (int)$pdo->query("SELECT COUNT(*) FROM web_leads WHERE status = 'Pending'")->fetchColumn();
+                } else {
+                    $bId = (int)($currentUser['branch_id'] ?? 0);
+                    $wStmt = $pdo->prepare("SELECT COUNT(*) FROM web_leads WHERE status = 'Pending' AND (branch_id = ? OR branch_id IS NULL)");
+                    $wStmt->execute([$bId]);
+                    $sidebarWebLeadsCount = (int)$wStmt->fetchColumn();
+                }
             }
+
+            // 1. Scheduled follow-ups due today
+            $stmt = $pdo->query("
+                SELECT COUNT(*) FROM followups f
+                JOIN leads l ON f.lead_id = l.id
+                WHERE f.scheduled_date = CURDATE() AND f.status = 'Pending' AND l.is_archived = 0 AND {$scopeLeads}
+            ");
+            $sidebarScheduledCount = (int)$stmt->fetchColumn();
+
+            // 2. Overdue pending follow-ups
+            $stmt = $pdo->query("
+                SELECT COUNT(*) FROM followups f
+                JOIN leads l ON f.lead_id = l.id
+                WHERE f.scheduled_date < CURDATE() AND f.status = 'Pending' AND l.is_archived = 0 AND {$scopeLeads}
+            ");
+            $sidebarOverdueCount = (int)$stmt->fetchColumn();
+
+            // 3. Today Leads (assigned today, 0 followups)
+            $stmt = $pdo->query("
+                SELECT COUNT(*) FROM leads l
+                WHERE DATE(l.assigned_at) = CURDATE() AND l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
+            ");
+            $sidebarTodayLeadsCount = (int)$stmt->fetchColumn();
+
+            // 4. Pending Leads (assigned earlier, 0 followups)
+            $stmt = $pdo->query("
+                SELECT COUNT(*) FROM leads l
+                WHERE DATE(l.assigned_at) < CURDATE() AND l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
+            ");
+            $sidebarPendingLeadsCount = (int)$stmt->fetchColumn();
+
+            $sidebarTotalTasks = $sidebarScheduledCount + $sidebarOverdueCount + $sidebarTodayLeadsCount + $sidebarPendingLeadsCount;
+            $sidebarUnreadNotifs = get_unread_notifications_count($currentUser['id']);
+
+            $_SESSION['sidebar_cache'] = [
+                'active_leads'   => $sidebarActiveLeadsCount,
+                'web_leads'      => $sidebarWebLeadsCount,
+                'scheduled'      => $sidebarScheduledCount,
+                'overdue'        => $sidebarOverdueCount,
+                'today_leads'    => $sidebarTodayLeadsCount,
+                'pending_leads'  => $sidebarPendingLeadsCount,
+                'total_tasks'    => $sidebarTotalTasks,
+                'unread_notifs'  => $sidebarUnreadNotifs
+            ];
+            $_SESSION['sidebar_cache_time'] = $now;
         }
-
-        // 1. Scheduled follow-ups due today
-        $stmt = $pdo->query("
-            SELECT COUNT(*) FROM followups f
-            JOIN leads l ON f.lead_id = l.id
-            WHERE f.scheduled_date = CURDATE() AND f.status = 'Pending' AND l.is_archived = 0 AND {$scopeLeads}
-        ");
-        $sidebarScheduledCount = (int)$stmt->fetchColumn();
-
-        // 2. Overdue pending follow-ups
-        $stmt = $pdo->query("
-            SELECT COUNT(*) FROM followups f
-            JOIN leads l ON f.lead_id = l.id
-            WHERE f.scheduled_date < CURDATE() AND f.status = 'Pending' AND l.is_archived = 0 AND {$scopeLeads}
-        ");
-        $sidebarOverdueCount = (int)$stmt->fetchColumn();
-
-        // 3. Today Leads (assigned today, 0 followups)
-        $stmt = $pdo->query("
-            SELECT COUNT(*) FROM leads l
-            WHERE DATE(l.assigned_at) = CURDATE() AND l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
-        ");
-        $sidebarTodayLeadsCount = (int)$stmt->fetchColumn();
-
-        // 4. Pending Leads (assigned earlier, 0 followups)
-        $stmt = $pdo->query("
-            SELECT COUNT(*) FROM leads l
-            WHERE DATE(l.assigned_at) < CURDATE() AND l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
-        ");
-        $sidebarPendingLeadsCount = (int)$stmt->fetchColumn();
-
-        $sidebarTotalTasks = $sidebarScheduledCount + $sidebarOverdueCount + $sidebarTodayLeadsCount + $sidebarPendingLeadsCount;
-        $sidebarUnreadNotifs = get_unread_notifications_count($currentUser['id']);
     }
 } catch (Exception $e) {
     // Fail silently in case of db lag

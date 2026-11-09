@@ -27,13 +27,12 @@ function is_logged_in() {
  * @return array|null
  */
 function current_user($forceReload = false) {
-    static $cachedUser = null;
-    if (!$forceReload && $cachedUser !== null && ($cachedUser['id'] ?? 0) === ($_SESSION['user_id'] ?? 0)) {
-        return $cachedUser;
-    }
-    
     if (!is_logged_in()) {
         return null;
+    }
+
+    if (!$forceReload && !empty($_SESSION['current_user_cache']) && ($_SESSION['current_user_cache']['id'] ?? 0) === ($_SESSION['user_id'] ?? 0)) {
+        return $_SESSION['current_user_cache'];
     }
     
     global $pdo;
@@ -52,11 +51,13 @@ function current_user($forceReload = false) {
         
         if (!$cachedUser) {
             unset($_SESSION['user_id']);
+            unset($_SESSION['current_user_cache']);
             return null;
         }
+        $_SESSION['current_user_cache'] = $cachedUser;
         return $cachedUser;
     } catch (Exception $e) {
-        return null;
+        return $_SESSION['current_user_cache'] ?? null;
     }
 }
 
@@ -349,31 +350,25 @@ function can($module, $action = 'view', $user = null) {
     $userId = (int)$user['id'];
     $roleId = (int)$user['role_id'];
 
-    // In-memory request cache
-    if (!isset($GLOBALS['crm_perm_cache'])) {
-        $GLOBALS['crm_perm_cache'] = [];
-    }
-    $cacheKey = "{$userId}_{$roleId}_{$module}_{$column}";
-    if (isset($GLOBALS['crm_perm_cache'][$cacheKey])) {
-        return $GLOBALS['crm_perm_cache'][$cacheKey];
+    // High-performance session-level role permissions cache (avoids repeated round-trip DB queries)
+    if (!isset($_SESSION['crm_role_perms'][$roleId])) {
+        if (!$pdo) {
+            return false;
+        }
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM role_permissions WHERE role_id = ?");
+            $stmt->execute([$roleId]);
+            $perms = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $perms[$row['module']] = $row;
+            }
+            $_SESSION['crm_role_perms'][$roleId] = $perms;
+        } catch (Exception $e) {
+            return false;
+        }
     }
 
-    if (!$pdo) {
-        return false;
-    }
-
-    try {
-        // Fallback to role-level permission in role_permissions table
-        $rStmt = $pdo->prepare("SELECT {$column} FROM role_permissions WHERE role_id = ? AND module = ? LIMIT 1");
-        $rStmt->execute([$roleId, $module]);
-        $rVal = $rStmt->fetchColumn();
-
-        $allowed = ($rVal !== false) ? (bool)$rVal : false;
-        $GLOBALS['crm_perm_cache'][$cacheKey] = $allowed;
-        return $allowed;
-    } catch (Exception $e) {
-        return false;
-    }
+    return !empty($_SESSION['crm_role_perms'][$roleId][$module][$column]);
 }
 
 /**
