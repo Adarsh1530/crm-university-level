@@ -3354,6 +3354,20 @@
   let navToastEl = null;
   let completionModalEl = null;
 
+  /**
+   * Determine user role key
+   */
+  function detectRoleKey() {
+    const user = window.CRM_CURRENT_USER || {};
+    if (user.is_super_admin || user.role_name === 'super_admin' || user.role_id == 1) {
+      return 'super_admin';
+    }
+    if (user.is_branch_manager || user.role_name === 'manager' || user.role_id == 2) {
+      return 'manager';
+    }
+    return 'counselor';
+  }
+
   function ensureTutorialDOM() {
     if (!overlayEl) {
       overlayEl = document.getElementById('tutorial-overlay');
@@ -4029,6 +4043,15 @@
         }, 350);
       }
     }
+
+    // 3. Bind click events to Guide buttons across the DOM
+    const guideBtns = document.querySelectorAll('#btn-guide-tutorial, #btn-dashboard-guide, .btn-guide-trigger');
+    guideBtns.forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        window.startInteractiveTutorial();
+      });
+    });
   });
 
 })();
