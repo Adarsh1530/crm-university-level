@@ -151,9 +151,6 @@ include __DIR__ . '/../includes/header.php';
     <button type="button" class="btn btn-primary btn-sm" id="btn-quick-add-lead" onclick="openQuickLeadModal()" style="font-weight:700; box-shadow:0 2px 6px rgba(112,8,231,0.25);">
       <i class="fa-solid fa-plus"></i> Quick Add Lead
     </button>
-    <button type="button" class="btn btn-outline btn-sm" id="btn-dashboard-guide" onclick="startInteractiveTutorial()">
-      <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--primary);"></i> <?= htmlspecialchars($currentUser['role_label']) ?> Guide
-    </button>
     <?php if (can('invoices', 'add')): ?>
       <a href="<?= base_url('finance/create_invoice.php') ?>" class="btn btn-secondary btn-sm" id="btn-generate-invoice">
         <i class="fa-solid fa-file-invoice-dollar"></i> Generate Invoice
