@@ -407,7 +407,8 @@ include __DIR__ . '/../includes/header.php';
           <tbody>
             <?php foreach ($urgentCalls as $call): 
               $dialUrl = "tel:" . preg_replace('/[^0-9+]/', '', $call['phone']);
-              $waUrl = "https://wa.me/91" . normalize_phone($call['phone']) . "?text=" . urlencode("Hello " . $call['full_name'] . ", this is " . ($currentUser['name'] ?? 'Edroots') . " regarding your higher education admission enquiry.");
+              $waMsg = get_whatsapp_message($call['stage'], $call['full_name'], $currentUser['name'] ?? 'Edroots', $call['preferred_country'] ?? 'UK');
+              $waUrl = "https://wa.me/91" . normalize_phone($call['phone']) . "?text=" . urlencode($waMsg);
             ?>
               <tr>
                 <td>
@@ -752,7 +753,8 @@ include __DIR__ . '/../includes/header.php';
           <?php else: ?>
             <?php foreach ($recentLeads as $rl): 
               $dialUrl = "tel:" . preg_replace('/[^0-9+]/', '', $rl['phone']);
-              $waUrl = "https://wa.me/91" . normalize_phone($rl['phone']) . "?text=" . urlencode("Hello " . $rl['full_name'] . ", this is " . ($currentUser['name'] ?? 'Edroots') . " regarding your higher education admission enquiry.");
+              $waMsg = get_whatsapp_message($rl['stage'], $rl['full_name'], $currentUser['name'] ?? 'Edroots', $rl['preferred_country'] ?? 'UK');
+              $waUrl = "https://wa.me/91" . normalize_phone($rl['phone']) . "?text=" . urlencode($waMsg);
             ?>
               <tr>
                 <td>

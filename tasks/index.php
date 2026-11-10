@@ -233,7 +233,8 @@ include __DIR__ . '/../includes/header.php';
         <?php else: ?>
           <?php foreach ($records as $row): 
             $dialUrl = "tel:" . preg_replace('/[^0-9+]/', '', $row['phone']);
-            $waUrl = "https://wa.me/91" . normalize_phone($row['phone']) . "?text=" . urlencode("Hello " . $row['full_name'] . ", this is " . ($currentUser['name'] ?? 'Edroots') . " regarding your higher education admission enquiry.");
+            $waMsg = get_whatsapp_message($row['stage'] ?? 'ENQUIRY', $row['full_name'], $currentUser['name'] ?? 'Edroots', $row['preferred_country'] ?? 'UK', $row['preferred_course'] ?? 'Higher Ed');
+            $waUrl = "https://wa.me/91" . normalize_phone($row['phone']) . "?text=" . urlencode($waMsg);
           ?>
             <tr>
               <td>

@@ -45,10 +45,15 @@ $currentUri = $_SERVER['REQUEST_URI'] ?? '';
     
     <!-- Top Navigation Bar -->
     <header id="top-navbar">
-      <div class="navbar-left">
+      <div class="navbar-left" style="display:flex; align-items:center; gap:0.75rem; flex:1;">
         <button type="button" class="sidebar-toggle-btn" id="sidebar-toggle" title="Toggle Sidebar">
           <i class="fa-solid fa-bars-staggered"></i>
         </button>
+        <!-- Global Fast Search Bar (Always Accessible) -->
+        <form action="<?= base_url('leads/index.php') ?>" method="GET" style="max-width:320px; width:100%; position:relative;" class="d-none d-md-block">
+          <input type="text" name="search" placeholder="Search student name, phone, ID..." style="width:100%; height:36px; border-radius:20px; border:1px solid var(--border-color); padding:0 12px 0 34px; font-size:0.8rem; background:var(--bg-subtle); outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'; this.style.background='#fff';" onblur="this.style.borderColor='var(--border-color)'; this.style.background='var(--bg-subtle)';">
+          <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:0.78rem; color:var(--text-light); pointer-events:none;"></i>
+        </form>
       </div>
 
       <div class="navbar-right">

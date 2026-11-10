@@ -140,7 +140,7 @@ function get_crm_scope_clause($tableAlias = 'l', $counselorCol = 'assigned_couns
     
     if (is_branch_manager()) {
         $branchId = (int)($user['branch_id'] ?? 0);
-        return $branchId > 0 ? "{$tableAlias}.{$branchCol} = {$branchId}" : '1=1';
+        return $branchId > 0 ? "{$tableAlias}.{$branchCol} = {$branchId}" : '1=0';
     }
     
     // Counselor and other staff
@@ -169,7 +169,9 @@ function can_access_lead($leadId) {
     if (!$lead) return false;
     
     if (is_branch_manager()) {
-        return ((int)$lead['branch_id'] === (int)$user['branch_id']);
+        $userBranchId = (int)($user['branch_id'] ?? 0);
+        if ($userBranchId <= 0) return false;
+        return ((int)$lead['branch_id'] === $userBranchId);
     }
     
     return ((int)$lead['assigned_counselor_id'] === (int)$user['id']);

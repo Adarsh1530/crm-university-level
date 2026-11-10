@@ -638,3 +638,91 @@ function award_points($targetType, $targetId, $points, $reason, $createdBy = nul
     }
 }
 
+/**
+ * Stage-Aware Intelligent WhatsApp Message Generator
+ *
+ * @param string $stage
+ * @param string $studentName
+ * @param string $senderName
+ * @param string $preferredCountry
+ * @param string $preferredCourse
+ * @return string
+ */
+function get_whatsapp_message($stage, $studentName, $senderName = 'UniCRM', $preferredCountry = '', $preferredCourse = '') {
+    $studentName = trim($studentName) ?: 'Student';
+    $senderName = trim($senderName) ?: 'Admissions Team';
+    $country = trim($preferredCountry) ?: 'overseas';
+    $course = trim($preferredCourse) ?: 'higher education program';
+
+    switch (strtoupper((string)$stage)) {
+        case 'CUSTOMER':
+            return "Hello {$studentName}, thank you for registering with UniCRM for your {$country} admissions. This is {$senderName}. We have prepared your initial eligibility assessment and course shortlist. When would be a good time to discuss the next steps?";
+            
+        case 'APPLICATION':
+            return "Hello {$studentName}, this is {$senderName} regarding your application for {$course} in {$country}. We are currently compiling your dossier documents for university filing. Could you please share any pending transcripts or test scores at your earliest convenience?";
+            
+        case 'OFFER RECEIVED':
+            return "Congratulations {$studentName}! 🎉 We have received an official offer letter for your {$course} application in {$country}! This is {$senderName}. Let us connect today to review the offer terms and acceptance conditions.";
+            
+        case 'TUITION FEES PAID':
+            return "Hello {$studentName}, this is {$senderName}. Congratulations on remitting your tuition fee deposit for {$country}! We are now ready to commence your student visa file and financial verification.";
+            
+        case 'ENROLLED':
+            return "Hello {$studentName}, congratulations on completing your enrollment for {$course} in {$country}! This is {$senderName}. Wishing you immense success in your international academic journey. Please let us know if you need any pre-departure or accommodation assistance.";
+            
+        case 'ENQUIRY':
+        default:
+            return "Hello {$studentName}, this is {$senderName} from Edroots Admissions. I am following up on your higher education enquiry for {$country}. Are you available for a brief 5-minute consultation today regarding course options and intakes?";
+    }
+}
+
+/**
+ * Predefined WhatsApp Message Templates for Counselors
+ *
+ * @param string $studentName
+ * @param string $senderName
+ * @param string $country
+ * @param string $course
+ * @return array
+ */
+function get_whatsapp_templates($studentName, $senderName = 'UniCRM', $country = 'UK', $course = 'Higher Ed') {
+    return [
+        'enquiry' => [
+            'label' => 'Initial Enquiry Greeting',
+            'icon' => 'fa-comments',
+            'text' => "Hello {$studentName}, this is {$senderName} from Edroots Admissions. I am following up on your higher education enquiry for {$country}. Are you available for a brief 5-minute consultation today regarding course options and intakes?"
+        ],
+        'followup' => [
+            'label' => 'Follow-up Call Reminder',
+            'icon' => 'fa-clock',
+            'text' => "Hello {$studentName}, this is {$senderName}. As scheduled, I am reaching out to discuss your university applications. Please let me know when you are free to take a quick call."
+        ],
+        'documents' => [
+            'label' => 'Document Checklist Request',
+            'icon' => 'fa-file-arrow-up',
+            'text' => "Hello {$studentName}, this is {$senderName}. To proceed with your university submission for {$country}, please share clear scans of your Passport, Degree Transcripts, and English proficiency test scores."
+        ],
+        'application' => [
+            'label' => 'Application Status Update',
+            'icon' => 'fa-paper-plane',
+            'text' => "Hello {$studentName}, good news! Your application for {$course} in {$country} is being finalized. We will share your university application reference number shortly."
+        ],
+        'offer' => [
+            'label' => 'Offer Letter Received 🎉',
+            'icon' => 'fa-envelope-open-text',
+            'text' => "Congratulations {$studentName}! 🎉 We have received your official university offer letter! Let us connect today to review the offer conditions and acceptance deadline."
+        ],
+        'fees' => [
+            'label' => 'Tuition Fee Deposit Reminder',
+            'icon' => 'fa-receipt',
+            'text' => "Hello {$studentName}, this is {$senderName}. A quick reminder regarding your tuition fee deposit to secure your university CAS / visa paperwork. Please let us know if you require any assistance with the international wire transfer."
+        ],
+        'enrolled' => [
+            'label' => 'Enrolment & Visa Confirmation 🎓',
+            'icon' => 'fa-graduation-cap',
+            'text' => "Congratulations {$studentName} on your successful student visa and university enrollment! Wishing you all the best. We are here if you need any pre-departure guidance."
+        ]
+    ];
+}
+
+

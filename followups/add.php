@@ -45,11 +45,7 @@ if (!$lead) {
     redirect('leads/index.php');
 }
 
-// Mandatory Next Follow-up Date Check
-if (empty($nextDate)) {
-    set_flash('danger', 'Validation Error: Next follow-up date is strictly mandatory when recording an interaction.');
-    redirect($returnUrl);
-}
+$scheduleNext = isset($_POST['schedule_next']) ? (int)$_POST['schedule_next'] : 1;
 
 // Fetch Interaction Title & Duration Constraint
 $titleStmt = $pdo->prepare("SELECT id, title, max_duration_days FROM interaction_titles WHERE id = ? LIMIT 1");
@@ -61,21 +57,28 @@ if (!$interactionTitle) {
     redirect($returnUrl);
 }
 
-// Rule Engine: Next follow-up date cannot exceed CURRENT_DATE + max_duration_days
-$today = new DateTime('today');
-$selectedDate = new DateTime($nextDate);
-$maxDays = (int)$interactionTitle['max_duration_days'];
-$allowedMaxDate = (clone $today)->modify("+{$maxDays} days");
+$maxDays = (int)($interactionTitle['max_duration_days'] ?? 7);
 
-if ($selectedDate < $today) {
-    set_flash('danger', 'Validation Error: Next follow-up date cannot be in the past.');
-    redirect($returnUrl);
-}
+// If scheduling next follow-up, validate date
+if ($scheduleNext) {
+    if (empty($nextDate)) {
+        $nextDate = date('Y-m-d', strtotime("+{$maxDays} days"));
+    }
 
-if ($selectedDate > $allowedMaxDate) {
-    $maxDateStr = $allowedMaxDate->format('d M Y');
-    set_flash('danger', "Governance Constraint Violated: Interaction title <strong>\"{$interactionTitle['title']}\"</strong> enforces a maximum interval of <strong>{$maxDays} days</strong>. The next follow-up date cannot exceed <strong>{$maxDateStr}</strong>.");
-    redirect($returnUrl);
+    $today = new DateTime('today');
+    $selectedDate = new DateTime($nextDate);
+    $allowedMaxDate = (clone $today)->modify("+{$maxDays} days");
+
+    if ($selectedDate < $today) {
+        set_flash('danger', 'Validation Error: Next follow-up date cannot be in the past.');
+        redirect($returnUrl);
+    }
+
+    if ($selectedDate > $allowedMaxDate) {
+        $maxDateStr = $allowedMaxDate->format('d M Y');
+        set_flash('danger', "Governance Constraint Violated: Interaction title <strong>\"{$interactionTitle['title']}\"</strong> enforces a maximum interval of <strong>{$maxDays} days</strong>. The next follow-up date cannot exceed <strong>{$maxDateStr}</strong>.");
+        redirect($returnUrl);
+    }
 }
 
 try {
@@ -110,34 +113,46 @@ try {
         $maxDays
     ]);
 
-    // 3. Schedule the next follow-up task
-    $insNextStmt = $pdo->prepare("
-        INSERT INTO followups (
-            lead_id, counselor_id, interaction_title_id, interaction_type,
-            scheduled_date, scheduled_time, status, notes
-        ) VALUES (
-            ?, ?, ?, 'Scheduled Follow-up',
-            ?, ?, 'Pending', ?
-        )
-    ");
-    $insNextStmt->execute([
-        $leadId,
-        $lead['assigned_counselor_id'] ?: $currentUser['id'],
-        $titleId,
-        $nextDate,
-        $nextTime,
-        "Next follow-up following: {$interactionTitle['title']}"
-    ]);
+    // 3. Schedule the next follow-up task (if requested)
+    if ($scheduleNext) {
+        $insNextStmt = $pdo->prepare("
+            INSERT INTO followups (
+                lead_id, counselor_id, interaction_title_id, interaction_type,
+                scheduled_date, scheduled_time, status, notes
+            ) VALUES (
+                ?, ?, ?, 'Scheduled Follow-up',
+                ?, ?, 'Pending', ?
+            )
+        ");
+        $insNextStmt->execute([
+            $leadId,
+            $lead['assigned_counselor_id'] ?: $currentUser['id'],
+            $titleId,
+            $nextDate,
+            $nextTime,
+            "Next follow-up following: {$interactionTitle['title']}"
+        ]);
 
-    // 4. Update Lead metadata
-    $updLeadStmt = $pdo->prepare("
-        UPDATE leads 
-        SET followup_count = followup_count + 1,
-            last_followup_date = CURDATE(),
-            next_followup_date = ?
-        WHERE id = ?
-    ");
-    $updLeadStmt->execute([$nextDate, $leadId]);
+        // Update Lead metadata with next follow-up date
+        $updLeadStmt = $pdo->prepare("
+            UPDATE leads 
+            SET followup_count = followup_count + 1,
+                last_followup_date = CURDATE(),
+                next_followup_date = ?
+            WHERE id = ?
+        ");
+        $updLeadStmt->execute([$nextDate, $leadId]);
+    } else {
+        // Only update lead followup count and clear next date if not scheduling
+        $updLeadStmt = $pdo->prepare("
+            UPDATE leads 
+            SET followup_count = followup_count + 1,
+                last_followup_date = CURDATE(),
+                next_followup_date = NULL
+            WHERE id = ?
+        ");
+        $updLeadStmt->execute([$leadId]);
+    }
 
     // 4b. Optional Admission Stage Update
     $newStage = trim($_POST['new_stage'] ?? '');

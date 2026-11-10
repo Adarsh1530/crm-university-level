@@ -188,10 +188,12 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
           </select>
         </div>
 
+        <input type="hidden" name="schedule_next" id="logCallScheduleNext" value="1">
+
         <!-- Next Call Date -->
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label" style="font-weight:700; font-size:0.825rem;">Next Follow-up Date <span style="color:red;">*</span></label>
-          <input type="date" name="next_followup_date" id="logCallNextDate" class="form-control" value="<?= date('Y-m-d', strtotime('+2 days')) ?>" required>
+        <div class="form-group" style="margin-bottom:0;" id="logCallNextDateGroup">
+          <label class="form-label" style="font-weight:700; font-size:0.825rem;">Next Follow-up Date</label>
+          <input type="date" name="next_followup_date" id="logCallNextDate" class="form-control" value="<?= date('Y-m-d', strtotime('+2 days')) ?>">
           <div style="display:flex; gap:0.4rem; margin-top:6px; flex-wrap:wrap;">
             <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:2px 8px;" onclick="setLogCallDate(1)">Tomorrow</button>
             <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:2px 8px;" onclick="setLogCallDate(2)">In 2 Days</button>
@@ -201,10 +203,13 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
         </div>
       </div>
 
-      <div class="modal-footer" style="padding:1rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
-        <button type="button" class="btn btn-secondary" onclick="closeLogCallModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary" style="background:#059669; border-color:#059669; font-weight:700;">
-          <i class="fa-solid fa-floppy-disk"></i> Save & Log Interaction
+      <div class="modal-footer" style="padding:1rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc; flex-wrap:wrap;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeLogCallModal()">Cancel</button>
+        <button type="submit" onclick="document.getElementById('logCallScheduleNext').value='0'; document.getElementById('logCallNextDate').required=false;" class="btn btn-outline btn-sm" style="font-weight:600;">
+          <i class="fa-solid fa-check"></i> Save Outcome Only
+        </button>
+        <button type="submit" onclick="document.getElementById('logCallScheduleNext').value='1'; document.getElementById('logCallNextDate').required=true;" class="btn btn-primary btn-sm" style="background:#059669; border-color:#059669; font-weight:700;">
+          <i class="fa-solid fa-calendar-check"></i> Save & Schedule Next
         </button>
       </div>
     </form>

@@ -36,7 +36,7 @@ if (!can_access_lead($leadId)) {
 }
 
 // Fetch current lead state
-$stmt = $pdo->prepare("SELECT id, full_name, lead_code, stage, secondary_status, branch_id FROM leads WHERE id = ? LIMIT 1");
+$stmt = $pdo->prepare("SELECT id, full_name, lead_code, stage, secondary_status, branch_id, is_customer FROM leads WHERE id = ? LIMIT 1");
 $stmt->execute([$leadId]);
 $lead = $stmt->fetch();
 
@@ -46,17 +46,18 @@ if (!$lead) {
 }
 
 $oldStage = $lead['stage'];
+$isCustomerFlag = (in_array($newStage, ['CUSTOMER', 'ENROLLED'], true) || (int)($lead['is_customer'] ?? 0) === 1) ? 1 : 0;
 
 try {
     $pdo->beginTransaction();
 
-    // Update lead stage
+    // Update lead stage and customer status
     $updStmt = $pdo->prepare("
         UPDATE leads 
-        SET stage = ?, secondary_status = ?
+        SET stage = ?, secondary_status = ?, is_customer = ?
         WHERE id = ?
     ");
-    $updStmt->execute([$newStage, $secondaryStatus, $leadId]);
+    $updStmt->execute([$newStage, $secondaryStatus, $isCustomerFlag, $leadId]);
 
     // Record stage history
     $histStmt = $pdo->prepare("

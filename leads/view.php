@@ -142,7 +142,10 @@ include __DIR__ . '/../includes/header.php';
             <i class="fa-solid fa-phone" style="color:var(--primary);"></i> 
             <strong style="color:var(--text-heading);"><?= htmlspecialchars($lead['phone']) ?></strong>
             <a href="tel:<?= preg_replace('/[^0-9+]/', '', $lead['phone']) ?>" class="btn btn-outline btn-sm" style="padding:1px 6px; margin-left:4px;" title="Call"><i class="fa-solid fa-phone"></i></a>
-            <a href="https://wa.me/91<?= normalize_phone($lead['phone']) ?>?text=<?= urlencode("Hello " . $lead['full_name'] . ", this is " . ($currentUser['name'] ?? 'Edroots') . " regarding your higher education admission enquiry.") ?>" target="_blank" class="btn btn-outline btn-sm" style="padding:1px 6px; margin-left:2px;" title="WhatsApp"><i class="fa-brands fa-whatsapp" style="color:#25d366;"></i></a>
+            <?php 
+              $viewWaMsg = get_whatsapp_message($lead['stage'], $lead['full_name'], $currentUser['name'] ?? 'Edroots', $lead['preferred_country'] ?? 'UK', $lead['preferred_course'] ?? 'Higher Ed');
+            ?>
+            <a href="https://wa.me/91<?= normalize_phone($lead['phone']) ?>?text=<?= urlencode($viewWaMsg) ?>" target="_blank" class="btn btn-outline btn-sm" style="padding:1px 6px; margin-left:2px;" title="WhatsApp Candidate"><i class="fa-brands fa-whatsapp" style="color:#25d366;"></i></a>
           </span>
           <?php if (!empty($lead['email'])): ?>
             <span><i class="fa-regular fa-envelope"></i> <?= htmlspecialchars($lead['email']) ?></span>

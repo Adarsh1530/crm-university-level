@@ -334,14 +334,19 @@ include __DIR__ . '/../includes/header.php';
                 </div>
               </td>
               <td>
+                <?php
+                  $waMsg = get_whatsapp_message($lead['stage'], $lead['full_name'], $currentUser['name'] ?? 'Edroots', $lead['preferred_country'] ?? 'UK', $lead['preferred_course'] ?? 'Higher Ed');
+                  $waUrl = "https://wa.me/91" . normalize_phone($lead['phone']) . "?text=" . urlencode($waMsg);
+                  $dialUrl = "tel:" . preg_replace('/[^0-9+]/', '', $lead['phone']);
+                ?>
                 <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                   <span style="font-family:monospace; font-weight:700; color:var(--text-heading); font-size:0.85rem;">
                     <?= htmlspecialchars($lead['phone']) ?>
                   </span>
-                  <a href="https://wa.me/91<?= normalize_phone($lead['phone']) ?>?text=<?= urlencode("Hello " . $lead['full_name'] . ", this is " . ($currentUser['name'] ?? 'Edroots') . " regarding your higher education admission enquiry.") ?>" target="_blank" class="btn btn-sm" style="background:#25d366; color:#fff; font-size:0.75rem; padding:2px 7px; border-radius:6px; font-weight:700; display:inline-flex; align-items:center; gap:4px;" title="WhatsApp Candidate">
+                  <a href="<?= $waUrl ?>" target="_blank" class="btn btn-sm" style="background:#25d366; color:#fff; font-size:0.75rem; padding:2px 7px; border-radius:6px; font-weight:700; display:inline-flex; align-items:center; gap:4px;" title="WhatsApp Candidate">
                     <i class="fa-brands fa-whatsapp"></i> Chat
                   </a>
-                  <a href="tel:<?= preg_replace('/[^0-9+]/', '', $lead['phone']) ?>" class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.75rem; border-radius:6px;" title="Direct Call">
+                  <a href="<?= $dialUrl ?>" class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.75rem; border-radius:6px;" title="Direct Call">
                     <i class="fa-solid fa-phone" style="font-size:0.75rem; color:var(--primary);"></i>
                   </a>
                 </div>

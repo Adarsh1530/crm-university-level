@@ -49,11 +49,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $phoneToUse = !empty($rawPhone) ? $rawPhone : $wRow['phone'];
         $cleanPhone = normalize_phone($phoneToUse);
 
-        // Check duplicate in active leads
+        // Check duplicate in active leads (Preserve single student record per candidate)
         $existingLead = check_phone_duplicate($cleanPhone);
         if ($existingLead) {
-            set_flash('danger', "Duplicate Blocked: An active lead with phone <strong>{$cleanPhone}</strong> already exists (" . htmlspecialchars($existingLead['full_name']) . " - " . htmlspecialchars($existingLead['lead_code']) . ").");
-            redirect('data/web_leads.php');
+            if (!empty($_POST['link_existing'])) {
+                // Link this web lead to the existing active student without creating a duplicate record
+                $pdo->beginTransaction();
+                $updStmt = $pdo->prepare("
+                    UPDATE web_leads 
+                    SET status = 'Assigned', assigned_lead_id = ?, assigned_at = NOW(), assigned_counselor_id = ?
+                    WHERE id = ?
+                ");
+                $updStmt->execute([$existingLead['id'], $counselorId ?: $existingLead['assigned_counselor_id'], $webLeadId]);
+                log_activity(
+                    $currentUser['id'],
+                    $existingLead['id'],
+                    'Digital Lead Linked',
+                    "Inbound inquiry from {$wRow['source']} ({$cleanPhone}) linked to existing student record."
+                );
+                $pdo->commit();
+                set_flash('success', "Inbound inquiry successfully linked to existing student <strong>" . htmlspecialchars($existingLead['full_name']) . "</strong> ({$existingLead['lead_code']}).");
+                redirect('leads/view.php?id=' . $existingLead['id']);
+            } else {
+                set_flash('warning', "Notice: An active student already exists with phone <strong>{$cleanPhone}</strong>: <strong>" . htmlspecialchars($existingLead['full_name']) . "</strong> ({$existingLead['lead_code']} &bull; Counselor: " . htmlspecialchars($existingLead['counselor_name'] ?? 'Unassigned') . "). <a href='" . base_url('leads/view.php?id=' . $existingLead['id']) . "' class='btn btn-sm btn-primary' style='margin-left:8px; font-weight:700;'>Open Student Dossier &rarr;</a>");
+                redirect('data/web_leads.php');
+            }
         }
 
         // Generate Lead Code
