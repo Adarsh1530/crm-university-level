@@ -208,11 +208,26 @@ include __DIR__ . '/../includes/header.php';
         </tr>
       </thead>
       <tbody>
-        <?php if (empty($records)): ?>
+        <?php if (empty($records)): 
+          $emptyMsg = match($queue) {
+            'scheduled' => "All scheduled calls for today are completed! Fantastic work staying on top of your student consultations.",
+            'pending_followup' => "Zero overdue calls! Your follow-up queue is completely up to date.",
+            'today_leads' => "All today's fresh inbound inquiries have been contacted. No pending new inquiries.",
+            'pending_leads' => "All previous leads have been contacted! No backlog of uncontacted inquiries.",
+            default => "No items currently pending in this operational queue."
+          };
+        ?>
           <tr>
             <td colspan="7" style="text-align:center; padding:3.5rem; color:var(--text-muted);">
-              <i class="fa-solid fa-circle-check" style="font-size:2.4rem; color:var(--success); margin-bottom:0.75rem; display:block;"></i>
-              <strong>Queue Cleared!</strong> No items currently pending in this operational queue.
+              <div style="width:56px; height:56px; border-radius:50%; background:#dcfce7; color:#15803d; display:inline-flex; align-items:center; justify-content:center; font-size:1.8rem; margin-bottom:0.75rem;">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+              <div style="font-size:1.15rem; font-weight:800; color:#166534; margin-bottom:0.35rem;">Queue Cleared! 🎉</div>
+              <p style="font-size:0.875rem; color:var(--text-muted); max-width:480px; margin:0 auto 1.25rem auto;"><?= $emptyMsg ?></p>
+              <div style="display:flex; justify-content:center; gap:0.5rem;">
+                <a href="<?= base_url('dashboard/index.php') ?>" class="btn btn-secondary btn-sm"><i class="fa-solid fa-table-columns"></i> Go to Cockpit</a>
+                <a href="<?= base_url('leads/index.php') ?>" class="btn btn-primary btn-sm"><i class="fa-solid fa-user-graduate"></i> View All Leads</a>
+              </div>
             </td>
           </tr>
         <?php else: ?>

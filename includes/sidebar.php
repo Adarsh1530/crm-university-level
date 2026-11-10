@@ -253,65 +253,73 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
     <?php endif; ?>
 
     <!-- 4. OPERATIONS (Finance & Documents) -->
-    <?php if (can('invoices', 'view') || can('documents', 'view')): 
+    <?php 
+    $hasFinanceAccess = can('invoices', 'view');
+    $hasDocAccess = can('documents', 'view');
+    if ($hasFinanceAccess || $hasDocAccess): 
       $groupOpsOpen = in_array($activePage, ['finance', 'invoices', 'payments', 'balances', 'create_invoice', 'documents', 'general_docs', 'dossiers']);
     ?>
-      <div class="nav-section-title">Operations</div>
-      <div class="nav-group <?= $groupOpsOpen ? 'nav-group-open active' : '' ?>" id="sidebar-group-finance">
-        <button type="button" class="nav-group-toggle" onclick="toggleNavGroup(this)">
-          <div class="nav-item-content">
-            <i class="fa-solid fa-file-invoice-dollar nav-icon"></i>
-            <span class="nav-label">Finance & Invoices</span>
-          </div>
-          <i class="fa-solid fa-chevron-down nav-arrow"></i>
-        </button>
-        <ul class="nav-submenu">
-          <li>
-            <a href="<?= base_url('finance/invoices.php') ?>" class="nav-subitem <?= ($activePage === 'invoices') ? 'active' : '' ?>">
-              Invoices & Billings
-            </a>
-          </li>
-          <?php if (can('invoices', 'add')): ?>
+      <div class="nav-section-title"><?= $hasFinanceAccess ? 'Operations' : 'Documents' ?></div>
+      
+      <?php if ($hasFinanceAccess): ?>
+        <div class="nav-group <?= $groupOpsOpen ? 'nav-group-open active' : '' ?>" id="sidebar-group-finance">
+          <button type="button" class="nav-group-toggle" onclick="toggleNavGroup(this)">
+            <div class="nav-item-content">
+              <i class="fa-solid fa-file-invoice-dollar nav-icon"></i>
+              <span class="nav-label">Finance & Invoices</span>
+            </div>
+            <i class="fa-solid fa-chevron-down nav-arrow"></i>
+          </button>
+          <ul class="nav-submenu">
             <li>
-              <a href="<?= base_url('finance/create_invoice.php') ?>" class="nav-subitem <?= ($activePage === 'create_invoice') ? 'active' : '' ?>">
-                Generate Invoice
+              <a href="<?= base_url('finance/invoices.php') ?>" class="nav-subitem <?= ($activePage === 'invoices') ? 'active' : '' ?>">
+                Invoices & Billings
               </a>
             </li>
-          <?php endif; ?>
-          <li>
-            <a href="<?= base_url('finance/payments.php') ?>" class="nav-subitem <?= ($activePage === 'payments') ? 'active' : '' ?>">
-              Payment Receipts
-            </a>
-          </li>
-          <li>
-            <a href="<?= base_url('finance/balances.php') ?>" class="nav-subitem <?= ($activePage === 'balances') ? 'active' : '' ?>">
-              Outstanding Balances
-            </a>
-          </li>
-        </ul>
-      </div>
+            <?php if (can('invoices', 'add')): ?>
+              <li>
+                <a href="<?= base_url('finance/create_invoice.php') ?>" class="nav-subitem <?= ($activePage === 'create_invoice') ? 'active' : '' ?>">
+                  Generate Invoice
+                </a>
+              </li>
+            <?php endif; ?>
+            <li>
+              <a href="<?= base_url('finance/payments.php') ?>" class="nav-subitem <?= ($activePage === 'payments') ? 'active' : '' ?>">
+                Payment Receipts
+              </a>
+            </li>
+            <li>
+              <a href="<?= base_url('finance/balances.php') ?>" class="nav-subitem <?= ($activePage === 'balances') ? 'active' : '' ?>">
+                Outstanding Balances
+              </a>
+            </li>
+          </ul>
+        </div>
+      <?php endif; ?>
 
-      <div class="nav-group <?= in_array($activePage, ['documents', 'general_docs', 'dossiers']) ? 'nav-group-open active' : '' ?>" id="sidebar-group-docs">
-        <button type="button" class="nav-group-toggle" onclick="toggleNavGroup(this)">
-          <div class="nav-item-content">
-            <i class="fa-solid fa-folder-open nav-icon"></i>
-            <span class="nav-label">Document Hub</span>
-          </div>
-          <i class="fa-solid fa-chevron-down nav-arrow"></i>
-        </button>
-        <ul class="nav-submenu">
-          <li>
-            <a href="<?= base_url('documents/dossiers.php') ?>" class="nav-subitem <?= ($activePage === 'dossiers') ? 'active' : '' ?>">
-              Student Dossiers
-            </a>
-          </li>
-          <li>
-            <a href="<?= base_url('documents/general.php') ?>" class="nav-subitem <?= ($activePage === 'general_docs') ? 'active' : '' ?>">
-              Country Checklists & Guidelines
-            </a>
-          </li>
-        </ul>
-      </div>
+      <?php if ($hasDocAccess): ?>
+        <div class="nav-group <?= in_array($activePage, ['documents', 'general_docs', 'dossiers']) ? 'nav-group-open active' : '' ?>" id="sidebar-group-docs">
+          <button type="button" class="nav-group-toggle" onclick="toggleNavGroup(this)">
+            <div class="nav-item-content">
+              <i class="fa-solid fa-folder-open nav-icon"></i>
+              <span class="nav-label">Document Hub</span>
+            </div>
+            <i class="fa-solid fa-chevron-down nav-arrow"></i>
+          </button>
+          <ul class="nav-submenu">
+            <li>
+              <a href="<?= base_url('documents/dossiers.php') ?>" class="nav-subitem <?= ($activePage === 'dossiers') ? 'active' : '' ?>">
+                Student Dossiers
+              </a>
+            </li>
+            <li>
+              <a href="<?= base_url('documents/general.php') ?>" class="nav-subitem <?= ($activePage === 'general_docs') ? 'active' : '' ?>">
+                Country Checklists & Guidelines
+              </a>
+            </li>
+          </ul>
+        </div>
+      <?php endif; ?>
     <?php endif; ?>
 
     <!-- 5. MANAGEMENT & GOVERNANCE (Manager & Super Admin) -->

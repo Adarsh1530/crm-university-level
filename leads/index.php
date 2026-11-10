@@ -278,8 +278,25 @@ include __DIR__ . '/../includes/header.php';
         <?php if (empty($leads)): ?>
           <tr>
             <td colspan="<?= can('leads', 'reassign') ? 9 : 8 ?>" style="text-align:center; padding:3.5rem; color:var(--text-muted);">
-              <i class="fa-solid fa-user-graduate" style="font-size:2.2rem; margin-bottom:0.75rem; display:block; color:var(--text-light);"></i>
-              No active student leads match the selected criteria.
+              <div style="width:56px; height:56px; border-radius:50%; background:var(--primary-subtle); color:var(--primary); display:inline-flex; align-items:center; justify-content:center; font-size:1.8rem; margin-bottom:0.75rem;">
+                <i class="fa-solid fa-user-graduate"></i>
+              </div>
+              <div style="font-size:1.15rem; font-weight:800; color:var(--text-heading); margin-bottom:0.35rem;">No Student Leads Found</div>
+              <p style="font-size:0.875rem; color:var(--text-muted); max-width:440px; margin:0 auto 1.25rem auto;">
+                <?php if (!empty($search) || !empty($stageFilter) || !empty($priorityFilter) || !empty($sourceFilter)): ?>
+                  No student leads match your current search and filter combination. Try clearing your filters.
+                <?php else: ?>
+                  No active student leads are recorded in this caseload yet. You can add a new inquiry anytime.
+                <?php endif; ?>
+              </p>
+              <div style="display:flex; justify-content:center; gap:0.5rem;">
+                <?php if (!empty($search) || !empty($stageFilter) || !empty($priorityFilter) || !empty($sourceFilter)): ?>
+                  <a href="<?= base_url('leads/index.php') ?>" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate-left"></i> Reset Filters</a>
+                <?php endif; ?>
+                <?php if (can('leads', 'add')): ?>
+                  <button type="button" class="btn btn-primary btn-sm" onclick="openQuickLeadModal()"><i class="fa-solid fa-plus"></i> + Add Student Lead</button>
+                <?php endif; ?>
+              </div>
             </td>
           </tr>
         <?php else: ?>
