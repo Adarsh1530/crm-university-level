@@ -52,6 +52,14 @@ $currentUri = $_SERVER['REQUEST_URI'] ?? '';
       </div>
 
       <div class="navbar-right">
+        <!-- 1-Click Fast Lead Capture (Always Accessible) -->
+        <?php if (can('leads', 'add')): ?>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openQuickLeadModal()" style="font-weight:700; padding:0.42rem 0.85rem; display:inline-flex; align-items:center; gap:6px; border-radius:8px; box-shadow:0 2px 6px rgba(89,85,209,0.25);" title="Quick Add Student Lead (15 Seconds)">
+            <i class="fa-solid fa-plus"></i>
+            <span class="d-none d-sm-inline" style="font-size:0.8rem;">+ New Lead</span>
+          </button>
+        <?php endif; ?>
+
         <!-- Role User Manual & Interactive Guided Tutorial Button -->
         <button type="button" class="btn btn-ghost btn-sm" id="btn-guide-tutorial" onclick="startInteractiveTutorial()" style="font-weight:600; padding:0.42rem 0.75rem; display:inline-flex; align-items:center; gap:5px; border-radius:8px; border:1px solid var(--border-color); background:#fff;" title="Start Interactive Role Tutorial">
           <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--primary); font-size:0.95rem;"></i>

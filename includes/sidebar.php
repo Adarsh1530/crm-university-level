@@ -161,13 +161,13 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
     <?php endif; ?>
 
     <!-- 2. STUDENT ADMISSIONS WORKSPACE (1-Click Direct Access) -->
-    <div class="nav-section-title">Admissions Workspace</div>
+    <div class="nav-section-title"><?= is_counselor() ? 'My Daily Focus' : 'Admissions Workspace' ?></div>
 
     <?php if (can('leads', 'view')): ?>
       <a href="<?= base_url('leads/index.php') ?>" id="sidebar-nav-leads" class="nav-item <?= in_array($activePage, ['leads', 'add_lead']) ? 'active' : '' ?>">
         <div class="nav-item-content">
           <i class="fa-solid fa-user-graduate nav-icon"></i>
-          <span class="nav-label">Student Leads</span>
+          <span class="nav-label"><?= is_counselor() ? 'My Students' : 'Student Leads' ?></span>
         </div>
         <?php if ($sidebarActiveLeadsCount > 0): ?>
           <span class="nav-badge badge-primary"><?= $sidebarActiveLeadsCount ?></span>
@@ -188,7 +188,7 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       <a href="<?= base_url('tasks/index.php') ?>" id="sidebar-nav-tasks" class="nav-item <?= ($activePage === 'tasks') ? 'active' : '' ?>">
         <div class="nav-item-content">
           <i class="fa-solid fa-list-check nav-icon"></i>
-          <span class="nav-label">Daily Follow-ups</span>
+          <span class="nav-label"><?= is_counselor() ? 'Calls & Follow-ups' : 'Daily Follow-ups' ?></span>
         </div>
         <?php if ($sidebarTotalTasks > 0): ?>
           <span class="nav-badge badge-warning" title="<?= $sidebarTotalTasks ?> pending items"><?= $sidebarTotalTasks ?></span>
@@ -200,7 +200,7 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       <a href="<?= base_url('customers/index.php') ?>" id="sidebar-nav-customers" class="nav-item <?= ($activePage === 'customers') ? 'active' : '' ?>">
         <div class="nav-item-content">
           <i class="fa-solid fa-certificate nav-icon"></i>
-          <span class="nav-label">Enrolled Clients</span>
+          <span class="nav-label"><?= is_counselor() ? 'Enrolled Students' : 'Enrolled Clients' ?></span>
         </div>
       </a>
     <?php endif; ?>

@@ -248,15 +248,15 @@ include __DIR__ . '/../includes/header.php';
                 </div>
               </td>
               <td>
-                <div style="display:flex; align-items:center; gap:0.5rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                   <span style="font-family:monospace; font-weight:700; color:var(--text-heading); font-size:0.85rem;">
                     <?= htmlspecialchars($row['phone']) ?>
                   </span>
-                  <a href="<?= $dialUrl ?>" class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.75rem;" title="Direct Call">
-                    <i class="fa-solid fa-phone" style="color:var(--primary);"></i>
+                  <a href="<?= $waUrl ?>" target="_blank" class="btn btn-sm" style="background:#25d366; color:#fff; font-size:0.75rem; padding:2px 8px; border-radius:6px; font-weight:700; display:inline-flex; align-items:center; gap:4px;" title="WhatsApp Candidate">
+                    <i class="fa-brands fa-whatsapp"></i> Chat
                   </a>
-                  <a href="<?= $waUrl ?>" target="_blank" class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.75rem;" title="WhatsApp Candidate">
-                    <i class="fa-brands fa-whatsapp" style="color:#25d366;"></i>
+                  <a href="<?= $dialUrl ?>" class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.75rem; border-radius:6px;" title="Direct Phone Call">
+                    <i class="fa-solid fa-phone" style="font-size:0.75rem; color:var(--primary);"></i>
                   </a>
                 </div>
                 <?php if (!empty($row['email'])): ?>

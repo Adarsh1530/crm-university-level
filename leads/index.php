@@ -334,19 +334,19 @@ include __DIR__ . '/../includes/header.php';
                 </div>
               </td>
               <td>
-                <div style="display:flex; align-items:center; gap:6px;">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                   <span style="font-family:monospace; font-weight:700; color:var(--text-heading); font-size:0.85rem;">
                     <?= htmlspecialchars($lead['phone']) ?>
                   </span>
-                  <a href="tel:<?= preg_replace('/[^0-9+]/', '', $lead['phone']) ?>" class="btn btn-outline btn-sm" style="padding:1px 5px;" title="Call">
-                    <i class="fa-solid fa-phone" style="font-size:0.7rem; color:var(--primary);"></i>
+                  <a href="https://wa.me/91<?= normalize_phone($lead['phone']) ?>?text=<?= urlencode("Hello " . $lead['full_name'] . ", this is " . ($currentUser['name'] ?? 'Edroots') . " regarding your higher education admission enquiry.") ?>" target="_blank" class="btn btn-sm" style="background:#25d366; color:#fff; font-size:0.75rem; padding:2px 7px; border-radius:6px; font-weight:700; display:inline-flex; align-items:center; gap:4px;" title="WhatsApp Candidate">
+                    <i class="fa-brands fa-whatsapp"></i> Chat
                   </a>
-                  <a href="https://wa.me/91<?= normalize_phone($lead['phone']) ?>?text=<?= urlencode("Hello " . $lead['full_name'] . ", this is " . ($currentUser['name'] ?? 'Edroots') . " regarding your higher education admission enquiry.") ?>" target="_blank" class="btn btn-outline btn-sm" style="padding:1px 5px;" title="WhatsApp Candidate">
-                    <i class="fa-brands fa-whatsapp" style="color:#25d366; font-size:0.8rem;"></i>
+                  <a href="tel:<?= preg_replace('/[^0-9+]/', '', $lead['phone']) ?>" class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.75rem; border-radius:6px;" title="Direct Call">
+                    <i class="fa-solid fa-phone" style="font-size:0.75rem; color:var(--primary);"></i>
                   </a>
                 </div>
                 <?php if (!empty($lead['email'])): ?>
-                  <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                  <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
                     <?= htmlspecialchars($lead['email']) ?>
                   </div>
                 <?php endif; ?>
