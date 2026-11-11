@@ -363,6 +363,12 @@ include __DIR__ . '/../includes/header.php';
                 <div style="font-size:0.75rem; color:var(--text-muted);">
                   <?= htmlspecialchars($lead['preferred_course'] ?: 'General Program') ?>
                 </div>
+                <div onclick="openChangeIntakeModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['intake_term'] ?? 'September') ?>', '<?= htmlspecialchars($lead['intake_year'] ?? '2026') ?>')" style="cursor:pointer; margin-top:2px;" title="Click to change InTake (User Manual Section 9.2.4)">
+                  <span class="badge badge-secondary" style="font-size:0.68rem; font-weight:600; padding:1px 5px;">
+                    <i class="fa-regular fa-calendar"></i> <?= htmlspecialchars($lead['intake_term'] ?: 'Sept') ?> <?= htmlspecialchars($lead['intake_year'] ?: date('Y')) ?>
+                    <i class="fa-solid fa-pen" style="font-size:0.6rem; color:var(--text-light); margin-left:2px;"></i>
+                  </span>
+                </div>
               </td>
               <td>
                 <span class="badge <?= $stageBadgeClass ?>" style="font-weight:700; font-size:0.72rem;">
@@ -375,7 +381,10 @@ include __DIR__ . '/../includes/header.php';
                 <?php endif; ?>
               </td>
               <td>
-                <?= priority_badge($lead['priority']) ?>
+                <div onclick="openChangeProspectivityModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['priority']) ?>')" style="cursor:pointer;" title="Click to change Prospectivity (User Manual Section 9.2.3)">
+                  <?= priority_badge($lead['priority']) ?>
+                  <i class="fa-solid fa-pen" style="font-size:0.65rem; color:var(--text-light); margin-left:2px;"></i>
+                </div>
               </td>
               <td>
                 <div style="font-size:0.82rem; font-weight:600; color:var(--text-heading);">

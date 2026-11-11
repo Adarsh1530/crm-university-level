@@ -223,13 +223,14 @@ include __DIR__ . '/../includes/header.php';
         <input type="text" name="full_name" class="form-control" placeholder="e.g. Arun Kumar" required value="<?= htmlspecialchars($_POST['full_name'] ?? '') ?>" autofocus>
       </div>
 
-      <!-- Phone Number -->
+      <!-- Phone Number (With Real-Time Duplicate Validation - User Manual Page 13) -->
       <div class="form-group">
         <label class="form-label" style="font-weight:700;">Phone / WhatsApp (10-Digits) <span style="color:red;">*</span></label>
         <div style="position:relative;">
-          <input type="tel" name="phone" class="form-control" placeholder="e.g. 9847112233" required value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>">
+          <input type="tel" id="leadAddPhone" name="phone" class="form-control" placeholder="e.g. 9847112233" required value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>" oninput="checkLeadPhoneDuplicate(this.value, 'leadAddPhoneFeedback', 'btn-save-lead-details')">
           <i class="fa-solid fa-phone" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--text-light);"></i>
         </div>
+        <div id="leadAddPhoneFeedback" style="display:none; margin-top:6px; font-size:0.8rem;"></div>
         <small style="font-size:0.72rem; color:var(--text-muted);">Country code will be automatically normalized.</small>
       </div>
 
@@ -483,8 +484,8 @@ include __DIR__ . '/../includes/header.php';
         <i class="fa-solid fa-times"></i> Cancel
       </a>
       <div style="display:flex; gap:0.75rem;">
-        <button type="submit" class="btn btn-primary btn-lg" style="padding:0.75rem 2rem; font-weight:700; box-shadow:0 4px 14px rgba(89,85,209,0.3);">
-          <i class="fa-solid fa-check"></i> Register Student Lead
+        <button type="submit" id="btn-save-lead-details" class="btn btn-primary btn-lg" style="padding:0.75rem 2rem; font-weight:700; box-shadow:0 4px 14px rgba(89,85,209,0.3);">
+          <i class="fa-solid fa-check"></i> Save Details
         </button>
       </div>
     </div>

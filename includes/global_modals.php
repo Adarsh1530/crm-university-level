@@ -48,7 +48,8 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
           </div>
           <div class="form-group" style="margin:0;">
             <label class="form-label" style="font-weight:700; font-size:0.825rem;">Mobile / WhatsApp <span style="color:red;">*</span></label>
-            <input type="tel" name="phone" class="form-control" placeholder="10-digit mobile" required>
+            <input type="tel" id="quickLeadPhone" name="phone" class="form-control" placeholder="10-digit mobile" required oninput="checkLeadPhoneDuplicate(this.value, 'quickLeadPhoneFeedback', 'quickLeadSubmitBtn')">
+            <div id="quickLeadPhoneFeedback" style="display:none; margin-top:4px; font-size:0.75rem;"></div>
           </div>
         </div>
 
@@ -131,7 +132,7 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
 
       <div class="modal-footer" style="padding:1rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
         <button type="button" class="btn btn-secondary" onclick="closeQuickLeadModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary" style="font-weight:700; padding:0.5rem 1.25rem;">
+        <button type="submit" id="quickLeadSubmitBtn" class="btn btn-primary" style="font-weight:700; padding:0.5rem 1.25rem;">
           <i class="fa-solid fa-check"></i> Register Lead
         </button>
       </div>
@@ -192,8 +193,11 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
 
         <!-- Next Call Date -->
         <div class="form-group" style="margin-bottom:0;" id="logCallNextDateGroup">
-          <label class="form-label" style="font-weight:700; font-size:0.825rem;">Next Follow-up Date</label>
-          <input type="date" name="next_followup_date" id="logCallNextDate" class="form-control" value="<?= date('Y-m-d', strtotime('+2 days')) ?>">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label class="form-label" style="font-weight:700; font-size:0.825rem; margin:0;">Next Follow-up Date</label>
+            <span id="logCallWorkloadNotice" style="font-size:0.75rem; color:var(--primary); font-weight:700;"></span>
+          </div>
+          <input type="date" name="next_followup_date" id="logCallNextDate" class="form-control" value="<?= date('Y-m-d', strtotime('+2 days')) ?>" onchange="updateDateWorkloadNotice(this.value)" style="margin-top:4px;">
           <div style="display:flex; gap:0.4rem; margin-top:6px; flex-wrap:wrap;">
             <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:2px 8px;" onclick="setLogCallDate(1)">Tomorrow</button>
             <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:2px 8px;" onclick="setLogCallDate(2)">In 2 Days</button>
@@ -268,6 +272,117 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
         <button type="submit" class="btn btn-primary" style="background:#0284c7; border-color:#0284c7; font-weight:700;">
           <i class="fa-solid fa-check-double"></i> Update Milestone
         </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 5. CHANGE PROSPECTIVITY MODAL (EdrootsCRM User Manual Section 9.2.3) -->
+<div class="modal fade" id="changeProspectivityModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+  <div class="modal-dialog" style="background:#fff; border-radius:14px; max-width:400px; width:92%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden;">
+    <form method="POST" action="<?= base_url('leads/update_meta.php') ?>">
+      <?= csrf_field() ?>
+      <input type="hidden" name="field" value="prospectivity">
+      <input type="hidden" name="lead_id" id="prospectivityLeadId" value="0">
+      <input type="hidden" name="return_url" id="prospectivityReturnUrl" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '') ?>">
+      <div class="modal-header" style="padding:1.2rem 1.5rem; background:linear-gradient(135deg, #7008E7 0%, #5955D1 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h3 style="font-size:1.1rem; font-weight:700; margin:0; color:#fff;">Change Prospectivity</h3>
+          <span style="font-size:0.75rem; color:rgba(255,255,255,0.9);" id="prospectivityStudentLabel">Candidate</span>
+        </div>
+        <button type="button" onclick="closeChangeProspectivityModal()" style="border:none; background:rgba(255,255,255,0.2); color:#fff; width:28px; height:28px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:1.5rem;">
+        <label class="form-label" style="font-weight:700; font-size:0.85rem; margin-bottom:0.5rem;">Select Prospectivity Level</label>
+        <select name="priority" id="prospectivitySelect" class="form-control" style="font-size:0.9rem; font-weight:700;">
+          <option value="High">🔥 High (Strong interest / immediate conversion)</option>
+          <option value="Moderate">⚡ Moderate (Interested / evaluating options)</option>
+          <option value="Low">💤 Low (Mild interest / future intake)</option>
+        </select>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.75rem; line-height:1.4;">
+          High prospectivity students are prioritized in daily counselor follow-up calls.
+        </p>
+      </div>
+      <div class="modal-footer" style="padding:0.85rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeChangeProspectivityModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm" style="font-weight:700; padding:0.45rem 1.25rem;">Update</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 6. CHANGE INTAKE MODAL (EdrootsCRM User Manual Section 9.2.4) -->
+<div class="modal fade" id="changeIntakeModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+  <div class="modal-dialog" style="background:#fff; border-radius:14px; max-width:420px; width:92%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden;">
+    <form method="POST" action="<?= base_url('leads/update_meta.php') ?>">
+      <?= csrf_field() ?>
+      <input type="hidden" name="field" value="intake">
+      <input type="hidden" name="lead_id" id="intakeLeadId" value="0">
+      <input type="hidden" name="return_url" id="intakeReturnUrl" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '') ?>">
+      <div class="modal-header" style="padding:1.2rem 1.5rem; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h3 style="font-size:1.1rem; font-weight:700; margin:0; color:#fff;">Change InTake</h3>
+          <span style="font-size:0.75rem; color:rgba(255,255,255,0.9);" id="intakeStudentLabel">Candidate</span>
+        </div>
+        <button type="button" onclick="closeChangeIntakeModal()" style="border:none; background:rgba(255,255,255,0.2); color:#fff; width:28px; height:28px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:1.5rem;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" style="font-weight:700; font-size:0.825rem;">InTake Term</label>
+            <select name="intake_term" id="intakeTermSelect" class="form-control" style="font-size:0.85rem; font-weight:600;">
+              <option value="September">September (Fall)</option>
+              <option value="January">January (Spring)</option>
+              <option value="May">May (Summer)</option>
+              <option value="February">February</option>
+              <option value="November">November</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" style="font-weight:700; font-size:0.825rem;">InTake Year</label>
+            <input type="number" name="intake_year" id="intakeYearInput" class="form-control" value="<?= date('Y') ?>" style="font-size:0.85rem; font-weight:600;" required>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding:0.85rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeChangeIntakeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm" style="font-weight:700; padding:0.45rem 1.25rem;">Update</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 7. REASSIGN COUNSELOR MODAL (EdrootsCRM User Manual Section 9.3.3) -->
+<div class="modal fade" id="changeCounselorModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+  <div class="modal-dialog" style="background:#fff; border-radius:14px; max-width:440px; width:92%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden;">
+    <form method="POST" action="<?= base_url('leads/assign.php') ?>">
+      <?= csrf_field() ?>
+      <input type="hidden" name="lead_id" id="reassignLeadId" value="0">
+      <input type="hidden" name="return" id="reassignReturnUrl" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '') ?>">
+      <div class="modal-header" style="padding:1.2rem 1.5rem; background:linear-gradient(135deg, #475569 0%, #334155 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h3 style="font-size:1.1rem; font-weight:700; margin:0; color:#fff;">ReAssign Lead</h3>
+          <span style="font-size:0.75rem; color:rgba(255,255,255,0.9);" id="reassignStudentLabel">Candidate</span>
+        </div>
+        <button type="button" onclick="closeChangeCounselorModal()" style="border:none; background:rgba(255,255,255,0.2); color:#fff; width:28px; height:28px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:1.5rem;">
+        <label class="form-label" style="font-weight:700; font-size:0.85rem; margin-bottom:0.5rem;">Assigned To</label>
+        <select name="counselor_id" id="reassignCounselorSelect" class="form-control" style="font-size:0.875rem;" required>
+          <option value="">-- Select Counselor --</option>
+          <?php foreach ($counselorsList as $cl): ?>
+            <option value="<?= $cl['id'] ?>">
+              <?= htmlspecialchars($cl['name']) ?> (<?= htmlspecialchars($cl['branch_name'] ?? 'Counselor') ?>)
+            </option>
+          <?php endforeach; ?>
+        </select>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.75rem; line-height:1.4;">
+          The newly assigned counselor will receive an internal work notification in their Notifications Center.
+        </p>
+      </div>
+      <div class="modal-footer" style="padding:0.85rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeChangeCounselorModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm" style="font-weight:700; padding:0.45rem 1.25rem;">Change Assigned To User</button>
       </div>
     </form>
   </div>
@@ -782,11 +897,131 @@ function setLogCallDate(days) {
 }
 function updateMaxFollowupNotice(selectElem) {
   const opt = selectElem.options[selectElem.selectedIndex];
-  const max = opt.getAttribute('data-max') || 7;
+  const max = parseInt(opt.getAttribute('data-max') || 7, 10);
+  const maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + max);
+  const day = String(maxDate.getDate()).padStart(2, '0');
+  const month = String(maxDate.getMonth() + 1).padStart(2, '0');
+  const year = maxDate.getFullYear();
+  const formattedDate = `${day}-${month}-${year}`;
+
   const notice = document.getElementById('maxDaysNotice');
   if (notice) {
-    notice.innerHTML = `Governance Constraint: Next follow-up must be within <strong>${max} days</strong>.`;
+    notice.innerHTML = `<i class="fa-solid fa-clock" style="color:var(--primary);"></i> Governance Rule: Select a date on or before <strong>${formattedDate}</strong> (Max ${max} days).`;
   }
+
+  const dateInput = document.getElementById('logCallNextDate');
+  if (dateInput) {
+    const isoMax = maxDate.toISOString().split('T')[0];
+    dateInput.max = isoMax;
+  }
+}
+
+function updateDateWorkloadNotice(dateVal) {
+  const noticeElem = document.getElementById('logCallWorkloadNotice');
+  if (!noticeElem || !dateVal) return;
+
+  fetch((window.CRM_BASE_URL || '/') + 'api/check_workload.php?date=' + encodeURIComponent(dateVal))
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.message) {
+        noticeElem.innerHTML = `<i class="fa-solid fa-calendar-check" style="color:#059669;"></i> ${data.message}`;
+      } else {
+        noticeElem.innerHTML = '';
+      }
+    })
+    .catch(() => {});
+}
+
+// Real-time Phone Duplicate Verification (EdrootsCRM User Manual Page 13)
+let phoneCheckTimeout = null;
+function checkLeadPhoneDuplicate(phoneVal, feedbackElemId, submitBtnId) {
+  const feedback = document.getElementById(feedbackElemId);
+  const submitBtn = document.getElementById(submitBtnId);
+  if (!feedback) return;
+
+  clearTimeout(phoneCheckTimeout);
+  const clean = phoneVal.replace(/[^0-9]/g, '');
+
+  if (clean.length < 10) {
+    feedback.style.display = 'none';
+    feedback.innerHTML = '';
+    if (submitBtn) submitBtn.disabled = false;
+    return;
+  }
+
+  phoneCheckTimeout = setTimeout(() => {
+    fetch((window.CRM_BASE_URL || '/') + 'api/check_phone.php?phone=' + encodeURIComponent(clean))
+      .then(res => res.json())
+      .then(data => {
+        if (data.exists) {
+          feedback.style.display = 'block';
+          feedback.innerHTML = `
+            <div style="background:#fffbeb; border:1px solid #fef3c7; color:#92400e; padding:8px 12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+              <span><i class="fa-solid fa-triangle-exclamation" style="color:#d97706;"></i> <strong>Already Exists!</strong> Student: <strong>${data.full_name}</strong> (${data.lead_code}).</span>
+              <a href="${(window.CRM_BASE_URL || '/') + 'leads/view.php?id=' + data.lead_id}" target="_blank" class="btn btn-sm btn-primary" style="padding:2px 8px; font-size:0.75rem; white-space:nowrap; text-decoration:none;">Details &rarr;</a>
+            </div>
+          `;
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.title = 'Duplicate phone number already registered';
+          }
+        } else {
+          feedback.style.display = 'block';
+          feedback.innerHTML = `<span style="color:#10b981; font-size:0.75rem; font-weight:600;"><i class="fa-solid fa-check"></i> ${data.message}</span>`;
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.title = '';
+          }
+        }
+      })
+      .catch(() => {});
+  }, 300);
+}
+
+// 5. Change Prospectivity Modal Controller (Section 9.2.3)
+function openChangeProspectivityModal(leadId, studentName, currentProspectivity) {
+  const m = document.getElementById('changeProspectivityModal');
+  if (!m) return;
+  document.getElementById('prospectivityLeadId').value = leadId;
+  document.getElementById('prospectivityStudentLabel').textContent = 'Candidate: ' + (studentName || '#' + leadId);
+  const sel = document.getElementById('prospectivitySelect');
+  if (sel && currentProspectivity) sel.value = currentProspectivity;
+  m.style.display = 'flex';
+}
+function closeChangeProspectivityModal() {
+  const m = document.getElementById('changeProspectivityModal');
+  if (m) m.style.display = 'none';
+}
+
+// 6. Change Intake Modal Controller (Section 9.2.4)
+function openChangeIntakeModal(leadId, studentName, currentTerm, currentYear) {
+  const m = document.getElementById('changeIntakeModal');
+  if (!m) return;
+  document.getElementById('intakeLeadId').value = leadId;
+  document.getElementById('intakeStudentLabel').textContent = 'Candidate: ' + (studentName || '#' + leadId);
+  if (currentTerm && document.getElementById('intakeTermSelect')) document.getElementById('intakeTermSelect').value = currentTerm;
+  if (currentYear && document.getElementById('intakeYearInput')) document.getElementById('intakeYearInput').value = currentYear;
+  m.style.display = 'flex';
+}
+function closeChangeIntakeModal() {
+  const m = document.getElementById('changeIntakeModal');
+  if (m) m.style.display = 'none';
+}
+
+// 7. Change Counselor Modal Controller (Section 9.3.3)
+function openChangeCounselorModal(leadId, studentName, currentCounselorId) {
+  const m = document.getElementById('changeCounselorModal');
+  if (!m) return;
+  document.getElementById('reassignLeadId').value = leadId;
+  document.getElementById('reassignStudentLabel').textContent = 'Candidate: ' + (studentName || '#' + leadId);
+  const sel = document.getElementById('reassignCounselorSelect');
+  if (sel && currentCounselorId) sel.value = currentCounselorId;
+  m.style.display = 'flex';
+}
+function closeChangeCounselorModal() {
+  const m = document.getElementById('changeCounselorModal');
+  if (m) m.style.display = 'none';
 }
 
 function openAdvanceStageModal(leadId, studentName, currentStage) {
@@ -835,7 +1070,7 @@ function switchGuideTab(tabId) {
 
 // Close modals when clicking outside
 window.addEventListener('click', function(e) {
-  ['quickLeadModal', 'globalLogCallModal', 'advanceStageModal', 'userManualModal'].forEach(id => {
+  ['quickLeadModal', 'globalLogCallModal', 'advanceStageModal', 'userManualModal', 'changeProspectivityModal', 'changeIntakeModal', 'changeCounselorModal'].forEach(id => {
     const el = document.getElementById(id);
     if (el && e.target === el) {
       el.style.display = 'none';

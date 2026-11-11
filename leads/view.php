@@ -135,7 +135,10 @@ include __DIR__ . '/../includes/header.php';
               <i class="fa-solid fa-certificate"></i> OFFICIAL CUSTOMER
             </span>
           <?php endif; ?>
-          <?= priority_badge($lead['priority']) ?>
+          <span onclick="openChangeProspectivityModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['priority']) ?>')" style="cursor:pointer;" title="Click to change Prospectivity (Section 9.2.3)">
+            <?= priority_badge($lead['priority']) ?>
+            <i class="fa-solid fa-pen" style="font-size:0.65rem; color:var(--text-light); margin-left:2px;"></i>
+          </span>
         </div>
         <div style="font-size:0.85rem; color:var(--text-muted); margin-top:0.35rem; display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
           <span>
@@ -151,7 +154,12 @@ include __DIR__ . '/../includes/header.php';
             <span><i class="fa-regular fa-envelope"></i> <?= htmlspecialchars($lead['email']) ?></span>
           <?php endif; ?>
           <span><i class="fa-solid fa-building-columns"></i> <?= htmlspecialchars($lead['branch_name'] ?? 'Branch') ?></span>
-          <span><i class="fa-solid fa-headset"></i> <?= htmlspecialchars($lead['counselor_name'] ?? 'Counselor') ?></span>
+          <span>
+            <i class="fa-solid fa-headset"></i> <?= htmlspecialchars($lead['counselor_name'] ?? 'Counselor') ?>
+            <?php if (can('leads', 'assign')): ?>
+              <button type="button" class="btn btn-outline btn-sm" onclick="openChangeCounselorModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', <?= (int)$lead['assigned_counselor_id'] ?>)" style="padding:1px 7px; font-size:0.75rem; margin-left:4px; font-weight:700;" title="ReAssign Counselor (Section 9.3.3)">Change</button>
+            <?php endif; ?>
+          </span>
         </div>
       </div>
     </div>
@@ -167,9 +175,15 @@ include __DIR__ . '/../includes/header.php';
       </button>
 
       <?php if (can('invoices', 'add')): ?>
-        <a href="<?= base_url('finance/create_invoice.php?lead_id=' . $lead['id']) ?>" class="btn btn-success btn-sm">
-          <i class="fa-solid fa-file-invoice-dollar"></i> Generate Invoice
-        </a>
+        <?php if (!$lead['is_customer']): ?>
+          <a href="<?= base_url('finance/create_invoice.php?lead_id=' . $lead['id']) ?>" class="btn btn-success btn-sm" title="Convert to Customer by creating invoice (Section 9.3.2)">
+            <i class="fa-solid fa-certificate"></i> Convert to Customer
+          </a>
+        <?php else: ?>
+          <a href="<?= base_url('finance/create_invoice.php?lead_id=' . $lead['id']) ?>" class="btn btn-success btn-sm">
+            <i class="fa-solid fa-file-invoice-dollar"></i> Generate Invoice
+          </a>
+        <?php endif; ?>
       <?php endif; ?>
 
       <?php if (can('leads', 'edit')): ?>
@@ -303,7 +317,10 @@ include __DIR__ . '/../includes/header.php';
         </div>
         <div>
           <span style="color:var(--text-muted); display:block; font-size:0.75rem;">Target Intake</span>
-          <strong><?= htmlspecialchars($lead['intake_term']) ?> <?= htmlspecialchars($lead['intake_year']) ?></strong>
+          <div onclick="openChangeIntakeModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['intake_term']) ?>', '<?= htmlspecialchars($lead['intake_year']) ?>')" style="cursor:pointer;" title="Click to change Intake (Section 9.2.4)">
+            <strong><?= htmlspecialchars($lead['intake_term']) ?> <?= htmlspecialchars($lead['intake_year']) ?></strong>
+            <i class="fa-solid fa-pen" style="font-size:0.65rem; color:var(--text-light); margin-left:4px;"></i>
+          </div>
         </div>
         <div>
           <span style="color:var(--text-muted); display:block; font-size:0.75rem;">Lead Source</span>

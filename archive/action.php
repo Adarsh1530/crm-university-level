@@ -33,16 +33,25 @@ if ($action === 'archive') {
 } elseif ($action === 'restore') {
     require_permission('archive', 'restore');
     if ($type === 'lead') {
+        $leadCheck = $pdo->query("SELECT is_customer FROM leads WHERE id = {$id}")->fetch();
+        $isCust = !empty($leadCheck['is_customer']);
+
         $stmt = $pdo->prepare("UPDATE leads SET is_archived = 0, archived_at = NULL, archived_reason = NULL WHERE id = ?");
         $stmt->execute([$id]);
-        log_activity($currentUser['id'], $id, 'Lead Restored', "Restored lead ID {$id} back to active pool.");
-        set_flash('success', 'Student record restored to Active Leads pool.');
-        redirect('archive/index.php?tab=leads');
+        log_activity($currentUser['id'], $id, 'Lead Restored', "Unzipped/restored student ID {$id} back to active pool.");
+
+        if ($isCust) {
+            set_flash('success', 'Student client unzipped and restored to Enrolled Customers directory.');
+            redirect('customers/index.php');
+        } else {
+            set_flash('success', 'Student lead unzipped and restored to Active Leads pool.');
+            redirect('leads/index.php');
+        }
     } elseif ($type === 'college_data') {
         $stmt = $pdo->prepare("UPDATE college_data SET is_archived = 0 WHERE id = ?");
         $stmt->execute([$id]);
-        set_flash('success', 'College student record restored to College Data pool.');
-        redirect('archive/index.php?tab=college_data');
+        set_flash('success', 'College candidate record unzipped and restored to College Data pool.');
+        redirect('data/college_data.php');
     }
 } elseif ($action === 'delete_permanent') {
     require_permission('archive', 'delete');

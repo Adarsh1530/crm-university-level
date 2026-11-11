@@ -151,8 +151,8 @@ include __DIR__ . '/../includes/header.php';
                 <td><?= htmlspecialchars($cd['degree']) ?></td>
                 <td><?= htmlspecialchars($cd['branch_name'] ?? 'Unassigned') ?></td>
                 <td style="text-align:right;">
-                  <a href="<?= base_url('archive/action.php?type=college_data&id=' . $cd['id'] . '&action=restore') ?>" class="btn btn-outline-success btn-sm">
-                    <i class="fa-solid fa-rotate-left"></i> Restore
+                  <a href="<?= base_url('archive/action.php?type=college_data&id=' . $cd['id'] . '&action=restore') ?>" class="btn btn-outline-success btn-sm" title="Restore / Unzip (User Manual Section 9.6.1)">
+                    <i class="fa-solid fa-file-zipper"></i> Unzip
                   </a>
                   <?php if (is_super_admin()): ?>
                     <button type="button" class="btn btn-danger btn-sm" onclick="openPurgeModal('college_data', <?= (int)$cd['id'] ?>, <?= htmlspecialchars(json_encode($cd['student_name'])) ?>)">
@@ -197,8 +197,8 @@ include __DIR__ . '/../includes/header.php';
                 <td style="font-size:0.825rem;"><?= !empty($ld['archived_at']) ? date('d M Y', strtotime($ld['archived_at'])) : '—' ?></td>
                 <td style="text-align:right;">
                   <div style="display:flex; justify-content:flex-end; gap:0.35rem;">
-                    <a href="<?= base_url('archive/action.php?type=lead&id=' . $ld['id'] . '&action=restore') ?>" class="btn btn-outline-success btn-sm">
-                      <i class="fa-solid fa-rotate-left"></i> Restore
+                    <a href="<?= base_url('archive/action.php?type=lead&id=' . $ld['id'] . '&action=restore') ?>" class="btn btn-outline-success btn-sm" title="Restore / Unzip (User Manual Section 9.6.1)">
+                      <i class="fa-solid fa-file-zipper"></i> Unzip
                     </a>
                     <?php if (is_super_admin()): 
                       $leadDesc = $ld['full_name'] . ' (' . $ld['lead_code'] . ')';

@@ -25,7 +25,7 @@ $notes = trim($_POST['notes'] ?? '');
 $currentUser = current_user();
 
 if ($collegeDataId <= 0 || $branchId <= 0 || $counselorId <= 0) {
-    set_flash('danger', 'Please select both an operating Branch and an assigned Counselor to convert this candidate.');
+    set_flash('danger', 'Unable to convert: The converting counselor location and assigned counselor must be set.');
     redirect('data/college_data.php');
 }
 
@@ -44,12 +44,12 @@ if ($cData['converted_to_lead']) {
     redirect('leads/view.php?id=' . $cData['lead_id']);
 }
 
-// Canonical phone deduplication
+// Canonical phone deduplication (User Manual Section 9.5.3)
 $cleanPhone = normalize_phone($cData['phone']);
 $duplicateLead = check_phone_duplicate($cleanPhone);
 
 if ($duplicateLead) {
-    set_flash('danger', "Duplicate Blocked: A lead already exists with canonical phone <strong>{$cleanPhone}</strong> (" . htmlspecialchars($duplicateLead['full_name']) . " - " . htmlspecialchars($duplicateLead['lead_code']) . "). Cannot create duplicate active lead.");
+    set_flash('danger', "Mobile No Exists: A student lead already exists with mobile number <strong>{$cleanPhone}</strong> (" . htmlspecialchars($duplicateLead['full_name']) . " - " . htmlspecialchars($duplicateLead['lead_code']) . ").");
     redirect('data/college_data.php');
 }
 

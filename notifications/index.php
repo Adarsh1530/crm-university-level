@@ -85,19 +85,19 @@ include __DIR__ . '/../includes/header.php';
       <?php foreach ($notifs as $n): 
         $isNotAttended = ($n['status'] === 'Not Attended');
       ?>
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:1.15rem 1.5rem; border-bottom:1px solid var(--border-color); background:<?= $isNotAttended ? 'var(--primary-subtle)' : '#fff' ?>;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:1.15rem 1.5rem; border-bottom:1px solid var(--border-color); background:<?= $isNotAttended ? '#ffffff' : '#f0fdf4' ?>;">
           <div style="display:flex; align-items:center; gap:1rem;">
-            <div style="width:40px; height:40px; border-radius:50%; background:<?= $isNotAttended ? 'var(--primary)' : 'var(--bg-subtle)' ?>; color:<?= $isNotAttended ? '#fff' : 'var(--text-muted)' ?>; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
+            <div style="width:40px; height:40px; border-radius:50%; background:<?= $isNotAttended ? '#1e293b' : '#16a34a' ?>; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
               <i class="fa-solid fa-bell"></i>
             </div>
             <div>
               <div style="display:flex; align-items:center; gap:0.5rem;">
-                <strong style="color:var(--text-heading); font-size:0.92rem;"><?= htmlspecialchars($n['title']) ?></strong>
-                <span class="badge <?= $isNotAttended ? 'badge-danger' : 'badge-success' ?>" style="font-size:0.68rem; font-weight:700;">
+                <strong style="color:<?= $isNotAttended ? '#0f172a' : '#15803d' ?>; font-size:0.92rem;"><?= htmlspecialchars($n['title']) ?></strong>
+                <span class="badge <?= $isNotAttended ? 'badge-secondary' : 'badge-success' ?>" style="font-size:0.68rem; font-weight:700;">
                   <?= htmlspecialchars($n['status']) ?>
                 </span>
               </div>
-              <div style="font-size:0.825rem; color:var(--text-muted); margin-top:2px;">
+              <div style="font-size:0.825rem; color:<?= $isNotAttended ? '#475569' : '#166534' ?>; margin-top:2px;">
                 <?= htmlspecialchars($n['message']) ?>
               </div>
               <div style="font-size:0.72rem; color:var(--text-light); margin-top:3px;">
@@ -113,8 +113,12 @@ include __DIR__ . '/../includes/header.php';
               </a>
             <?php endif; ?>
             <?php if ($isNotAttended): ?>
-              <a href="<?= base_url('notifications/mark_attended.php?id=' . $n['id'] . '&return=' . urlencode($_SERVER['REQUEST_URI'] ?? '')) ?>" class="btn btn-outline-success btn-sm" title="Mark Attended">
-                <i class="fa-solid fa-check"></i>
+              <a href="<?= base_url('notifications/mark_attended.php?id=' . $n['id'] . '&return=' . urlencode($_SERVER['REQUEST_URI'] ?? '')) ?>" class="btn btn-outline-success btn-sm" style="font-weight:600; font-size:0.75rem;" title="Marked as Attended">
+                <i class="fa-solid fa-check"></i> Mark as Attended
+              </a>
+            <?php else: ?>
+              <a href="<?= base_url('notifications/mark_attended.php?id=' . $n['id'] . '&unattend=1&return=' . urlencode($_SERVER['REQUEST_URI'] ?? '')) ?>" class="btn btn-outline-secondary btn-sm" style="font-size:0.75rem;" title="Marked as Not-Attended">
+                <i class="fa-solid fa-rotate-left"></i> Mark as Not-Attended
               </a>
             <?php endif; ?>
           </div>

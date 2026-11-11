@@ -75,9 +75,12 @@ include __DIR__ . '/../includes/header.php';
       Issued to <strong><?= htmlspecialchars($invoice['full_name']) ?></strong> (<?= htmlspecialchars($invoice['lead_code']) ?>) &bull; <?= htmlspecialchars($invoice['branch_name'] ?? 'Branch') ?>
     </p>
   </div>
-  <div style="display:flex; gap:0.5rem; align-items:center;">
-    <a href="<?= base_url('finance/pdf_invoice.php?id=' . $invoice['id']) ?>" target="_blank" class="btn btn-secondary btn-sm">
-      <i class="fa-solid fa-print"></i> Printable PDF
+  <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+    <a href="<?= base_url('leads/view.php?id=' . $invoice['lead_id']) ?>" class="btn btn-secondary btn-sm" title="Contact Details (Student Profile - User Manual Section 9.3.5.2)">
+      <i class="fa-solid fa-address-card"></i> Contact Details
+    </a>
+    <a href="<?= base_url('finance/pdf_invoice.php?id=' . $invoice['id']) ?>" target="_blank" class="btn btn-outline-primary btn-sm" title="Print / Download PDF (User Manual Section 9.3.5.2)">
+      <i class="fa-solid fa-file-pdf"></i> PDF
     </a>
     <?php if ($invoice['balance_due'] > 0 && can('invoices', 'edit')): ?>
       <button type="button" class="btn btn-primary btn-sm" onclick="openPaymentModal()">
