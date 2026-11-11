@@ -10,7 +10,7 @@
  */
 
 function sync_edroots_database_data(PDO $pdo) {
-    if (!empty($_SESSION['edroots_manual_synced_v5'])) {
+    if (!empty($_SESSION['edroots_manual_synced_v6'])) {
         return;
     }
 
@@ -25,7 +25,7 @@ function sync_edroots_database_data(PDO $pdo) {
         $hasNoufal = $user1 && $user1['name'] === 'Noufal Peediyakkal';
 
         if ($hasNileena && $hasNoufal) {
-            $_SESSION['edroots_manual_synced_v5'] = true;
+            $_SESSION['edroots_manual_synced_v6'] = true;
             return;
         }
 
@@ -127,88 +127,88 @@ function sync_edroots_database_data(PDO $pdo) {
                 'id' => 1, 'lead_code' => 'LED-54879', 'full_name' => 'Nileena', 'phone' => '9074134910', 'email' => 'nileena.54879@gmail.com',
                 'branch_id' => 2, 'counselor_id' => 2, 'degree' => 'B.Com-2017', 'college' => 'Perinthalmanna Arts & Science',
                 'country' => 'United Kingdom', 'course' => 'MSc International Business',
-                'priority' => 'Moderate', 'source' => 'Ex Student', 'stage' => 'ENQUIRY', 'status_note' => 'Lead - Information shared',
-                'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-09 11:25:00'
+                'priority' => 'Moderate', 'source' => 'Ex Student', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
+                'notes' => 'Lead - Information shared', 'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-09 11:25:00'
             ],
             // Reg.# 54376: Mohammed Ameen M K (Page 10)
             [
                 'id' => 2, 'lead_code' => 'LED-54376', 'full_name' => 'Mohammed Ameen M K', 'phone' => '9633371111', 'email' => 'ameen.mk@gmail.com',
                 'branch_id' => 1, 'counselor_id' => 4, 'degree' => 'B.Tech Computer Science', 'college' => 'Model Engineering College, Kochi',
                 'country' => 'United Kingdom', 'course' => 'MSc Advanced Computer Science',
-                'priority' => 'Low', 'source' => 'Direct Reference', 'stage' => 'ENQUIRY', 'status_note' => 'Stage1- Enquiry',
-                'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-05 10:15:00'
+                'priority' => 'Low', 'source' => 'Direct Reference', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
+                'notes' => 'Stage1- Enquiry', 'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-05 10:15:00'
             ],
             // Reg.# 54375: SNEHA THOMAS (Page 10)
             [
                 'id' => 3, 'lead_code' => 'LED-54375', 'full_name' => 'SNEHA THOMAS', 'phone' => '7511140594', 'email' => 'sneha.thomas@gmail.com',
                 'branch_id' => 4, 'counselor_id' => 10, 'degree' => 'B.Sc Nursing', 'college' => 'Lourdes College of Nursing',
                 'country' => 'United Kingdom', 'course' => 'MSc Global Healthcare Management',
-                'priority' => 'Low', 'source' => 'UK Jan22 FB Leads', 'stage' => 'ENQUIRY', 'status_note' => 'Stage1- Enquiry',
-                'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-05 11:30:00'
+                'priority' => 'Low', 'source' => 'Social Media', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
+                'notes' => 'Stage1- Enquiry', 'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-05 11:30:00'
             ],
             // Reg.# 54451: ALBERT JOSEPH (Page 9)
             [
                 'id' => 4, 'lead_code' => 'LED-54451', 'full_name' => 'ALBERT JOSEPH', 'phone' => '8547597476', 'email' => 'albert.joseph@gmail.com',
                 'branch_id' => 7, 'counselor_id' => 3, 'degree' => 'B.Tech Mechanical', 'college' => 'LBS College of Engineering, Kasaragod',
                 'country' => 'United Kingdom', 'course' => 'MSc Mechanical Engineering',
-                'priority' => 'Low', 'source' => 'Walk-in', 'stage' => 'ENQUIRY', 'status_note' => 'Stage1- Enquiry',
-                'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-05 14:00:00'
+                'priority' => 'Low', 'source' => 'Walk-in', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
+                'notes' => 'Stage1- Enquiry', 'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-05 14:00:00'
             ],
             // Reg.# 54089: VISHAKH (Page 9)
             [
                 'id' => 5, 'lead_code' => 'LED-54089', 'full_name' => 'VISHAKH', 'phone' => '8547930281', 'email' => 'vishakh.k@gmail.com',
                 'branch_id' => 7, 'counselor_id' => 3, 'degree' => 'BBA Marketing', 'college' => 'Nehru Arts and Science College, Kanhangad',
                 'country' => 'Canada', 'course' => 'Postgraduate Certificate in Project Management',
-                'priority' => 'Low', 'source' => 'Canada Jan/May 22 FB leads', 'stage' => 'ENQUIRY', 'status_note' => 'Lead - Course Option shared',
-                'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-03 09:45:00'
+                'priority' => 'Low', 'source' => 'Social Media', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
+                'notes' => 'Lead - Course Option shared', 'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-03 09:45:00'
             ],
             // Reg.# 54048: YADUKRISHNAN (Page 9)
             [
                 'id' => 6, 'lead_code' => 'LED-54048', 'full_name' => 'YADUKRISHNAN', 'phone' => '9400538097', 'email' => 'yadukrishnan@gmail.com',
                 'branch_id' => 7, 'counselor_id' => 3, 'degree' => 'B.Com Finance', 'college' => 'Kannur University Campus',
                 'country' => 'United Kingdom', 'course' => 'MSc Accounting and Finance',
-                'priority' => 'Moderate', 'source' => 'Ex Student Reference', 'stage' => 'ENQUIRY', 'status_note' => 'Lead - Course Option shared',
-                'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-03 16:20:00'
+                'priority' => 'Moderate', 'source' => 'Ex Student', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
+                'notes' => 'Lead - Course Option shared', 'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-03 16:20:00'
             ],
             // Reg.# 54628: REVATHY (Page 12, 19)
             [
                 'id' => 7, 'lead_code' => 'LED-54628', 'full_name' => 'REVATHY', 'phone' => '7907663590', 'email' => 'revathy.clt@gmail.com',
                 'branch_id' => 3, 'counselor_id' => 3, 'degree' => 'B.Sc Biotechnology', 'college' => 'Farook College, Kozhikode',
                 'country' => 'United Kingdom', 'course' => 'MSc Biotechnology and Enterprise',
-                'priority' => 'Low', 'source' => 'Reception Calicut', 'stage' => 'ENQUIRY', 'status_note' => 'Lead - Call not connected',
-                'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-06 10:00:00'
+                'priority' => 'Low', 'source' => 'Walk-in', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
+                'notes' => 'Lead - Call not connected', 'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-06 10:00:00'
             ],
             // Customer: Test- Shareef Customer (Page 17 - Invoice INV-6262)
             [
                 'id' => 8, 'lead_code' => 'LED-54629', 'full_name' => 'Test- Shareef Customer', 'phone' => '9895716711', 'email' => 'shareef.customer@gmail.com',
                 'branch_id' => 2, 'counselor_id' => 5, 'degree' => 'B.Tech Civil', 'college' => 'MES College of Engineering, Kuttippuram',
                 'country' => 'United Kingdom', 'course' => 'MSc Construction Management',
-                'priority' => 'High', 'source' => 'Direct Reference', 'stage' => 'CUSTOMER', 'status_note' => 'Invoiced & Converted to Customer',
-                'is_customer' => 1, 'is_archived' => 0, 'created_at' => '2021-08-09 11:00:00'
+                'priority' => 'High', 'source' => 'Direct Reference', 'stage' => 'CUSTOMER', 'secondary_status' => 'Active',
+                'notes' => 'Invoiced & Converted to Customer', 'is_customer' => 1, 'is_archived' => 0, 'created_at' => '2021-08-09 11:00:00'
             ],
             // Customer: Fawas (Page 19, 29)
             [
                 'id' => 9, 'lead_code' => 'LED-54630', 'full_name' => 'Fawas', 'phone' => '9947921306', 'email' => 'fawas.kochi@gmail.com',
                 'branch_id' => 1, 'counselor_id' => 6, 'degree' => 'B.Sc Computer Science', 'college' => 'Rajagiri College of Social Sciences',
                 'country' => 'United Kingdom', 'course' => 'MSc Data Science',
-                'priority' => 'High', 'source' => 'Website Leads', 'stage' => 'CUSTOMER', 'status_note' => 'Customer - Documents Pending',
-                'is_customer' => 1, 'is_archived' => 0, 'created_at' => '2021-08-09 12:30:00'
+                'priority' => 'High', 'source' => 'Website', 'stage' => 'CUSTOMER', 'secondary_status' => 'Active',
+                'notes' => 'Customer - Documents Pending', 'is_customer' => 1, 'is_archived' => 0, 'created_at' => '2021-08-09 12:30:00'
             ],
             // Reg.# 54636: Test- User-Manohar (Page 15, 33)
             [
                 'id' => 10, 'lead_code' => 'LED-54636', 'full_name' => 'Test- User-Manohar', 'phone' => '9895716725', 'email' => 'manohar.test@gmail.com',
                 'branch_id' => 2, 'counselor_id' => 5, 'degree' => 'B.Com Computer Applications', 'college' => 'Al Salama Arts College',
                 'country' => 'Canada', 'course' => 'PG Diploma in Business Analysis',
-                'priority' => 'Low', 'source' => 'Canada Jan/May 22 FB leads', 'stage' => 'ENQUIRY', 'status_note' => 'Lead - Call not connected',
-                'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-09 10:15:00'
+                'priority' => 'Low', 'source' => 'Social Media', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
+                'notes' => 'Lead - Call not connected', 'is_customer' => 0, 'is_archived' => 0, 'created_at' => '2021-08-09 10:15:00'
             ],
             // Archived Student: Salish (Page 26)
             [
                 'id' => 11, 'lead_code' => 'LED-54430', 'full_name' => 'Salish', 'phone' => '9947502125', 'email' => 'salish.pmna@gmail.com',
                 'branch_id' => 2, 'counselor_id' => 4, 'degree' => 'B.Sc Chemistry', 'college' => 'Govt College Malappuram',
                 'country' => 'United Kingdom', 'course' => 'MSc Analytical Chemistry',
-                'priority' => 'Low', 'source' => 'Walk-in', 'stage' => 'ENQUIRY', 'status_note' => 'Archived lead for future intake',
-                'is_customer' => 0, 'is_archived' => 1, 'created_at' => '2021-08-05 09:30:00'
+                'priority' => 'Low', 'source' => 'Walk-in', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
+                'notes' => 'Archived lead for future intake', 'is_customer' => 0, 'is_archived' => 1, 'created_at' => '2021-08-05 09:30:00'
             ]
         ];
 
@@ -216,26 +216,26 @@ function sync_edroots_database_data(PDO $pdo) {
             INSERT INTO leads (
                 id, lead_code, full_name, phone, email, branch_id, assigned_counselor_id,
                 stage, secondary_status, priority, source, preferred_country, preferred_course,
-                highest_qualification, college_name, is_customer, is_archived, created_by, created_at, assigned_at
+                highest_qualification, college_name, notes, is_customer, is_archived, created_by, created_at, assigned_at
             ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, 1, ?, ?
+                ?, ?, ?, ?, ?, 1, ?, ?
             ) ON DUPLICATE KEY UPDATE 
                 lead_code = VALUES(lead_code), full_name = VALUES(full_name), phone = VALUES(phone), email = VALUES(email),
                 branch_id = VALUES(branch_id), assigned_counselor_id = VALUES(assigned_counselor_id),
                 stage = VALUES(stage), secondary_status = VALUES(secondary_status), priority = VALUES(priority),
                 source = VALUES(source), preferred_country = VALUES(preferred_country), preferred_course = VALUES(preferred_course),
-                highest_qualification = VALUES(highest_qualification), college_name = VALUES(college_name),
+                highest_qualification = VALUES(highest_qualification), college_name = VALUES(college_name), notes = VALUES(notes),
                 is_customer = VALUES(is_customer), is_archived = VALUES(is_archived)
         ");
 
         foreach ($leads as $l) {
             $stmtLead->execute([
                 $l['id'], $l['lead_code'], $l['full_name'], $l['phone'], $l['email'],
-                $l['branch_id'], $l['counselor_id'], $l['stage'], $l['status_note'],
+                $l['branch_id'], $l['counselor_id'], $l['stage'], $l['secondary_status'],
                 $l['priority'], $l['source'], $l['country'], $l['course'],
-                $l['degree'], $l['college'], $l['is_customer'], $l['is_archived'],
+                $l['degree'], $l['college'], $l['notes'], $l['is_customer'], $l['is_archived'],
                 $l['created_at'], $l['created_at']
             ]);
         }
@@ -319,7 +319,7 @@ function sync_edroots_database_data(PDO $pdo) {
             // Silently continue
         }
 
-        $_SESSION['edroots_manual_synced_v5'] = true;
+        $_SESSION['edroots_manual_synced_v6'] = true;
     } catch (Exception $e) {
         error_log('Edroots DB Sync Notice: ' . $e->getMessage());
     }
