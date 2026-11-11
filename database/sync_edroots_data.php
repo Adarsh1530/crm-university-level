@@ -312,10 +312,17 @@ function sync_edroots_database_data(PDO $pdo) {
         // 10. Official Invoice INV-6262 for Shareef Customer (Page 17)
         try {
             $pdo->exec("
-                INSERT INTO invoices (id, invoice_number, lead_id, company_id, branch_id, subtotal, tax_rate, tax_amount, discount_amount, total_amount, paid_amount, balance_due, invoice_date, due_date, status, created_by)
-                VALUES (6262, 'INV-6262', 8, 1, 2, 1000.00, 10.00, 100.00, 0.00, 1100.00, 110.00, 990.00, '2021-08-09', '2021-08-10', 'Partially Paid', 2)
+                INSERT INTO invoices (id, invoice_number, lead_id, branch_id, subtotal, tax_percentage, tax_amount, tax_total, grand_total, paid_total, paid_amount, balance_total, balance_due, invoice_date, due_date, payment_status, status, created_by)
+                VALUES (6262, 'INV-6262', 8, 2, 1000.00, 10.00, 100.00, 100.00, 1100.00, 110.00, 110.00, 990.00, 990.00, '2021-08-09', '2021-08-10', 'Partially Paid', 'Active', 2)
                 ON DUPLICATE KEY UPDATE 
-                    invoice_number = 'INV-6262', total_amount = 1100.00, paid_amount = 110.00, balance_due = 990.00, status = 'Partially Paid'
+                    invoice_number = 'INV-6262', grand_total = 1100.00, paid_total = 110.00, balance_total = 990.00, payment_status = 'Partially Paid', status = 'Active'
+            ");
+
+            // Also update lead #8's financial cache
+            $pdo->exec("
+                UPDATE leads 
+                SET fee_total = 1100.00, paid_total = 110.00, balance_total = 990.00 
+                WHERE id = 8
             ");
         } catch (Exception $invEx) {
             error_log('Invoice sync error: ' . $invEx->getMessage());
