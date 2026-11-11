@@ -2,32 +2,22 @@
 require_once __DIR__ . '/../config/database.php';
 
 header('Content-Type: text/plain');
-echo "=== TESTING SYNC ===\n";
+echo "=== DIRECT INSERT TEST ===\n";
 
 try {
-    // Unset the session flag to force sync
-    unset($_SESSION['edroots_manual_synced_v5']);
-    
-    // Test lead count before
-    $cnt = $pdo->query("SELECT COUNT(*) FROM leads")->fetchColumn();
-    echo "Current lead count in DB: " . $cnt . "\n";
-    
-    // Check columns in leads table
-    $cols = $pdo->query("SHOW COLUMNS FROM leads")->fetchAll(PDO::FETCH_COLUMN);
-    echo "Columns in leads table:\n" . implode(', ', $cols) . "\n\n";
-
-    // Call sync function directly
-    require_once __DIR__ . '/../database/sync_edroots_data.php';
-    sync_edroots_database_data($pdo);
-
-    $cntAfter = $pdo->query("SELECT COUNT(*) FROM leads")->fetchColumn();
-    echo "Lead count after sync: " . $cntAfter . "\n";
-
-    $leads = $pdo->query("SELECT id, lead_code, full_name, phone, branch_id FROM leads LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
-    echo "Leads after sync:\n";
-    print_r($leads);
-
+    $stmt = $pdo->prepare("
+        INSERT INTO leads (
+            id, lead_code, full_name, phone, email, branch_id, assigned_counselor_id,
+            stage, secondary_status, priority, source, preferred_country, preferred_course,
+            highest_qualification, college_name, is_customer, is_archived, created_by, created_at, assigned_at
+        ) VALUES (
+            1, 'LED-54879', 'Nileena', '9074134910', 'nileena@edroots.in', 2, 2,
+            'ENQUIRY', 'Lead - Information shared', 'Moderate', 'Ex Student', 'United Kingdom', 'MSc International Business',
+            'B.Com-2017', 'Perinthalmanna Arts & Science', 0, 0, 1, '2021-08-09 11:25:00', '2021-08-09 11:25:00'
+        )
+    ");
+    $stmt->execute();
+    echo "SUCCESS: Inserted Nileena! ID: " . $pdo->lastInsertId() . "\n";
 } catch (Exception $e) {
-    echo "EXCEPTION: " . $e->getMessage() . "\n";
-    echo $e->getTraceAsString() . "\n";
+    echo "ERROR: " . $e->getMessage() . "\n";
 }
