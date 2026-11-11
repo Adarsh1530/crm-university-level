@@ -74,6 +74,10 @@ try {
             // Silently continue if schema exists or driver restricts auto-exec
         }
     }
+
+    // Automatically align system identities and demo profiles with official EdrootsCRM Manual
+    require_once __DIR__ . '/../database/sync_edroots_data.php';
+    sync_edroots_database_data($pdo);
 } catch (PDOException $e) {
     $isVercel = !empty(getenv('VERCEL')) || !empty($_ENV['VERCEL']);
     

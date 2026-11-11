@@ -135,7 +135,10 @@ include __DIR__ . '/../includes/header.php';
             By: <strong><?= htmlspecialchars($d['uploaded_by_name'] ?? 'Admin') ?></strong>
           </span>
           <div style="display:flex; gap:0.4rem; align-items:center;">
-            <a href="<?= base_url('uploads/documents/' . rawurlencode($d['file_name'])) ?>" target="_blank" class="btn btn-primary btn-sm" style="font-size:0.75rem;">
+            <?php 
+              $docLink = !empty($d['file_path']) ? base_url($d['file_path']) : base_url('uploads/documents/' . rawurlencode($d['file_name'])); 
+            ?>
+            <a href="<?= $docLink ?>" target="_blank" class="btn btn-primary btn-sm" style="font-size:0.75rem;">
               <i class="fa-solid fa-arrow-down"></i> Open PDF
             </a>
             <?php if (can('documents', 'delete')): ?>

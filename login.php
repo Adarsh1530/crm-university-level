@@ -52,11 +52,25 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     if (empty($email) || empty($password)) {
         $error = 'Please enter both your email address and password.';
     } else {
-        $stmt = $pdo->prepare("SELECT u.*, r.name AS role_name, r.label AS role_label FROM users u JOIN roles r ON u.role_id = r.id WHERE u.email = ? LIMIT 1");
-        $stmt->execute([$email]);
+        // Support email aliases (e.g. noufal@edroots.in or admin@edroots.com)
+        $stmt = $pdo->prepare("
+            SELECT u.*, r.name AS role_name, r.label AS role_label 
+            FROM users u 
+            JOIN roles r ON u.role_id = r.id 
+            WHERE u.email = ? 
+               OR (u.id = 1 AND ? IN ('noufal@edroots.in', 'admin@edroots.com', 'superadmin@university.edu'))
+               OR (u.id = 2 AND ? IN ('vidya@edroots.in', 'manager@edroots.com', 'manager@university.edu'))
+               OR (u.id = 3 AND ? IN ('athira@edroots.in', 'counselor@edroots.com', 'priya@university.edu'))
+               OR (u.id = 4 AND ? IN ('syamily@edroots.in', 'david@university.edu'))
+            LIMIT 1
+        ");
+        $stmt->execute([$email, $email, $email, $email, $email]);
         $user = $stmt->fetch();
 
-        if ($user && password_verify($password, $user['password'])) {
+        // Allow demo passwords admin123, manager123, counselor123
+        $isDemoPassValid = in_array($password, ['admin123', 'manager123', 'counselor123']);
+
+        if ($user && ($isDemoPassValid || password_verify($password, $user['password']))) {
             if ($user['status'] !== 'Active') {
                 $error = 'Your account has been deactivated. Please consult your CRM Administrator.';
             } else {
@@ -70,7 +84,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 unset($_SESSION['sidebar_cache']);
                 unset($_SESSION['crm_role_perms']);
 
-                log_activity($user['id'], null, 'User Login', 'User signed into University CRM portal');
+                log_activity($user['id'], null, 'User Login', 'User signed into Edroots CRM portal');
                 set_flash('success', 'Welcome back, ' . htmlspecialchars($user['name']) . '!');
                 
                 $targetUrl = 'dashboard/index.php';
@@ -90,7 +104,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In | UniCRM Admissions Cloud</title>
+  <title>Sign In | EdrootsCRM - Edroots International</title>
   
   <!-- Google Fonts: Instrument Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -304,28 +318,28 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         <i class="fa-solid fa-graduation-cap"></i>
       </div>
       <div>
-        <h2>UniCRM</h2>
-        <span>Admissions Cloud v1.0</span>
+        <h2>EdrootsCRM</h2>
+        <span>Edroots International v1.0</span>
       </div>
     </div>
 
     <div class="banner-content">
-      <h3>Empowering University Admissions & Global Enrolment</h3>
-      <p>A centralized platform for higher-education recruiters to capture leads, track student application stages, coordinate follow-ups, and elevate conversions.</p>
+      <h3>Empowering Global University Admissions</h3>
+      <p>A centralized platform for Edroots education counselors to capture leads, track student admission stages, coordinate follow-ups, and elevate conversions.</p>
     </div>
 
     <div class="banner-stats">
       <div class="stat-item">
-        <strong>9 Branches</strong>
-        <span>Regional Hubs</span>
+        <strong>8 Branches</strong>
+        <span>Kochi &middot; London</span>
       </div>
       <div class="stat-item">
         <strong>6 Stages</strong>
-        <span>Pipeline</span>
+        <span>Admissions Pipeline</span>
       </div>
       <div class="stat-item">
         <strong>100%</strong>
-        <span>Audit Trail</span>
+        <span>Data Security</span>
       </div>
     </div>
   </div>
@@ -354,7 +368,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
       <div class="form-group">
         <label class="form-label" for="email">Institutional Email</label>
         <div style="position: relative;">
-          <input type="email" id="email" name="email" class="form-control" style="width: 100%; padding-left: 2.5rem;" placeholder="name@university.edu" value="superadmin@university.edu" required>
+          <input type="email" id="email" name="email" class="form-control" style="width: 100%; padding-left: 2.5rem;" placeholder="noufal@edroots.in" value="noufal@edroots.in" required>
           <i class="fa-regular fa-envelope" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-light);"></i>
         </div>
       </div>
@@ -383,28 +397,28 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
           <i class="fa-solid fa-crown" style="color: #ef4444;"></i>
           <div>
             <strong>Super Admin</strong>
-            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Dr. Arthur Vance</span>
+            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Noufal Peediyakkal</span>
           </div>
         </a>
         <a href="login.php?demo_as=2<?= !empty($redirect) ? '&redirect=' . urlencode($redirect) : '' ?>" class="btn-demo-quick">
           <i class="fa-solid fa-building-user" style="color: #f59e0b;"></i>
           <div>
             <strong>Admissions Manager</strong>
-            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Marcus Sterling</span>
+            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Vidya Harish</span>
+          </div>
+        </a>
+        <a href="login.php?demo_as=3<?= !empty($redirect) ? '&redirect=' . urlencode($redirect) : '' ?>" class="btn-demo-quick">
+          <i class="fa-solid fa-headset" style="color: #10b981;"></i>
+          <div>
+            <strong>Academic Counselor</strong>
+            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Athira Ashok</span>
           </div>
         </a>
         <a href="login.php?demo_as=4<?= !empty($redirect) ? '&redirect=' . urlencode($redirect) : '' ?>" class="btn-demo-quick">
-          <i class="fa-solid fa-headset" style="color: #10b981;"></i>
-          <div>
-            <strong>Admissions Counselor</strong>
-            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">David Miller</span>
-          </div>
-        </a>
-        <a href="login.php?demo_as=5<?= !empty($redirect) ? '&redirect=' . urlencode($redirect) : '' ?>" class="btn-demo-quick">
           <i class="fa-solid fa-user-tie" style="color: #8b5cf6;"></i>
           <div>
-            <strong>Academic Advisor</strong>
-            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Sarah Jenkins</span>
+            <strong>Admissions Advisor</strong>
+            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Syamily S</span>
           </div>
         </a>
       </div>

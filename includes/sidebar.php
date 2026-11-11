@@ -138,10 +138,10 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       </div>
       <div class="brand-text">
         <div class="brand-title-row">
-          <h1 class="brand-title">UniCRM</h1>
+          <h1 class="brand-title">EdrootsCRM</h1>
           <span class="sidebar-role-badge sidebar-demo-badge" title="<?= htmlspecialchars($rawRoleLabel) ?>"><?= htmlspecialchars($headerRoleBadge) ?></span>
         </div>
-        <span class="brand-subtitle">Admissions Cloud</span>
+        <span class="brand-subtitle">Edroots International</span>
       </div>
     </a>
   </div>

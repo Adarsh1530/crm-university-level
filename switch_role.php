@@ -8,8 +8,10 @@ require_once __DIR__ . '/config/helpers.php';
 require_once __DIR__ . '/includes/auth.php';
 
 $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
+$roleName = $_GET['role'] ?? '';
 $returnUrl = $_GET['return'] ?? base_url('dashboard/index.php');
 
+$user = null;
 if ($userId > 0) {
     $stmt = $pdo->prepare("
         SELECT u.*, r.name AS role_name, r.label AS role_label, b.name AS branch_name 
@@ -20,8 +22,22 @@ if ($userId > 0) {
     ");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
-    
-    if ($user) {
+}
+
+if (!$user && !empty($roleName)) {
+    $stmt = $pdo->prepare("
+        SELECT u.*, r.name AS role_name, r.label AS role_label, b.name AS branch_name 
+        FROM users u 
+        JOIN roles r ON u.role_id = r.id 
+        LEFT JOIN branches b ON u.branch_id = b.id 
+        WHERE r.name = ? AND u.status = 'Active'
+        ORDER BY u.id ASC LIMIT 1
+    ");
+    $stmt->execute([$roleName]);
+    $user = $stmt->fetch();
+}
+
+if ($user) {
         clear_flashes();
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user'] = $user;
@@ -40,7 +56,6 @@ if ($userId > 0) {
         }
         redirect($targetUrl);
     }
-}
 
 redirect(base_url('dashboard/index.php'));
 

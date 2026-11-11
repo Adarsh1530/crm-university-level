@@ -105,7 +105,7 @@
       "title": "Instant Role Switcher Dropdown",
       "badge": "Role Simulation",
       "icon": "fa-shuffle",
-      "description": "Test, audit, and verify system behavior across all staff personas with a single click: Dr. Arthur Vance (Super Admin), Marcus Sterling (Manager), David Miller (Counselor), or Sarah Jenkins (Advisor). Validates role permissions, caseload boundaries, and screen access in real time.",
+      "description": "Test, audit, and verify system behavior across all staff personas with a single click: Noufal Peediyakkal (Super Admin), Vidya Harish (Manager), Athira Ashok (Counselor), or Syamily S (Advisor). Validates role permissions, caseload boundaries, and screen access in real time.",
       "tip": "Switch to Admissions Counselor anytime to verify exactly what assigned staff see on their screens.",
       "position": "bottom"
     },
@@ -1004,7 +1004,7 @@
       "title": "Instant Role Switcher Dropdown",
       "badge": "Role Simulation",
       "icon": "fa-shuffle",
-      "description": "Test, audit, and verify system behavior across all staff personas with a single click: Dr. Arthur Vance (Super Admin), Marcus Sterling (Manager), David Miller (Counselor), or Sarah Jenkins (Advisor). Validates role permissions, caseload boundaries, and screen access in real time.",
+      "description": "Test, audit, and verify system behavior across all staff personas with a single click: Noufal Peediyakkal (Super Admin), Vidya Harish (Manager), Athira Ashok (Counselor), or Syamily S (Advisor). Validates role permissions, caseload boundaries, and screen access in real time.",
       "tip": "Switch to Admissions Counselor anytime to verify exactly what assigned staff see on their screens.",
       "position": "bottom"
     },
@@ -1903,7 +1903,7 @@
       "title": "Instant Role Switcher Dropdown",
       "badge": "Admissions Counselor • Student Advisory",
       "icon": "fa-shuffle",
-      "description": "Test, audit, and verify system behavior across all staff personas with a single click: Dr. Arthur Vance (Super Admin), Marcus Sterling (Manager), David Miller (Counselor), or Sarah Jenkins (Advisor). Validates role permissions, caseload boundaries, and screen access in real time.",
+      "description": "Test, audit, and verify system behavior across all staff personas with a single click: Noufal Peediyakkal (Super Admin), Vidya Harish (Manager), Athira Ashok (Counselor), or Syamily S (Advisor). Validates role permissions, caseload boundaries, and screen access in real time.",
       "tip": "Switch to Admissions Counselor anytime to verify exactly what assigned staff see on their screens.",
       "position": "bottom"
     },

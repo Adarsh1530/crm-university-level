@@ -815,8 +815,8 @@ include __DIR__ . '/../includes/header.php';
         </div>
       <?php else: ?>
         <?php foreach ($generalDocs as $gdoc): 
-          $fileName = !empty($gdoc['file_name']) ? $gdoc['file_name'] : ($gdoc['file_path'] ?? '');
-          $docUrl = base_url('uploads/documents/' . rawurlencode($fileName));
+          $rawPath = !empty($gdoc['file_path']) ? $gdoc['file_path'] : (!empty($gdoc['file_name']) ? 'uploads/documents/' . $gdoc['file_name'] : '');
+          $docUrl = base_url($rawPath);
         ?>
           <a href="<?= $docUrl ?>" target="_blank" style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.85rem; border-radius:8px; background:var(--bg-subtle); text-decoration:none; transition:background 0.15s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='var(--bg-subtle)'">
             <div style="display:flex; align-items:center; gap:8px;">

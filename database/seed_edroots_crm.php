@@ -147,15 +147,15 @@ try {
     $passwordHash = password_hash('admin123', PASSWORD_BCRYPT);
     $usersData = [
         // Super Admin
-        [null, $roleMap['super_admin'], null, 'Dr. Arthur Vance', 'superadmin@university.edu', $passwordHash, '+91 98470 12345', 'Chief Executive & Admissions Director'],
+        [null, $roleMap['super_admin'], null, 'Noufal Peediyakkal', 'noufal@edroots.in', $passwordHash, '+91 4933 224333', 'Super Admin & Case Manager'],
         // Admissions Manager (Single Manager)
-        [$branchMap['KOC'], $roleMap['manager'], null, 'Marcus Sterling', 'manager@university.edu', $passwordHash, '+91 98470 23456', 'Admissions Manager'],
-        // Admissions Counselors & Advisors (All reporting to Marcus Sterling)
-        [$branchMap['CLT'], $roleMap['counselor'], 2, 'Priya Sharma', 'priya@university.edu', $passwordHash, '+91 98470 34567', 'Senior Admissions Counselor'],
-        [$branchMap['KOC'], $roleMap['counselor'], 2, 'David Miller', 'david@university.edu', $passwordHash, '+91 98470 45678', 'Admissions Counselor'],
-        [$branchMap['KOC'], $roleMap['counselor'], 2, 'Sarah Jenkins', 'sarah@university.edu', $passwordHash, '+91 98470 56789', 'Academic Advisor'],
-        [$branchMap['CLT'], $roleMap['counselor'], 2, 'Alex Chen', 'alex@university.edu', $passwordHash, '+91 98470 67890', 'Admissions Counselor'],
-        [$branchMap['CLT'], $roleMap['counselor'], 2, 'Ananya Nair', 'ananya@university.edu', $passwordHash, '+91 98470 78901', 'Admissions Counselor']
+        [$branchMap['PMNA'], $roleMap['manager'], null, 'Vidya Harish', 'vidya@edroots.in', $passwordHash, '+91 9074 134910', 'Admissions & Branch Head'],
+        // Admissions Counselors & Advisors (All reporting to Vidya Harish)
+        [$branchMap['KHD'], $roleMap['counselor'], 2, 'Athira Ashok', 'athira@edroots.in', $passwordHash, '+91 8547 597476', 'Senior Academic Counselor'],
+        [$branchMap['KOC'], $roleMap['counselor'], 2, 'Syamily S', 'syamily@edroots.in', $passwordHash, '+91 9633 371111', 'Admissions Advisor & Counselor'],
+        [$branchMap['CLT'], $roleMap['counselor'], 2, 'Ambili CO', 'ambili@edroots.in', $passwordHash, '+91 9895 716710', 'Academic Counselor'],
+        [$branchMap['KOC'], $roleMap['counselor'], 2, 'Sharanya M P', 'sharanya@edroots.in', $passwordHash, '+91 9947 921306', 'Academic Counselor'],
+        [$branchMap['CLT'], $roleMap['counselor'], 2, 'Soumya Ajith', 'soumya@edroots.in', $passwordHash, '+91 9061 253555', 'Academic Counselor']
     ];
 
     $insUser = $pdo->prepare("INSERT INTO users (branch_id, role_id, manager_id, name, email, password, phone, designation, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Active')");
@@ -166,7 +166,7 @@ try {
     }
 
     // Update branches with manager IDs
-    $pdo->prepare("UPDATE branches SET manager_id = ? WHERE code IN ('KOC', 'CLT')")->execute([$userMap['Marcus Sterling']]);
+    $pdo->prepare("UPDATE branches SET manager_id = ? WHERE code IN ('PMNA', 'KOC', 'CLT')")->execute([$userMap['Vidya Harish']]);
     echo "  [OK] 7 Organizational users seeded with single Admissions Manager hierarchy\n";
 
     // 9. Raw College Data Pool
@@ -546,10 +546,10 @@ try {
 
     // 14. General Documents Repository
     $genDocs = [
-        ['UK University Admissions Master Handbook 2026/27', 'University Prospectuses', 'United Kingdom', 'assets/docs/uk_admissions_handbook_2026.pdf', 'uk_admissions_handbook_2026.pdf', 3450000, $userMap['Dr. Arthur Vance']],
-        ['Ireland Graduate Route & Stayback Visa Guidelines', 'Country Guidelines', 'Ireland', 'assets/docs/ireland_visa_guidelines.pdf', 'ireland_visa_guidelines.pdf', 1820000, $userMap['Dr. Arthur Vance']],
-        ['Australia Subclass 500 Genuine Student Guidelines', 'Country Guidelines', 'Australia', 'assets/docs/australia_subclass_500_guide.pdf', 'australia_subclass_500_guide.pdf', 2140000, $userMap['Dr. Arthur Vance']],
-        ['Edroots SOP & Statement of Purpose Master Template', 'Training Documents', 'Global', 'assets/docs/edroots_sop_master_template.pdf', 'edroots_sop_master_template.pdf', 940000, $userMap['Marcus Sterling']]
+        ['Edroots CRM - Official User Guide & Training Manual', 'Training Documents', 'Global', 'assets/docs/edroots_crm_user_manual.pdf', 'edroots_crm_user_manual.pdf', 3450000, $userMap['Noufal Peediyakkal']],
+        ['UK University Admissions Master Handbook & CAS Guide', 'University Prospectuses', 'United Kingdom', 'assets/docs/uk_admissions_handbook_2026.pdf', 'uk_admissions_handbook_2026.pdf', 1820000, $userMap['Noufal Peediyakkal']],
+        ['Canada SDS Visa Guidelines & Document Checklist', 'Country Guidelines', 'Canada', 'assets/docs/canada_sds_visa_guide.pdf', 'canada_sds_visa_guide.pdf', 2140000, $userMap['Noufal Peediyakkal']],
+        ['Edroots SOP & Statement of Purpose Master Template', 'Training Documents', 'Global', 'assets/docs/edroots_sop_master_template.pdf', 'edroots_sop_master_template.pdf', 940000, $userMap['Vidya Harish']]
     ];
     $insGenDoc = $pdo->prepare("INSERT INTO general_documents (title, category, country, file_path, file_name, file_size, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?)");
     foreach ($genDocs as $gd) {
@@ -559,12 +559,12 @@ try {
 
     // 15. Student Academic Dossiers
     $studentDocs = [
-        [$leadIdMap['LED-2026-0001'], 'Identity', 'Passport Front & Back Copy', 'assets/uploads/docs/adithya_passport.pdf', 'adithya_passport.pdf', 1200000, $userMap['David Miller']],
-        [$leadIdMap['LED-2026-0001'], 'Academic', 'B.Tech Degree Consolidated Marksheet', 'assets/uploads/docs/adithya_btech_marks.pdf', 'adithya_btech_marks.pdf', 2500000, $userMap['David Miller']],
-        [$leadIdMap['LED-2026-0001'], 'English Proficiency', 'IELTS Official TRF Scorecard (7.5 Band)', 'assets/uploads/docs/adithya_ielts_trf.pdf', 'adithya_ielts_trf.pdf', 980000, $userMap['David Miller']],
-        [$leadIdMap['LED-2026-0002'], 'Identity', 'Passport Copy', 'assets/uploads/docs/benjamin_passport.pdf', 'benjamin_passport.pdf', 1100000, $userMap['David Miller']],
-        [$leadIdMap['LED-2026-0002'], 'Financial & Visa', 'Trinity College Dublin Offer Letter', 'assets/uploads/docs/tcd_offer_letter.pdf', 'tcd_offer_letter.pdf', 840000, $userMap['David Miller']],
-        [$leadIdMap['LED-2026-0007'], 'Financial & Visa', 'UK Visa Vignette & CAS Letter', 'assets/uploads/docs/sandra_cas_letter.pdf', 'sandra_cas_letter.pdf', 1450000, $userMap['Sarah Jenkins']]
+        [$leadIdMap['LED-2026-0001'], 'Identity', 'Passport Front & Back Copy', 'assets/uploads/docs/adithya_passport.pdf', 'adithya_passport.pdf', 1200000, $userMap['Athira Ashok']],
+        [$leadIdMap['LED-2026-0001'], 'Academic', 'B.Tech Degree Consolidated Marksheet', 'assets/uploads/docs/adithya_btech_marks.pdf', 'adithya_btech_marks.pdf', 2500000, $userMap['Athira Ashok']],
+        [$leadIdMap['LED-2026-0001'], 'English Proficiency', 'IELTS Official TRF Scorecard (7.5 Band)', 'assets/uploads/docs/adithya_ielts_trf.pdf', 'adithya_ielts_trf.pdf', 980000, $userMap['Athira Ashok']],
+        [$leadIdMap['LED-2026-0002'], 'Identity', 'Passport Copy', 'assets/uploads/docs/benjamin_passport.pdf', 'benjamin_passport.pdf', 1100000, $userMap['Athira Ashok']],
+        [$leadIdMap['LED-2026-0002'], 'Financial & Visa', 'Trinity College Dublin Offer Letter', 'assets/uploads/docs/tcd_offer_letter.pdf', 'tcd_offer_letter.pdf', 840000, $userMap['Athira Ashok']],
+        [$leadIdMap['LED-2026-0007'], 'Financial & Visa', 'UK Visa Vignette & CAS Letter', 'assets/uploads/docs/sandra_cas_letter.pdf', 'sandra_cas_letter.pdf', 1450000, $userMap['Syamily S']]
     ];
     $insStuDoc = $pdo->prepare("INSERT INTO student_documents (lead_id, category, document_name, file_path, file_name, file_size, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?)");
     foreach ($studentDocs as $sd) {
@@ -574,11 +574,11 @@ try {
 
     // 16. Notifications (Attended / Not Attended states)
     $notifs = [
-        [$userMap['David Miller'], $branchMap['KOC'], 'New Lead Assigned: Adithya R. Nair', 'Adithya R. Nair (LED-2026-0001) has been assigned to you for UK MSc Computer Science.', 'lead_assigned', 'leads/view.php?id=' . $leadIdMap['LED-2026-0001'], 'Not Attended'],
-        [$userMap['David Miller'], $branchMap['KOC'], 'Follow-up Due Today: Adithya R. Nair', 'Scheduled Bristol curriculum consultation due at 10:30 AM.', 'followup_due', 'leads/view.php?id=' . $leadIdMap['LED-2026-0001'], 'Not Attended'],
-        [$userMap['Sarah Jenkins'], $branchMap['KOC'], 'Visa Milestone: Sandra Varghese Enrolled', 'Student visa confirmed for King’s College London departure.', 'stage_updated', 'leads/view.php?id=' . $leadIdMap['LED-2026-0007'], 'Not Attended'],
-        [$userMap['Marcus Sterling'], $branchMap['KOC'], 'Invoice INV-2026-0001 Payment Logged', '₹20,000 payment received from Benjamin Paul via UPI.', 'payment_received', 'finance/invoices.php', 'Not Attended'],
-        [$userMap['Dr. Arthur Vance'], null, 'New Website Inquiries Received', '4 prospective student leads awaiting triage in digital staging queue.', 'web_lead', 'data/web_leads.php', 'Not Attended']
+        [$userMap['Athira Ashok'], $branchMap['KOC'], 'New Lead Assigned: Adithya R. Nair', 'Adithya R. Nair (LED-2026-0001) has been assigned to you for UK MSc Computer Science.', 'lead_assigned', 'leads/view.php?id=' . $leadIdMap['LED-2026-0001'], 'Not Attended'],
+        [$userMap['Athira Ashok'], $branchMap['KOC'], 'Follow-up Due Today: Adithya R. Nair', 'Scheduled Bristol curriculum consultation due at 10:30 AM.', 'followup_due', 'leads/view.php?id=' . $leadIdMap['LED-2026-0001'], 'Not Attended'],
+        [$userMap['Syamily S'], $branchMap['KOC'], 'Visa Milestone: Sandra Varghese Enrolled', 'Student visa confirmed for King’s College London departure.', 'stage_updated', 'leads/view.php?id=' . $leadIdMap['LED-2026-0007'], 'Not Attended'],
+        [$userMap['Vidya Harish'], $branchMap['KOC'], 'Invoice INV-2026-0001 Payment Logged', '₹20,000 payment received from Benjamin Paul via UPI.', 'payment_received', 'finance/invoices.php', 'Not Attended'],
+        [$userMap['Noufal Peediyakkal'], null, 'New Website Inquiries Received', '4 prospective student leads awaiting triage in digital staging queue.', 'web_lead', 'data/web_leads.php', 'Not Attended']
     ];
     $insNotif = $pdo->prepare("INSERT INTO notifications (user_id, branch_id, title, message, type, link, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
     foreach ($notifs as $n) {
@@ -588,12 +588,12 @@ try {
 
     // 17. Activity Logs
     $logs = [
-        [$userMap['Dr. Arthur Vance'], null, null, 'System Setup', 'Initial enterprise configuration and branch locations initialized.', '127.0.0.1'],
-        [$userMap['Marcus Sterling'], $leadIdMap['LED-2026-0001'], $branchMap['KOC'], 'Lead Assigned', 'Assigned lead LED-2026-0001 (Adithya R. Nair) to counselor David Miller.', '127.0.0.1'],
-        [$userMap['David Miller'], $leadIdMap['LED-2026-0001'], $branchMap['KOC'], 'Follow-up Interaction', 'Logged consultation outcome: Information Shared.', '127.0.0.1'],
-        [$userMap['Marcus Sterling'], $leadIdMap['LED-2026-0002'], $branchMap['KOC'], 'Invoice Generated', 'Generated formal service invoice INV-2026-0001 for ₹38,940.00. Lead converted to Customer.', '127.0.0.1'],
-        [$userMap['Marcus Sterling'], $leadIdMap['LED-2026-0002'], $branchMap['KOC'], 'Payment Recorded', 'Recorded partial payment of ₹20,000.00 via UPI.', '127.0.0.1'],
-        [$userMap['Sarah Jenkins'], $leadIdMap['LED-2026-0007'], $branchMap['KOC'], 'Stage Advanced', 'Advanced student Sandra Varghese to Stage 6: ENROLLED.', '127.0.0.1']
+        [$userMap['Noufal Peediyakkal'], null, null, 'System Setup', 'Initial enterprise configuration and branch locations initialized.', '127.0.0.1'],
+        [$userMap['Vidya Harish'], $leadIdMap['LED-2026-0001'], $branchMap['KOC'], 'Lead Assigned', 'Assigned lead LED-2026-0001 (Adithya R. Nair) to counselor Athira Ashok.', '127.0.0.1'],
+        [$userMap['Athira Ashok'], $leadIdMap['LED-2026-0001'], $branchMap['KOC'], 'Follow-up Interaction', 'Logged consultation outcome: Information Shared.', '127.0.0.1'],
+        [$userMap['Vidya Harish'], $leadIdMap['LED-2026-0002'], $branchMap['KOC'], 'Invoice Generated', 'Generated formal service invoice INV-2026-0001 for ₹38,940.00. Lead converted to Customer.', '127.0.0.1'],
+        [$userMap['Vidya Harish'], $leadIdMap['LED-2026-0002'], $branchMap['KOC'], 'Payment Recorded', 'Recorded partial payment of ₹20,000.00 via UPI.', '127.0.0.1'],
+        [$userMap['Syamily S'], $leadIdMap['LED-2026-0007'], $branchMap['KOC'], 'Stage Advanced', 'Advanced student Sandra Varghese to Stage 6: ENROLLED.', '127.0.0.1']
     ];
     $insLog = $pdo->prepare("INSERT INTO activity_logs (user_id, lead_id, branch_id, action, details, ip_address) VALUES (?, ?, ?, ?, ?, ?)");
     foreach ($logs as $l) {
@@ -608,7 +608,7 @@ try {
         (lead_code, full_name, mobile_number, phone_normalized, email, branch_id, assigned_counselor_id, target_country, target_course, prospectivity, enquiry_type, lead_source, stage_id, secondary_status, is_archived, archived_at, archived_by, archive_reason)
         VALUES 
         ('LED-2026-0099', 'Siddharth V.', '+91 98473 33099', '9847333099', 'siddharth.v@gmail.com', ?, ?, 'Canada', 'MBA', 'Low', 'TELE', 'Walk-in', 1, 'Lost', 1, NOW(), ?, 'Student decided to take domestic campus placement.')
-    ")->execute([$branchMap['KOC'], $userMap['David Miller'], $userMap['Marcus Sterling']]);
+    ")->execute([$branchMap['KOC'], $userMap['Athira Ashok'], $userMap['Vidya Harish']]);
 
     // Deletion log
     $pdo->prepare("
@@ -616,7 +616,7 @@ try {
         (user_id, record_type, record_id, record_identifier, justification, ip_address)
         VALUES 
         (?, 'web_lead', 99, 'Spam Form Bot Submission (9800000000)', 'Confirmed marketing bot spam submission from suspicious IP range.', '127.0.0.1')
-    ")->execute([$userMap['Dr. Arthur Vance']]);
+    ")->execute([$userMap['Noufal Peediyakkal']]);
     echo "  [OK] Archived records & deletion logs seeded\n";
 
     $pdo->commit();
