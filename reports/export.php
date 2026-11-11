@@ -97,7 +97,7 @@ if ($type === 'students') {
         LEFT JOIN leads l ON u.id = l.assigned_staff_id
         LEFT JOIN followups f ON u.id = f.assigned_staff_id
         WHERE u.role_id IN (4, 5)
-        GROUP BY u.id
+        GROUP BY u.id, u.name, u.designation, u.email, r.label
     ");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         fputcsv($output, array_values($row));

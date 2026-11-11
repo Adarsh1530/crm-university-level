@@ -318,7 +318,7 @@ function sync_edroots_database_data(PDO $pdo) {
                     invoice_number = 'INV-6262', total_amount = 1100.00, paid_amount = 110.00, balance_due = 990.00, status = 'Partially Paid'
             ");
         } catch (Exception $invEx) {
-            // Silently continue
+            error_log('Invoice sync error: ' . $invEx->getMessage());
         }
 
         $_SESSION['edroots_manual_synced_v7'] = true;

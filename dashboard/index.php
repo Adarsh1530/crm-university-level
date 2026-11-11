@@ -94,7 +94,7 @@ if ($isSuperAdmin) {
                COALESCE(SUM(l.paid_total), 0) as collected_amount
         FROM branches b
         LEFT JOIN leads l ON b.id = l.branch_id AND l.is_archived = 0
-        GROUP BY b.id
+        GROUP BY b.id, b.name, b.city
         ORDER BY lead_count DESC
     ")->fetchAll();
 }

@@ -51,7 +51,7 @@ if (isset($_GET['export']) && $_GET['export'] == 'csv') {
                    COALESCE(SUM(l.balance_total), 0) as total_balance
             FROM branches b
             LEFT JOIN leads l ON b.id = l.branch_id AND l.is_archived = 0
-            GROUP BY b.id
+            GROUP BY b.id, b.name, b.city
             ORDER BY total_leads DESC
         ")->fetchAll(PDO::FETCH_ASSOC);
         foreach ($bRows as $br) fputcsv($out, $br);
@@ -70,7 +70,7 @@ if (isset($_GET['export']) && $_GET['export'] == 'csv') {
             LEFT JOIN branches b ON u.branch_id = b.id
             LEFT JOIN leads l ON u.id = l.assigned_counselor_id AND l.is_archived = 0
             WHERE u.status = 'Active'
-            GROUP BY u.id
+            GROUP BY u.id, u.name, b.name
             ORDER BY caseload DESC
         ")->fetchAll(PDO::FETCH_ASSOC);
         foreach ($cRows as $cr) fputcsv($out, $cr);
@@ -120,7 +120,7 @@ $branchStats = $pdo->query("
            COALESCE(SUM(l.balance_total), 0) as balance_due
     FROM branches b
     LEFT JOIN leads l ON b.id = l.branch_id AND l.is_archived = 0 {$dateFilter}
-    GROUP BY b.id
+    GROUP BY b.id, b.name, b.city
     ORDER BY total_leads DESC
 ")->fetchAll();
 
@@ -138,7 +138,7 @@ $counselorStats = $pdo->query("
     LEFT JOIN branches b ON u.branch_id = b.id
     LEFT JOIN leads l ON u.id = l.assigned_counselor_id AND l.is_archived = 0 {$dateFilter}
     WHERE u.status = 'Active' " . (is_branch_manager() ? ("AND u.branch_id = " . (int)$currentUser['branch_id']) : "") . "
-    GROUP BY u.id
+    GROUP BY u.id, u.name, b.name
     ORDER BY active_caseload DESC
 ")->fetchAll();
 

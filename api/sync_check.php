@@ -25,6 +25,26 @@ try {
     $docCnt = $pdo->query("SELECT COUNT(*) FROM general_documents")->fetchColumn();
     echo "General Documents Count: " . $docCnt . "\n";
 
+    try {
+        $invCols = $pdo->query("DESCRIBE invoices")->fetchAll(PDO::FETCH_ASSOC);
+        echo "Invoice columns:\n";
+        print_r($invCols);
+    } catch (Exception $ie) {
+        echo "DESCRIBE invoices error: " . $ie->getMessage() . "\n";
+    }
+
+    try {
+        $pdo->exec("
+            INSERT INTO invoices (id, invoice_number, lead_id, company_id, branch_id, subtotal, tax_rate, tax_amount, discount_amount, total_amount, paid_amount, balance_due, invoice_date, due_date, status, created_by)
+            VALUES (6262, 'INV-6262', 8, 1, 2, 1000.00, 10.00, 100.00, 0.00, 1100.00, 110.00, 990.00, '2021-08-09', '2021-08-10', 'Partially Paid', 2)
+            ON DUPLICATE KEY UPDATE 
+                invoice_number = 'INV-6262', total_amount = 1100.00, paid_amount = 110.00, balance_due = 990.00, status = 'Partially Paid'
+        ");
+        echo "Invoice insert SUCCESS!\n";
+    } catch (Exception $ie2) {
+        echo "Invoice direct insert error: " . $ie2->getMessage() . "\n";
+    }
+
     $invCnt = $pdo->query("SELECT COUNT(*) FROM invoices")->fetchColumn();
     echo "Invoices Count: " . $invCnt . "\n";
 

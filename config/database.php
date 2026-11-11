@@ -47,6 +47,13 @@ if ($sslCa && file_exists($sslCa)) {
 try {
     $pdo = new PDO($dsn, $dbUser, $dbPass, $options);
     
+    // Ensure compatibility with group-by aggregation across TiDB / MySQL instances
+    try {
+        $pdo->exec("SET SESSION sql_mode = (SELECT REPLACE(@@sql_mode, 'ONLY_FULL_GROUP_BY', ''))");
+    } catch (Exception $eSqlMode) {
+        // Continue if sql_mode cannot be changed in restricted cloud instance
+    }
+    
     // Check database schema initialization once per session to avoid running SHOW TABLES on every request
     if (!isset($_SESSION['db_initialized'])) {
         try {
