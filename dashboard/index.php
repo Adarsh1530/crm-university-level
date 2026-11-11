@@ -164,7 +164,12 @@ if (!$isCounselor) {
 }
 
 // 10. General Training Documents (PDF Section 4.3)
-$generalDocs = $pdo->query("SELECT * FROM general_documents WHERE status = 'Active' ORDER BY id DESC LIMIT 5")->fetchAll();
+$generalDocs = [];
+try {
+    $generalDocs = $pdo->query("SELECT * FROM general_documents ORDER BY id DESC LIMIT 5")->fetchAll();
+} catch (Exception $e) {
+    $generalDocs = [];
+}
 
 include __DIR__ . '/../includes/header.php';
 ?>
@@ -810,7 +815,8 @@ include __DIR__ . '/../includes/header.php';
         </div>
       <?php else: ?>
         <?php foreach ($generalDocs as $gdoc): 
-          $docUrl = base_url('uploads/documents/' . $gdoc['file_path']);
+          $fileName = !empty($gdoc['file_name']) ? $gdoc['file_name'] : ($gdoc['file_path'] ?? '');
+          $docUrl = base_url('uploads/documents/' . rawurlencode($fileName));
         ?>
           <a href="<?= $docUrl ?>" target="_blank" style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.85rem; border-radius:8px; background:var(--bg-subtle); text-decoration:none; transition:background 0.15s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='var(--bg-subtle)'">
             <div style="display:flex; align-items:center; gap:8px;">
