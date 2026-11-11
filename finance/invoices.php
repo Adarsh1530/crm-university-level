@@ -205,8 +205,8 @@ include __DIR__ . '/../includes/header.php';
                   <?= htmlspecialchars($inv['lead_code']) ?> • <?= htmlspecialchars($inv['branch_name'] ?? 'Branch') ?>
                 </div>
               </td>
-              <td style="font-size:0.825rem;"><?= date('d M Y', strtotime($inv['issue_date'])) ?></td>
-              <td style="font-size:0.825rem;"><?= date('d M Y', strtotime($inv['due_date'])) ?></td>
+              <td style="font-size:0.825rem;"><?= !empty($inv['issue_date']) ? date('d M Y', strtotime($inv['issue_date'])) : (!empty($inv['invoice_date']) ? date('d M Y', strtotime($inv['invoice_date'])) : '-') ?></td>
+              <td style="font-size:0.825rem;"><?= !empty($inv['due_date']) ? date('d M Y', strtotime($inv['due_date'])) : '-' ?></td>
               <td style="font-weight:700; font-size:0.9rem;"><?= format_currency($inv['grand_total']) ?></td>
               <td style="font-weight:700; color:#15803d; font-size:0.9rem;"><?= format_currency($inv['paid_amount']) ?></td>
               <td style="font-weight:800; color:<?= $inv['balance_due'] > 0 ? '#b91c1c' : '#15803d' ?>; font-size:0.9rem;">

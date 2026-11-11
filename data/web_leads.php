@@ -16,7 +16,7 @@ $pageTitle = 'Website & Social Leads';
 $activePage = 'web_leads';
 
 // Handle Actions (Assign to Active Leads or Disqualify)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     verify_csrf_token($_POST['csrf_token'] ?? '');
     $action = $_POST['action'] ?? '';
     $webLeadId = (int)($_POST['web_lead_id'] ?? 0);
@@ -349,41 +349,41 @@ include __DIR__ . '/../includes/header.php';
                 <div style="display:flex; align-items:center; gap:0.5rem;">
                   <i class="<?= $sourceIcon ?>" style="color:<?= $sourceColor ?>; font-size:1.1rem;"></i>
                   <div>
-                    <strong style="font-size:0.85rem; color:var(--text-heading); display:block;"><?= htmlspecialchars($lead['source']) ?></strong>
-                    <span style="font-size:0.72rem; color:var(--text-muted);"><?= time_ago($lead['created_at']) ?></span>
+                    <strong style="font-size:0.85rem; color:var(--text-heading); display:block;"><?= htmlspecialchars((string)($lead['source'] ?? $lead['source_campaign'] ?? 'Website')) ?></strong>
+                    <span style="font-size:0.72rem; color:var(--text-muted);"><?= time_ago($lead['created_at'] ?? 'now') ?></span>
                   </div>
                 </div>
               </td>
               <td>
                 <div style="font-weight:700; color:var(--text-heading); font-size:0.9rem;">
-                  <?= htmlspecialchars($lead['full_name']) ?>
+                  <?= htmlspecialchars((string)($lead['full_name'] ?? $lead['student_name'] ?? 'Candidate')) ?>
                 </div>
-                <?php if (!empty($lead['city'])): ?>
+                <?php if (!empty($lead['city']) || !empty($lead['city_state'])): ?>
                   <div style="font-size:0.75rem; color:var(--text-muted);">
-                    <i class="fa-solid fa-location-dot" style="font-size:0.7rem;"></i> <?= htmlspecialchars($lead['city']) ?>
+                    <i class="fa-solid fa-location-dot" style="font-size:0.7rem;"></i> <?= htmlspecialchars((string)($lead['city'] ?? $lead['city_state'] ?? '')) ?>
                   </div>
                 <?php endif; ?>
               </td>
               <td>
                 <div style="font-family:monospace; font-weight:700; color:var(--primary); font-size:0.85rem;">
-                  <?= htmlspecialchars($lead['phone']) ?>
+                  <?= htmlspecialchars((string)($lead['phone'] ?? $lead['mobile_number'] ?? '')) ?>
                 </div>
                 <?php if (!empty($lead['email'])): ?>
                   <div style="font-size:0.75rem; color:var(--text-muted);">
-                    <?= htmlspecialchars($lead['email']) ?>
+                    <?= htmlspecialchars((string)$lead['email']) ?>
                   </div>
                 <?php endif; ?>
               </td>
               <td>
                 <div style="font-weight:600; font-size:0.85rem; color:var(--text-heading);">
-                  <?= htmlspecialchars($lead['target_country'] ?: 'Global') ?>
+                  <?= htmlspecialchars((string)($lead['target_country'] ?: 'Global')) ?>
                 </div>
                 <div style="font-size:0.75rem; color:var(--text-muted);">
-                  <?= htmlspecialchars($lead['target_course'] ?: 'Any') ?>
+                  <?= htmlspecialchars((string)($lead['target_course'] ?: 'Any')) ?>
                 </div>
               </td>
               <td style="font-weight:600; font-size:0.85rem;">
-                <?= htmlspecialchars($lead['intake'] ?: 'Immediate') ?>
+                <?= htmlspecialchars((string)($lead['intake'] ?: 'Immediate')) ?>
               </td>
               <td>
                 <?php if ($lead['status'] === 'Pending'): ?>

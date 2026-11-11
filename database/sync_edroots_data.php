@@ -10,7 +10,7 @@
  */
 
 function sync_edroots_database_data(PDO $pdo) {
-    if (!empty($_SESSION['edroots_manual_synced_v7'])) {
+    if (!empty($_SESSION['edroots_manual_synced_v8'])) {
         return;
     }
 
@@ -24,8 +24,12 @@ function sync_edroots_database_data(PDO $pdo) {
         $user1 = $userCheck ? $userCheck->fetch() : null;
         $hasNoufal = $user1 && $user1['name'] === 'Noufal Peediyakkal';
 
-        if ($hasNileena && $hasNoufal) {
-            $_SESSION['edroots_manual_synced_v7'] = true;
+        // Check if web_leads has full_name populated
+        $wlCheck = $pdo->query("SELECT id FROM web_leads WHERE full_name IS NOT NULL LIMIT 1");
+        $hasWlFullName = $wlCheck && $wlCheck->fetch();
+
+        if ($hasNileena && $hasNoufal && $hasWlFullName) {
+            $_SESSION['edroots_manual_synced_v8'] = true;
             return;
         }
 
@@ -264,19 +268,22 @@ function sync_edroots_database_data(PDO $pdo) {
 
         // 7. Website & Social Media Leads (Page 38)
         $webLeads = [
-            [1, 'Shibin thomas', '+91 97458 55900', '9745855900', 'shibinvs98@gmail.com', 'Wayanad, Kerala', 'MSc Data Analytics', 'Coventry University', 'UK', 5, 'UK Jan22 FB Leads', 'Pending'],
-            [2, 'Thasleer.k', '+91 86066 62961', '8606662961', 'thasleerk@gmail.com', 'Iritty, Kannur', 'MSc International Business', 'University of Greenwich', 'UK', 4, 'UK Jan22 FB Leads', 'Pending'],
-            [3, 'prajith', '+91 89439 88581', '8943988581', 'prajithhari.p@gmail.com', 'Thiruvananthapuram, Kerala', 'MBA Global Healthcare', 'University of East London', 'UK', 1, 'UK Jan22 FB Leads', 'Pending'],
-            [4, 'JyoThis Peter', '+91 95448 20602', '9544820602', 'jyothisjyothu@gmail.com', 'Chavakkad, Thrissur', 'PG Certificate Project Management', 'Fanshawe College, Ontario', 'Canada', 2, 'Canada Jan/May 22 FB leads', 'Pending'],
-            [5, 'Chaithanya Santhosh', '+91 95444 28086', '9544428086', 'chaithanyacm25@gmail.com', 'Nemmara, Palakkad', 'Master of Management', 'Concordia University, Montreal', 'Canada', 2, 'Canada Jan/May 22 FB leads', 'Pending']
+            [1, 'Shibin thomas', 'Shibin thomas', '+91 97458 55900', '+91 97458 55900', '9745855900', 'shibinvs98@gmail.com', 'Wayanad, Kerala', 'MSc Data Analytics', 'Coventry University', 'UK', 5, 5, 'UK Jan22 FB Leads', 'Meta Ads', 'Pending'],
+            [2, 'Thasleer.k', 'Thasleer.k', '+91 86066 62961', '+91 86066 62961', '8606662961', 'thasleerk@gmail.com', 'Iritty, Kannur', 'MSc International Business', 'University of Greenwich', 'UK', 4, 4, 'UK Jan22 FB Leads', 'Meta Ads', 'Pending'],
+            [3, 'prajith', 'prajith', '+91 89439 88581', '+91 89439 88581', '8943988581', 'prajithhari.p@gmail.com', 'Thiruvananthapuram, Kerala', 'MBA Global Healthcare', 'University of East London', 'UK', 1, 1, 'UK Jan22 FB Leads', 'Google Ads', 'Pending'],
+            [4, 'JyoThis Peter', 'JyoThis Peter', '+91 95448 20602', '+91 95448 20602', '9544820602', 'jyothisjyothu@gmail.com', 'Chavakkad, Thrissur', 'PG Certificate Project Management', 'Fanshawe College, Ontario', 'Canada', 2, 2, 'Canada Jan/May 22 FB leads', 'Meta Ads', 'Pending'],
+            [5, 'Chaithanya Santhosh', 'Chaithanya Santhosh', '+91 95444 28086', '+91 95444 28086', '9544428086', 'chaithanyacm25@gmail.com', 'Nemmara, Palakkad', 'Master of Management', 'Concordia University, Montreal', 'Canada', 2, 2, 'Canada Jan/May 22 FB leads', 'Meta Ads', 'Pending']
         ];
 
         $stmtWl = $pdo->prepare("
-            INSERT INTO web_leads (id, student_name, mobile_number, phone_normalized, email, city_state, target_course, target_university, target_country, nearest_branch_id, source_campaign, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO web_leads (id, student_name, full_name, mobile_number, phone, phone_normalized, email, city_state, target_course, target_university, target_country, nearest_branch_id, branch_id, source_campaign, source, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE 
-                student_name = VALUES(student_name), mobile_number = VALUES(mobile_number), phone_normalized = VALUES(phone_normalized),
-                email = VALUES(email), city_state = VALUES(city_state), target_course = VALUES(target_course), target_university = VALUES(target_university)
+                student_name = VALUES(student_name), full_name = VALUES(full_name),
+                mobile_number = VALUES(mobile_number), phone = VALUES(phone), phone_normalized = VALUES(phone_normalized),
+                email = VALUES(email), city_state = VALUES(city_state), target_course = VALUES(target_course), target_university = VALUES(target_university),
+                target_country = VALUES(target_country), nearest_branch_id = VALUES(nearest_branch_id), branch_id = VALUES(branch_id),
+                source_campaign = VALUES(source_campaign), source = VALUES(source), status = VALUES(status)
         ");
         foreach ($webLeads as $wl) {
             $stmtWl->execute($wl);
@@ -321,14 +328,14 @@ function sync_edroots_database_data(PDO $pdo) {
             // Also update lead #8's financial cache
             $pdo->exec("
                 UPDATE leads 
-                SET fee_total = 1100.00, paid_total = 110.00, balance_total = 990.00 
+                SET invoiced_total = 1100.00, paid_total = 110.00, balance_total = 990.00 
                 WHERE id = 8
             ");
         } catch (Exception $invEx) {
             error_log('Invoice sync error: ' . $invEx->getMessage());
         }
 
-        $_SESSION['edroots_manual_synced_v7'] = true;
+        $_SESSION['edroots_manual_synced_v8'] = true;
     } catch (Exception $e) {
         error_log('Edroots DB Sync Notice: ' . $e->getMessage());
     }

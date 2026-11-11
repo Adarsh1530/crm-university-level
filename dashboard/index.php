@@ -481,13 +481,19 @@ include __DIR__ . '/../includes/header.php';
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($unassignedWebLeads as $wl): ?>
+          <?php foreach ($unassignedWebLeads as $wl): 
+            $cName = !empty($wl['full_name']) ? $wl['full_name'] : (!empty($wl['student_name']) ? $wl['student_name'] : 'Candidate');
+            $cPhone = !empty($wl['phone']) ? $wl['phone'] : (!empty($wl['mobile_number']) ? $wl['mobile_number'] : '-');
+            $cCountry = !empty($wl['target_country']) ? $wl['target_country'] : (!empty($wl['preferred_country']) ? $wl['preferred_country'] : 'Global');
+            $cCourse = !empty($wl['target_course']) ? $wl['target_course'] : (!empty($wl['preferred_course']) ? $wl['preferred_course'] : 'Higher Education');
+            $cSource = !empty($wl['source']) ? $wl['source'] : (!empty($wl['source_campaign']) ? $wl['source_campaign'] : 'Inbound Web');
+          ?>
             <tr>
-              <td><strong><?= htmlspecialchars($wl['full_name']) ?></strong></td>
-              <td style="font-family:monospace; font-weight:700;"><?= htmlspecialchars($wl['phone']) ?></td>
-              <td><?= htmlspecialchars($wl['preferred_country']) ?> &bull; <?= htmlspecialchars($wl['preferred_course']) ?></td>
-              <td><span class="badge badge-secondary"><?= htmlspecialchars($wl['source']) ?></span></td>
-              <td style="font-size:0.8rem; color:var(--text-muted);"><?= time_ago($wl['created_at']) ?></td>
+              <td><strong><?= htmlspecialchars((string)$cName) ?></strong></td>
+              <td style="font-family:monospace; font-weight:700;"><?= htmlspecialchars((string)$cPhone) ?></td>
+              <td><?= htmlspecialchars((string)$cCountry) ?> &bull; <?= htmlspecialchars((string)$cCourse) ?></td>
+              <td><span class="badge badge-secondary"><?= htmlspecialchars((string)$cSource) ?></span></td>
+              <td style="font-size:0.8rem; color:var(--text-muted);"><?= time_ago($wl['created_at'] ?? 'now') ?></td>
               <td style="text-align:right;">
                 <a href="<?= base_url('data/web_leads.php') ?>" class="btn btn-primary btn-sm" style="font-size:0.75rem; padding:3px 10px; font-weight:700;">
                   Allocate &rarr;
