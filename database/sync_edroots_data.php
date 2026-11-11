@@ -10,7 +10,7 @@
  */
 
 function sync_edroots_database_data(PDO $pdo) {
-    if (!empty($_SESSION['edroots_manual_synced_v6'])) {
+    if (!empty($_SESSION['edroots_manual_synced_v7'])) {
         return;
     }
 
@@ -25,7 +25,7 @@ function sync_edroots_database_data(PDO $pdo) {
         $hasNoufal = $user1 && $user1['name'] === 'Noufal Peediyakkal';
 
         if ($hasNileena && $hasNoufal) {
-            $_SESSION['edroots_manual_synced_v6'] = true;
+            $_SESSION['edroots_manual_synced_v7'] = true;
             return;
         }
 
@@ -124,7 +124,7 @@ function sync_edroots_database_data(PDO $pdo) {
         $leads = [
             // Reg.# 54879: Nileena (Lead dossier in Page 14)
             [
-                'id' => 1, 'lead_code' => 'LED-54879', 'full_name' => 'Nileena', 'phone' => '9074134910', 'email' => 'nileena.54879@gmail.com',
+                'id' => 1, 'lead_code' => 'LED-54879', 'full_name' => 'Nileena', 'phone' => '9074134910', 'mobile_number' => '+91 90741 34910', 'email' => 'nileena.54879@gmail.com',
                 'branch_id' => 2, 'counselor_id' => 2, 'degree' => 'B.Com-2017', 'college' => 'Perinthalmanna Arts & Science',
                 'country' => 'United Kingdom', 'course' => 'MSc International Business',
                 'priority' => 'Moderate', 'source' => 'Ex Student', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
@@ -132,7 +132,7 @@ function sync_edroots_database_data(PDO $pdo) {
             ],
             // Reg.# 54376: Mohammed Ameen M K (Page 10)
             [
-                'id' => 2, 'lead_code' => 'LED-54376', 'full_name' => 'Mohammed Ameen M K', 'phone' => '9633371111', 'email' => 'ameen.mk@gmail.com',
+                'id' => 2, 'lead_code' => 'LED-54376', 'full_name' => 'Mohammed Ameen M K', 'phone' => '9633371111', 'mobile_number' => '+91 96333 71111', 'email' => 'ameen.mk@gmail.com',
                 'branch_id' => 1, 'counselor_id' => 4, 'degree' => 'B.Tech Computer Science', 'college' => 'Model Engineering College, Kochi',
                 'country' => 'United Kingdom', 'course' => 'MSc Advanced Computer Science',
                 'priority' => 'Low', 'source' => 'Direct Reference', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
@@ -140,7 +140,7 @@ function sync_edroots_database_data(PDO $pdo) {
             ],
             // Reg.# 54375: SNEHA THOMAS (Page 10)
             [
-                'id' => 3, 'lead_code' => 'LED-54375', 'full_name' => 'SNEHA THOMAS', 'phone' => '7511140594', 'email' => 'sneha.thomas@gmail.com',
+                'id' => 3, 'lead_code' => 'LED-54375', 'full_name' => 'SNEHA THOMAS', 'phone' => '7511140594', 'mobile_number' => '+91 75111 40594', 'email' => 'sneha.thomas@gmail.com',
                 'branch_id' => 4, 'counselor_id' => 10, 'degree' => 'B.Sc Nursing', 'college' => 'Lourdes College of Nursing',
                 'country' => 'United Kingdom', 'course' => 'MSc Global Healthcare Management',
                 'priority' => 'Low', 'source' => 'Social Media', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
@@ -148,7 +148,7 @@ function sync_edroots_database_data(PDO $pdo) {
             ],
             // Reg.# 54451: ALBERT JOSEPH (Page 9)
             [
-                'id' => 4, 'lead_code' => 'LED-54451', 'full_name' => 'ALBERT JOSEPH', 'phone' => '8547597476', 'email' => 'albert.joseph@gmail.com',
+                'id' => 4, 'lead_code' => 'LED-54451', 'full_name' => 'ALBERT JOSEPH', 'phone' => '8547597476', 'mobile_number' => '+91 85475 97476', 'email' => 'albert.joseph@gmail.com',
                 'branch_id' => 7, 'counselor_id' => 3, 'degree' => 'B.Tech Mechanical', 'college' => 'LBS College of Engineering, Kasaragod',
                 'country' => 'United Kingdom', 'course' => 'MSc Mechanical Engineering',
                 'priority' => 'Low', 'source' => 'Walk-in', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
@@ -156,7 +156,7 @@ function sync_edroots_database_data(PDO $pdo) {
             ],
             // Reg.# 54089: VISHAKH (Page 9)
             [
-                'id' => 5, 'lead_code' => 'LED-54089', 'full_name' => 'VISHAKH', 'phone' => '8547930281', 'email' => 'vishakh.k@gmail.com',
+                'id' => 5, 'lead_code' => 'LED-54089', 'full_name' => 'VISHAKH', 'phone' => '8547930281', 'mobile_number' => '+91 85479 30281', 'email' => 'vishakh.k@gmail.com',
                 'branch_id' => 7, 'counselor_id' => 3, 'degree' => 'BBA Marketing', 'college' => 'Nehru Arts and Science College, Kanhangad',
                 'country' => 'Canada', 'course' => 'Postgraduate Certificate in Project Management',
                 'priority' => 'Low', 'source' => 'Social Media', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
@@ -164,7 +164,7 @@ function sync_edroots_database_data(PDO $pdo) {
             ],
             // Reg.# 54048: YADUKRISHNAN (Page 9)
             [
-                'id' => 6, 'lead_code' => 'LED-54048', 'full_name' => 'YADUKRISHNAN', 'phone' => '9400538097', 'email' => 'yadukrishnan@gmail.com',
+                'id' => 6, 'lead_code' => 'LED-54048', 'full_name' => 'YADUKRISHNAN', 'phone' => '9400538097', 'mobile_number' => '+91 94005 38097', 'email' => 'yadukrishnan@gmail.com',
                 'branch_id' => 7, 'counselor_id' => 3, 'degree' => 'B.Com Finance', 'college' => 'Kannur University Campus',
                 'country' => 'United Kingdom', 'course' => 'MSc Accounting and Finance',
                 'priority' => 'Moderate', 'source' => 'Ex Student', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
@@ -172,7 +172,7 @@ function sync_edroots_database_data(PDO $pdo) {
             ],
             // Reg.# 54628: REVATHY (Page 12, 19)
             [
-                'id' => 7, 'lead_code' => 'LED-54628', 'full_name' => 'REVATHY', 'phone' => '7907663590', 'email' => 'revathy.clt@gmail.com',
+                'id' => 7, 'lead_code' => 'LED-54628', 'full_name' => 'REVATHY', 'phone' => '7907663590', 'mobile_number' => '+91 79076 63590', 'email' => 'revathy.clt@gmail.com',
                 'branch_id' => 3, 'counselor_id' => 3, 'degree' => 'B.Sc Biotechnology', 'college' => 'Farook College, Kozhikode',
                 'country' => 'United Kingdom', 'course' => 'MSc Biotechnology and Enterprise',
                 'priority' => 'Low', 'source' => 'Walk-in', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
@@ -180,7 +180,7 @@ function sync_edroots_database_data(PDO $pdo) {
             ],
             // Customer: Test- Shareef Customer (Page 17 - Invoice INV-6262)
             [
-                'id' => 8, 'lead_code' => 'LED-54629', 'full_name' => 'Test- Shareef Customer', 'phone' => '9895716711', 'email' => 'shareef.customer@gmail.com',
+                'id' => 8, 'lead_code' => 'LED-54629', 'full_name' => 'Test- Shareef Customer', 'phone' => '9895716711', 'mobile_number' => '+91 98957 16711', 'email' => 'shareef.customer@gmail.com',
                 'branch_id' => 2, 'counselor_id' => 5, 'degree' => 'B.Tech Civil', 'college' => 'MES College of Engineering, Kuttippuram',
                 'country' => 'United Kingdom', 'course' => 'MSc Construction Management',
                 'priority' => 'High', 'source' => 'Direct Reference', 'stage' => 'CUSTOMER', 'secondary_status' => 'Active',
@@ -188,7 +188,7 @@ function sync_edroots_database_data(PDO $pdo) {
             ],
             // Customer: Fawas (Page 19, 29)
             [
-                'id' => 9, 'lead_code' => 'LED-54630', 'full_name' => 'Fawas', 'phone' => '9947921306', 'email' => 'fawas.kochi@gmail.com',
+                'id' => 9, 'lead_code' => 'LED-54630', 'full_name' => 'Fawas', 'phone' => '9947921306', 'mobile_number' => '+91 99479 21306', 'email' => 'fawas.kochi@gmail.com',
                 'branch_id' => 1, 'counselor_id' => 6, 'degree' => 'B.Sc Computer Science', 'college' => 'Rajagiri College of Social Sciences',
                 'country' => 'United Kingdom', 'course' => 'MSc Data Science',
                 'priority' => 'High', 'source' => 'Website', 'stage' => 'CUSTOMER', 'secondary_status' => 'Active',
@@ -196,7 +196,7 @@ function sync_edroots_database_data(PDO $pdo) {
             ],
             // Reg.# 54636: Test- User-Manohar (Page 15, 33)
             [
-                'id' => 10, 'lead_code' => 'LED-54636', 'full_name' => 'Test- User-Manohar', 'phone' => '9895716725', 'email' => 'manohar.test@gmail.com',
+                'id' => 10, 'lead_code' => 'LED-54636', 'full_name' => 'Test- User-Manohar', 'phone' => '9895716725', 'mobile_number' => '+91 98957 16725', 'email' => 'manohar.test@gmail.com',
                 'branch_id' => 2, 'counselor_id' => 5, 'degree' => 'B.Com Computer Applications', 'college' => 'Al Salama Arts College',
                 'country' => 'Canada', 'course' => 'PG Diploma in Business Analysis',
                 'priority' => 'Low', 'source' => 'Social Media', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
@@ -204,7 +204,7 @@ function sync_edroots_database_data(PDO $pdo) {
             ],
             // Archived Student: Salish (Page 26)
             [
-                'id' => 11, 'lead_code' => 'LED-54430', 'full_name' => 'Salish', 'phone' => '9947502125', 'email' => 'salish.pmna@gmail.com',
+                'id' => 11, 'lead_code' => 'LED-54430', 'full_name' => 'Salish', 'phone' => '9947502125', 'mobile_number' => '+91 99475 02125', 'email' => 'salish.pmna@gmail.com',
                 'branch_id' => 2, 'counselor_id' => 4, 'degree' => 'B.Sc Chemistry', 'college' => 'Govt College Malappuram',
                 'country' => 'United Kingdom', 'course' => 'MSc Analytical Chemistry',
                 'priority' => 'Low', 'source' => 'Walk-in', 'stage' => 'ENQUIRY', 'secondary_status' => 'Active',
@@ -214,15 +214,16 @@ function sync_edroots_database_data(PDO $pdo) {
 
         $stmtLead = $pdo->prepare("
             INSERT INTO leads (
-                id, lead_code, full_name, phone, email, branch_id, assigned_counselor_id,
+                id, lead_code, full_name, mobile_number, phone, phone_normalized, email, branch_id, assigned_counselor_id,
                 stage, secondary_status, priority, source, preferred_country, preferred_course,
                 highest_qualification, college_name, notes, is_customer, is_archived, created_by, created_at, assigned_at
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, 1, ?, ?
             ) ON DUPLICATE KEY UPDATE 
-                lead_code = VALUES(lead_code), full_name = VALUES(full_name), phone = VALUES(phone), email = VALUES(email),
+                lead_code = VALUES(lead_code), full_name = VALUES(full_name), mobile_number = VALUES(mobile_number),
+                phone = VALUES(phone), phone_normalized = VALUES(phone_normalized), email = VALUES(email),
                 branch_id = VALUES(branch_id), assigned_counselor_id = VALUES(assigned_counselor_id),
                 stage = VALUES(stage), secondary_status = VALUES(secondary_status), priority = VALUES(priority),
                 source = VALUES(source), preferred_country = VALUES(preferred_country), preferred_course = VALUES(preferred_course),
@@ -232,7 +233,7 @@ function sync_edroots_database_data(PDO $pdo) {
 
         foreach ($leads as $l) {
             $stmtLead->execute([
-                $l['id'], $l['lead_code'], $l['full_name'], $l['phone'], $l['email'],
+                $l['id'], $l['lead_code'], $l['full_name'], $l['mobile_number'], $l['phone'], $l['phone'], $l['email'],
                 $l['branch_id'], $l['counselor_id'], $l['stage'], $l['secondary_status'],
                 $l['priority'], $l['source'], $l['country'], $l['course'],
                 $l['degree'], $l['college'], $l['notes'], $l['is_customer'], $l['is_archived'],
@@ -242,18 +243,19 @@ function sync_edroots_database_data(PDO $pdo) {
 
         // 6. College Data Pool (Page 22)
         $collegeEntries = [
-            [1, 'Rafeena p', '9895710001', 'rafeena.p@gmail.com', 'MES Mampad College', 'B.Com Finance', 2, 'Malappuram', 'NO', 1],
-            [2, 'Reenu ck', '9895710002', 'reenu.ck@gmail.com', 'Farook College, Kozhikode', 'BBA International Business', 3, 'Calicut', 'NO', 1],
-            [3, 'Shameer Husain', '9895710003', 'shameer.h@gmail.com', 'St. Alberts College, Ernakulam', 'B.Sc Computer Science', 1, 'Kochi', 'NO', 1],
-            [4, 'Manu Krishan', '9895710004', 'manu.k@gmail.com', 'Govt Engineering College, Thrissur', 'B.Tech Mechanical', 1, 'Thrissur', 'NO', 1],
-            [5, 'Janaki Devi', '9895710005', 'janaki.d@gmail.com', 'Sacred Heart College, Thevara', 'B.Com Taxation', 1, 'Kochi', 'NO', 1]
+            [1, 'Rafeena p', '+91 98957 10001', '9895710001', 'rafeena.p@gmail.com', 'MES Mampad College', 'B.Com Finance', 2, 'Malappuram', 'NO', 1],
+            [2, 'Reenu ck', '+91 98957 10002', '9895710002', 'reenu.ck@gmail.com', 'Farook College, Kozhikode', 'BBA International Business', 3, 'Calicut', 'NO', 1],
+            [3, 'Shameer Husain', '+91 98957 10003', '9895710003', 'shameer.h@gmail.com', 'St. Alberts College, Ernakulam', 'B.Sc Computer Science', 1, 'Kochi', 'NO', 1],
+            [4, 'Manu Krishan', '+91 98957 10004', '9895710004', 'manu.k@gmail.com', 'Govt Engineering College, Thrissur', 'B.Tech Mechanical', 1, 'Thrissur', 'NO', 1],
+            [5, 'Janaki Devi', '+91 98957 10005', '9895710005', 'janaki.d@gmail.com', 'Sacred Heart College, Thevara', 'B.Com Taxation', 1, 'Kochi', 'NO', 1]
         ];
 
         $stmtCol = $pdo->prepare("
-            INSERT INTO college_data (id, student_name, mobile_number, email, college_name, degree, branch_id, location, is_converted, converted_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO college_data (id, student_name, mobile_number, phone_normalized, email, college_name, degree, branch_id, location, is_converted, converted_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE 
                 student_name = VALUES(student_name), mobile_number = VALUES(mobile_number),
+                phone_normalized = VALUES(phone_normalized),
                 college_name = VALUES(college_name), degree = VALUES(degree), location = VALUES(location)
         ");
         foreach ($collegeEntries as $ce) {
@@ -262,19 +264,19 @@ function sync_edroots_database_data(PDO $pdo) {
 
         // 7. Website & Social Media Leads (Page 38)
         $webLeads = [
-            [1, 'Shibin thomas', '9745855900', 'shibinvs98@gmail.com', 'Wayanad, Kerala', 'MSc Data Analytics', 'Coventry University', 'UK', 5, 'UK Jan22 FB Leads', 'Pending'],
-            [2, 'Thasleer.k', '8606662961', 'thasleerk@gmail.com', 'Iritty, Kannur', 'MSc International Business', 'University of Greenwich', 'UK', 4, 'UK Jan22 FB Leads', 'Pending'],
-            [3, 'prajith', '8943988581', 'prajithhari.p@gmail.com', 'Thiruvananthapuram, Kerala', 'MBA Global Healthcare', 'University of East London', 'UK', 1, 'UK Jan22 FB Leads', 'Pending'],
-            [4, 'JyoThis Peter', '9544820602', 'jyothisjyothu@gmail.com', 'Chavakkad, Thrissur', 'PG Certificate Project Management', 'Fanshawe College, Ontario', 'Canada', 2, 'Canada Jan/May 22 FB leads', 'Pending'],
-            [5, 'Chaithanya Santhosh', '9544428086', 'chaithanyacm25@gmail.com', 'Nemmara, Palakkad', 'Master of Management', 'Concordia University, Montreal', 'Canada', 2, 'Canada Jan/May 22 FB leads', 'Pending']
+            [1, 'Shibin thomas', '+91 97458 55900', '9745855900', 'shibinvs98@gmail.com', 'Wayanad, Kerala', 'MSc Data Analytics', 'Coventry University', 'UK', 5, 'UK Jan22 FB Leads', 'Pending'],
+            [2, 'Thasleer.k', '+91 86066 62961', '8606662961', 'thasleerk@gmail.com', 'Iritty, Kannur', 'MSc International Business', 'University of Greenwich', 'UK', 4, 'UK Jan22 FB Leads', 'Pending'],
+            [3, 'prajith', '+91 89439 88581', '8943988581', 'prajithhari.p@gmail.com', 'Thiruvananthapuram, Kerala', 'MBA Global Healthcare', 'University of East London', 'UK', 1, 'UK Jan22 FB Leads', 'Pending'],
+            [4, 'JyoThis Peter', '+91 95448 20602', '9544820602', 'jyothisjyothu@gmail.com', 'Chavakkad, Thrissur', 'PG Certificate Project Management', 'Fanshawe College, Ontario', 'Canada', 2, 'Canada Jan/May 22 FB leads', 'Pending'],
+            [5, 'Chaithanya Santhosh', '+91 95444 28086', '9544428086', 'chaithanyacm25@gmail.com', 'Nemmara, Palakkad', 'Master of Management', 'Concordia University, Montreal', 'Canada', 2, 'Canada Jan/May 22 FB leads', 'Pending']
         ];
 
         $stmtWl = $pdo->prepare("
-            INSERT INTO web_leads (id, student_name, mobile_number, email, city_state, target_course, target_university, target_country, nearest_branch_id, source_campaign, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO web_leads (id, student_name, mobile_number, phone_normalized, email, city_state, target_course, target_university, target_country, nearest_branch_id, source_campaign, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE 
-                student_name = VALUES(student_name), mobile_number = VALUES(mobile_number), email = VALUES(email),
-                city_state = VALUES(city_state), target_course = VALUES(target_course), target_university = VALUES(target_university)
+                student_name = VALUES(student_name), mobile_number = VALUES(mobile_number), phone_normalized = VALUES(phone_normalized),
+                email = VALUES(email), city_state = VALUES(city_state), target_course = VALUES(target_course), target_university = VALUES(target_university)
         ");
         foreach ($webLeads as $wl) {
             $stmtWl->execute($wl);
@@ -296,12 +298,12 @@ function sync_edroots_database_data(PDO $pdo) {
         // 9. Follow-ups
         try {
             $pdo->exec("
-                INSERT INTO followups (lead_id, counselor_id, interaction_title_id, interaction_type, scheduled_date, scheduled_time, status, notes)
+                INSERT INTO followups (lead_id, followup_date, followup_time, interaction_title_id, notes, stage_id, next_followup_date, counselor_id, status)
                 VALUES 
-                (7, 3, 1, 'Scheduled Follow-up', CURDATE(), '10:30:00', 'Pending', 'Follow-up consultation for Revathy (UK Biotechnology)'),
-                (1, 2, 2, 'Scheduled Follow-up', CURDATE(), '11:45:00', 'Pending', 'Review course brochures and fee structure with Nileena'),
-                (4, 3, 1, 'Scheduled Follow-up', CURDATE(), '14:00:00', 'Pending', 'Connect with Albert Joseph regarding East London mechanical modules'),
-                (5, 3, 2, 'Scheduled Follow-up', DATE_ADD(CURDATE(), INTERVAL 3 DAY), '15:30:00', 'Pending', 'Course options discussion for Vishakh (Fanshawe College)')
+                (7, CURDATE(), '10:30:00', 1, 'Follow-up consultation for Revathy (UK Biotechnology)', 1, DATE_ADD(CURDATE(), INTERVAL 3 DAY), 3, 'Pending'),
+                (1, CURDATE(), '11:45:00', 2, 'Review course brochures and fee structure with Nileena', 1, DATE_ADD(CURDATE(), INTERVAL 2 DAY), 2, 'Pending'),
+                (4, CURDATE(), '14:00:00', 1, 'Connect with Albert Joseph regarding East London mechanical modules', 1, DATE_ADD(CURDATE(), INTERVAL 4 DAY), 3, 'Pending'),
+                (5, CURDATE(), '15:30:00', 2, 'Course options discussion for Vishakh (Fanshawe College)', 1, DATE_ADD(CURDATE(), INTERVAL 5 DAY), 3, 'Pending')
             ");
         } catch (Exception $fEx) {
             // Silently continue
@@ -319,7 +321,7 @@ function sync_edroots_database_data(PDO $pdo) {
             // Silently continue
         }
 
-        $_SESSION['edroots_manual_synced_v6'] = true;
+        $_SESSION['edroots_manual_synced_v7'] = true;
     } catch (Exception $e) {
         error_log('Edroots DB Sync Notice: ' . $e->getMessage());
     }
