@@ -41,7 +41,13 @@ $countPendingLeads = (int)$pdo->query("
     WHERE DATE(l.assigned_at) < CURDATE() AND l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
 ")->fetchColumn();
 
-$totalPendingTasks = $countScheduled + $countOverdue + $countTodayLeads + $countPendingLeads;
+// 5. Website/Social Media Leads (PDF Section 9.7.5)
+$countWebLeads = 0;
+try {
+    $countWebLeads = (int)$pdo->query("SELECT COUNT(*) FROM web_leads WHERE status = 'Pending'")->fetchColumn();
+} catch (Exception $e) {}
+
+$totalPendingTasks = $countScheduled + $countOverdue + $countTodayLeads + $countPendingLeads + $countWebLeads;
 
 // Interaction Titles for follow-up form modal
 $interactionTitles = $pdo->query("SELECT * FROM interaction_titles WHERE status = 'Active' ORDER BY sort_order ASC")->fetchAll();
@@ -116,9 +122,34 @@ if ($queue === 'scheduled') {
 include __DIR__ . '/../includes/header.php';
 ?>
 
+<!-- PDF Section 9.0: Student Module Top Tab Bar -->
+<div class="pdf-student-nav-tabs" style="display:flex; gap:0.25rem; border-bottom:2px solid var(--border-color); margin-bottom:1.25rem; overflow-x:auto; padding-bottom:1px;">
+  <a href="<?= base_url('leads/index.php?type=all') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+    <i class="fa-solid fa-users"></i> All
+  </a>
+  <a href="<?= base_url('leads/index.php?type=leads') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+    <i class="fa-solid fa-user-graduate"></i> Leads
+  </a>
+  <a href="<?= base_url('customers/index.php') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+    <i class="fa-solid fa-certificate"></i> Customers
+  </a>
+  <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="pdf-tab <?= in_array($queue, ['scheduled', 'pending_followup']) ? 'active' : '' ?>" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= in_array($queue, ['scheduled', 'pending_followup']) ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= in_array($queue, ['scheduled', 'pending_followup']) ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= in_array($queue, ['scheduled', 'pending_followup']) ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
+    <i class="fa-solid fa-phone-volume"></i> Follow-ups <span class="badge badge-warning" style="margin-left:4px; font-size:0.75rem;"><?= $countScheduled ?></span>
+  </a>
+  <a href="<?= base_url('data/college_data.php') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+    <i class="fa-solid fa-database"></i> College Datas
+  </a>
+  <a href="<?= base_url('archive/index.php') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+    <i class="fa-solid fa-box-archive"></i> Archived
+  </a>
+  <a href="<?= base_url('tasks/index.php') ?>" class="pdf-tab active" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--primary); border-bottom:3px solid var(--primary); background:#f5f3ff; white-space:nowrap;">
+    <i class="fa-solid fa-list-check"></i> My Tasks <span class="badge badge-primary" style="margin-left:4px; font-size:0.75rem;"><?= $totalPendingTasks ?></span>
+  </a>
+</div>
+
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
   <div>
-    <h1 style="font-size:1.5rem; font-weight:700; color:var(--text-heading); margin:0 0 0.35rem 0;">Operational Work Queues</h1>
+    <h1 style="font-size:1.5rem; font-weight:700; color:var(--text-heading); margin:0 0 0.35rem 0;">My Tasks (Work Queues)</h1>
     <p style="font-size:0.875rem; color:var(--text-muted); margin:0;">
       Counselor daily action surface. Contact leads, execute scheduled follow-ups, and log consultation outcomes to clear queues.
     </p>
@@ -130,54 +161,66 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- 4 Primary Operational Queues Tabs -->
-<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
-  <!-- Queue 1: Scheduled Follow-ups -->
-  <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="card" style="padding:1.2rem; text-decoration:none; border:2px solid <?= $queue === 'scheduled' ? 'var(--primary)' : 'transparent' ?>; background:<?= $queue === 'scheduled' ? 'var(--primary-subtle)' : '#fff' ?>;">
+<!-- PDF Section 9.7: 5 Work Queues (Scheduled Followup, Pending Followup, Today Leads, Pending Leads, Website/Social Media Leads) -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+  <!-- Queue 1: Scheduled Follow-ups (PDF 9.7.1) -->
+  <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="card" style="padding:1.1rem; text-decoration:none; border:2px solid <?= $queue === 'scheduled' ? 'var(--primary)' : 'transparent' ?>; background:<?= $queue === 'scheduled' ? 'var(--primary-subtle)' : '#fff' ?>;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:0.8rem; font-weight:700; color:var(--primary); text-transform:uppercase;">Scheduled Follow-ups</span>
+      <span style="font-size:0.75rem; font-weight:700; color:var(--primary); text-transform:uppercase;">Scheduled Followup</span>
       <span class="badge badge-blue" style="font-size:0.85rem; font-weight:800;"><?= $countScheduled ?></span>
     </div>
-    <div style="font-size:1.4rem; font-weight:800; color:var(--text-heading); margin-top:6px;">
-      Today's Tasks
+    <div style="font-size:1.3rem; font-weight:800; color:var(--text-heading); margin-top:6px;">
+      Today's Calls
     </div>
-    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Appointments scheduled for today</div>
+    <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Appointments due today</div>
   </a>
 
-  <!-- Queue 2: Pending Follow-ups (Overdue) -->
-  <a href="<?= base_url('tasks/index.php?queue=pending_followup') ?>" class="card" style="padding:1.2rem; text-decoration:none; border:2px solid <?= $queue === 'pending_followup' ? 'var(--danger)' : 'transparent' ?>; background:<?= $queue === 'pending_followup' ? '#fee2e2' : '#fff' ?>;">
+  <!-- Queue 2: Pending Follow-ups (PDF 9.7.2) -->
+  <a href="<?= base_url('tasks/index.php?queue=pending_followup') ?>" class="card" style="padding:1.1rem; text-decoration:none; border:2px solid <?= $queue === 'pending_followup' ? 'var(--danger)' : 'transparent' ?>; background:<?= $queue === 'pending_followup' ? '#fee2e2' : '#fff' ?>;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:0.8rem; font-weight:700; color:#b91c1c; text-transform:uppercase;">Pending Follow-ups</span>
+      <span style="font-size:0.75rem; font-weight:700; color:#b91c1c; text-transform:uppercase;">Pending Followup</span>
       <span class="badge badge-red" style="font-size:0.85rem; font-weight:800;"><?= $countOverdue ?></span>
     </div>
-    <div style="font-size:1.4rem; font-weight:800; color:#b91c1c; margin-top:6px;">
+    <div style="font-size:1.3rem; font-weight:800; color:#b91c1c; margin-top:6px;">
       Overdue Calls
     </div>
-    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Past due date and unresolved</div>
+    <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Past due follow-ups</div>
   </a>
 
-  <!-- Queue 3: Today Leads -->
-  <a href="<?= base_url('tasks/index.php?queue=today_leads') ?>" class="card" style="padding:1.2rem; text-decoration:none; border:2px solid <?= $queue === 'today_leads' ? 'var(--success)' : 'transparent' ?>; background:<?= $queue === 'today_leads' ? '#dcfce7' : '#fff' ?>;">
+  <!-- Queue 3: Today Leads (PDF 9.7.3) -->
+  <a href="<?= base_url('tasks/index.php?queue=today_leads') ?>" class="card" style="padding:1.1rem; text-decoration:none; border:2px solid <?= $queue === 'today_leads' ? 'var(--success)' : 'transparent' ?>; background:<?= $queue === 'today_leads' ? '#dcfce7' : '#fff' ?>;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:0.8rem; font-weight:700; color:#15803d; text-transform:uppercase;">Today Leads</span>
+      <span style="font-size:0.75rem; font-weight:700; color:#15803d; text-transform:uppercase;">Today Leads</span>
       <span class="badge badge-green" style="font-size:0.85rem; font-weight:800;"><?= $countTodayLeads ?></span>
     </div>
-    <div style="font-size:1.4rem; font-weight:800; color:#15803d; margin-top:6px;">
+    <div style="font-size:1.3rem; font-weight:800; color:#15803d; margin-top:6px;">
       Fresh Inbound
     </div>
-    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Assigned today with 0 contact logs</div>
+    <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Assigned today (0 logs)</div>
   </a>
 
-  <!-- Queue 4: Pending Leads -->
-  <a href="<?= base_url('tasks/index.php?queue=pending_leads') ?>" class="card" style="padding:1.2rem; text-decoration:none; border:2px solid <?= $queue === 'pending_leads' ? '#b45309' : 'transparent' ?>; background:<?= $queue === 'pending_leads' ? '#fef3c7' : '#fff' ?>;">
+  <!-- Queue 4: Pending Leads (PDF 9.7.4) -->
+  <a href="<?= base_url('tasks/index.php?queue=pending_leads') ?>" class="card" style="padding:1.1rem; text-decoration:none; border:2px solid <?= $queue === 'pending_leads' ? '#b45309' : 'transparent' ?>; background:<?= $queue === 'pending_leads' ? '#fef3c7' : '#fff' ?>;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:0.8rem; font-weight:700; color:#b45309; text-transform:uppercase;">Pending Leads</span>
+      <span style="font-size:0.75rem; font-weight:700; color:#b45309; text-transform:uppercase;">Pending Leads</span>
       <span class="badge badge-warning" style="font-size:0.85rem; font-weight:800;"><?= $countPendingLeads ?></span>
     </div>
-    <div style="font-size:1.4rem; font-weight:800; color:#b45309; margin-top:6px;">
-      Uncontacted Leads
+    <div style="font-size:1.3rem; font-weight:800; color:#b45309; margin-top:6px;">
+      Uncontacted
     </div>
-    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Older leads with 0 contact logs</div>
+    <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Older leads with 0 logs</div>
+  </a>
+
+  <!-- Queue 5: Website/Social Media Leads (PDF 9.7.5) -->
+  <a href="<?= base_url('data/web_leads.php') ?>" class="card" style="padding:1.1rem; text-decoration:none; border:2px solid transparent; background:#f0f9ff;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-size:0.75rem; font-weight:700; color:#0284c7; text-transform:uppercase;">Website/Social Leads</span>
+      <span class="badge badge-blue" style="font-size:0.85rem; font-weight:800;"><?= $countWebLeads ?></span>
+    </div>
+    <div style="font-size:1.3rem; font-weight:800; color:#0284c7; margin-top:6px;">
+      Social Media
+    </div>
+    <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Digital ads & web leads</div>
   </a>
 </div>
 

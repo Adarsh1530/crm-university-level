@@ -87,8 +87,8 @@ include __DIR__ . '/../includes/header.php';
         <i class="fa-solid fa-hand-holding-dollar"></i> Record Payment
       </button>
     <?php endif; ?>
-    <a href="<?= base_url('finance/invoices.php') ?>" class="btn btn-outline btn-sm">
-      <i class="fa-solid fa-arrow-left"></i> All Invoices
+    <a href="<?= base_url('leads/view.php?id=' . $invoice['lead_id'] . '&tab=invoices') ?>" class="btn btn-outline btn-sm">
+      <i class="fa-solid fa-arrow-left"></i> Student Dossier
     </a>
   </div>
 </div>

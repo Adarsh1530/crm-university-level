@@ -163,6 +163,9 @@ if (!$isCounselor) {
     ")->fetchAll();
 }
 
+// 10. General Training Documents (PDF Section 4.3)
+$generalDocs = $pdo->query("SELECT * FROM general_documents WHERE status = 'Active' ORDER BY id DESC LIMIT 5")->fetchAll();
+
 include __DIR__ . '/../includes/header.php';
 ?>
 
@@ -566,7 +569,7 @@ include __DIR__ . '/../includes/header.php';
         </h3>
         <p style="font-size:0.8rem; color:var(--text-muted); margin:2px 0 0 0;">Institutional intake volumes, enrolled conversions, and revenue yields by campus hub.</p>
       </div>
-      <a href="<?= base_url('organization/branches.php') ?>" class="btn btn-outline btn-sm">All Branches &rarr;</a>
+      <a href="<?= base_url('leads/index.php') ?>" class="btn btn-outline btn-sm">Students &rarr;</a>
     </div>
 
     <div class="table-responsive">
@@ -662,7 +665,7 @@ include __DIR__ . '/../includes/header.php';
         <i class="fa-solid fa-diagram-project" style="color:var(--primary); margin-right:4px;"></i> 
         <?= $isCounselor ? 'My 6-Stage Student Funnel' : '6-Stage Admission Pipeline' ?>
       </h3>
-      <a href="<?= base_url('admissions/index.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">Kanban Board &rarr;</a>
+      <a href="<?= base_url('leads/index.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">View Students &rarr;</a>
     </div>
     <div style="height:250px;">
       <canvas id="pipelineChart"></canvas>
@@ -706,7 +709,7 @@ include __DIR__ . '/../includes/header.php';
         <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-heading); margin:0;">
           <i class="fa-solid fa-chart-pie" style="color:var(--primary); margin-right:4px;"></i> Regional Branch Intake Distribution
         </h3>
-        <a href="<?= base_url('reports/index.php?report=branches') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">All Hubs &rarr;</a>
+        <a href="<?= base_url('leads/index.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">View Students &rarr;</a>
       </div>
       <div style="height:250px;">
         <canvas id="branchChart"></canvas>
@@ -790,37 +793,39 @@ include __DIR__ . '/../includes/header.php';
     </div>
   </div>
 
-  <?php if ($isSuperAdmin): ?>
-    <!-- Recent System Activity Trail (Admin Only) -->
-    <div class="card" style="padding:1.5rem; border-radius:12px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-        <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-heading); margin:0;">
-          <i class="fa-solid fa-clock-rotate-left" style="color:var(--primary); margin-right:4px;"></i> Audit Feed
-        </h3>
-        <a href="<?= base_url('system/activity_logs.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">Logs &rarr;</a>
-      </div>
-
-      <div style="display:flex; flex-direction:column; gap:0.85rem; font-size:0.825rem;">
-        <?php if (empty($recentActivities)): ?>
-          <div style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
-            <i class="fa-solid fa-clock-rotate-left" style="font-size:1.6rem; margin-bottom:0.5rem; display:block; color:var(--text-light);"></i>
-            No audit activity logged yet.
-          </div>
-        <?php else: ?>
-          <?php foreach ($recentActivities as $act): ?>
-            <div style="background:var(--bg-subtle); padding:0.65rem 0.85rem; border-radius:6px; line-height:1.4;">
-              <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
-                <strong style="color:var(--text-heading); font-size:0.8rem;"><?= htmlspecialchars($act['action']) ?></strong>
-                <span style="font-size:0.7rem; color:var(--text-light);"><?= time_ago($act['created_at']) ?></span>
-              </div>
-              <div style="color:var(--text-muted); font-size:0.78rem;"><?= htmlspecialchars($act['details']) ?></div>
-              <div style="font-size:0.7rem; color:var(--primary); font-weight:600; margin-top:2px;">By <?= htmlspecialchars($act['user_name'] ?? 'Staff') ?></div>
-            </div>
-          <?php endforeach; ?>
-        <?php endif; ?>
-      </div>
+  <!-- PDF Section 4.3: General Documents (Displays training docs in PDF format, click opens in new tab) -->
+  <div class="card" style="padding:1.5rem; border-radius:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-heading); margin:0;">
+        <i class="fa-solid fa-folder-open" style="color:var(--primary); margin-right:4px;"></i> General Documents
+      </h3>
+      <a href="<?= base_url('documents/general.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">View All &rarr;</a>
     </div>
-  <?php endif; ?>
+
+    <div style="display:flex; flex-direction:column; gap:0.65rem;">
+      <?php if (empty($generalDocs)): ?>
+        <div style="text-align:center; padding:2rem 1rem; color:var(--text-muted); font-size:0.85rem;">
+          <i class="fa-solid fa-file-pdf" style="font-size:1.6rem; margin-bottom:0.4rem; display:block; color:var(--text-light);"></i>
+          No general training documents uploaded yet.
+        </div>
+      <?php else: ?>
+        <?php foreach ($generalDocs as $gdoc): 
+          $docUrl = base_url('uploads/documents/' . $gdoc['file_path']);
+        ?>
+          <a href="<?= $docUrl ?>" target="_blank" style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.85rem; border-radius:8px; background:var(--bg-subtle); text-decoration:none; transition:background 0.15s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='var(--bg-subtle)'">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-file-pdf" style="color:#ef4444; font-size:1.1rem;"></i>
+              <div>
+                <div style="font-weight:700; font-size:0.825rem; color:var(--text-heading);"><?= htmlspecialchars($gdoc['title']) ?></div>
+                <div style="font-size:0.7rem; color:var(--text-muted);"><?= htmlspecialchars($gdoc['category'] ?? 'Guideline') ?></div>
+              </div>
+            </div>
+            <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.75rem; color:var(--primary);"></i>
+          </a>
+        <?php endforeach; ?>
+      <?php endif; ?>
+    </div>
+  </div>
 </div>
 
 <script>

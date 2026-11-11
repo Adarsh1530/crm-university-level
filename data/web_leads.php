@@ -163,6 +163,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dStmt->execute([$disqualifyReason, $webLeadId]);
         set_flash('info', 'Web lead marked as Disqualified.');
         redirect('data/web_leads.php');
+    } elseif ($action === 'delete') {
+        require_permission('web_leads', 'delete');
+        $dStmt = $pdo->prepare("DELETE FROM web_leads WHERE id = ?");
+        $dStmt->execute([$webLeadId]);
+        set_flash('success', 'Website/Social Media Lead deleted successfully.');
+        redirect('data/web_leads.php');
     }
 }
 
@@ -394,17 +400,27 @@ include __DIR__ . '/../includes/header.php';
                 <?php endif; ?>
               </td>
               <td style="text-align:right;">
-                <?php if ($lead['status'] === 'Pending' && can('web_leads', 'assign')): ?>
-                  <button type="button" class="btn btn-primary btn-sm" onclick="openAssignModal(<?= htmlspecialchars(json_encode($lead)) ?>)">
-                    <i class="fa-solid fa-user-check"></i> Assign to Counselor
-                  </button>
-                <?php elseif ($lead['status'] === 'Assigned' && !empty($lead['assigned_lead_id'])): ?>
-                  <a href="<?= base_url('leads/view.php?id=' . $lead['assigned_lead_id']) ?>" class="btn btn-secondary btn-sm">
-                    <i class="fa-solid fa-eye"></i> View Lead
-                  </a>
-                <?php else: ?>
-                  <span style="font-size:0.75rem; color:var(--text-light);">—</span>
-                <?php endif; ?>
+                <div style="display:inline-flex; gap:0.4rem; align-items:center;">
+                  <?php if ($lead['status'] === 'Pending' && can('web_leads', 'assign')): ?>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="openAssignModal(<?= htmlspecialchars(json_encode($lead)) ?>)">
+                      <i class="fa-solid fa-user-check"></i> Assign to Counselor
+                    </button>
+                  <?php elseif ($lead['status'] === 'Assigned' && !empty($lead['assigned_lead_id'])): ?>
+                    <a href="<?= base_url('leads/view.php?id=' . $lead['assigned_lead_id']) ?>" class="btn btn-secondary btn-sm">
+                      <i class="fa-solid fa-eye"></i> View Lead
+                    </a>
+                  <?php endif; ?>
+                  <?php if (can('web_leads', 'delete')): ?>
+                    <form method="POST" action="<?= base_url('data/web_leads.php') ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this lead? Click OK to confirm (Yes, Delete!).');">
+                      <?= csrf_field() ?>
+                      <input type="hidden" name="action" value="delete">
+                      <input type="hidden" name="web_lead_id" value="<?= $lead['id'] ?>">
+                      <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Website Lead (User Manual Section 12.0)">
+                        <i class="fa-solid fa-trash-can"></i>
+                      </button>
+                    </form>
+                  <?php endif; ?>
+                </div>
               </td>
             </tr>
           <?php endforeach; ?>

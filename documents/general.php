@@ -134,9 +134,22 @@ include __DIR__ . '/../includes/header.php';
           <span style="color:var(--text-muted);">
             By: <strong><?= htmlspecialchars($d['uploaded_by_name'] ?? 'Admin') ?></strong>
           </span>
-          <a href="<?= base_url('uploads/documents/' . rawurlencode($d['file_name'])) ?>" target="_blank" class="btn btn-primary btn-sm" style="font-size:0.75rem;">
-            <i class="fa-solid fa-arrow-down"></i> Open / Download
-          </a>
+          <div style="display:flex; gap:0.4rem; align-items:center;">
+            <a href="<?= base_url('uploads/documents/' . rawurlencode($d['file_name'])) ?>" target="_blank" class="btn btn-primary btn-sm" style="font-size:0.75rem;">
+              <i class="fa-solid fa-arrow-down"></i> Open PDF
+            </a>
+            <?php if (can('documents', 'delete')): ?>
+              <form method="POST" action="<?= base_url('documents/delete.php') ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this document? Click OK to confirm (Yes, delete!).');">
+                <?= csrf_field() ?>
+                <input type="hidden" name="type" value="general">
+                <input type="hidden" name="id" value="<?= $d['id'] ?>">
+                <input type="hidden" name="return_url" value="<?= base_url('documents/general.php') ?>">
+                <button type="submit" class="btn btn-outline-danger btn-sm" style="font-size:0.75rem; padding:3px 7px;" title="Delete Document (User Manual Section 10.3)">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </form>
+            <?php endif; ?>
+          </div>
         </div>
       </div>
     <?php endforeach; ?>

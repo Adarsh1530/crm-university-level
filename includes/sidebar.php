@@ -149,8 +149,9 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
   <!-- Navigation Links -->
   <nav class="sidebar-nav">
     
-    <!-- 1. MAIN COCKPIT -->
-    <div class="nav-section-title">Main</div>
+    <div class="nav-section-title">Core CRM</div>
+
+    <!-- 1. Dashboard (PDF Section 4.0) -->
     <?php if (can('dashboard', 'view')): ?>
       <a href="<?= base_url('dashboard/index.php') ?>" id="sidebar-nav-dashboard" class="nav-item <?= ($activePage === 'dashboard') ? 'active' : '' ?>">
         <div class="nav-item-content">
@@ -160,14 +161,23 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       </a>
     <?php endif; ?>
 
-    <!-- 2. STUDENT ADMISSIONS WORKSPACE (1-Click Direct Access) -->
-    <div class="nav-section-title"><?= is_counselor() ? 'My Daily Focus' : 'Admissions Workspace' ?></div>
+    <!-- 2. Notifications (PDF Section 5.0) -->
+    <a href="<?= base_url('notifications/index.php') ?>" id="sidebar-nav-notifications" class="nav-item <?= ($activePage === 'notifications') ? 'active' : '' ?>">
+      <div class="nav-item-content">
+        <i class="fa-solid fa-bell nav-icon"></i>
+        <span class="nav-label">Notifications</span>
+      </div>
+      <?php if ($sidebarUnreadNotifs > 0): ?>
+        <span class="nav-badge badge-red" title="<?= $sidebarUnreadNotifs ?> unread / unattended notifications"><?= $sidebarUnreadNotifs ?></span>
+      <?php endif; ?>
+    </a>
 
+    <!-- 3. Students (PDF Section 9.0) -->
     <?php if (can('leads', 'view')): ?>
       <a href="<?= base_url('leads/index.php') ?>" id="sidebar-nav-leads" class="nav-item <?= in_array($activePage, ['leads', 'add_lead']) ? 'active' : '' ?>">
         <div class="nav-item-content">
           <i class="fa-solid fa-user-graduate nav-icon"></i>
-          <span class="nav-label"><?= is_counselor() ? 'My Students' : 'Student Leads' ?></span>
+          <span class="nav-label">Students</span>
         </div>
         <?php if ($sidebarActiveLeadsCount > 0): ?>
           <span class="nav-badge badge-primary"><?= $sidebarActiveLeadsCount ?></span>
@@ -175,20 +185,12 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       </a>
     <?php endif; ?>
 
-    <?php if (can('admissions', 'view')): ?>
-      <a href="<?= base_url('admissions/index.php') ?>" id="sidebar-nav-pipeline" class="nav-item <?= ($activePage === 'admissions') ? 'active' : '' ?>">
-        <div class="nav-item-content">
-          <i class="fa-solid fa-diagram-project nav-icon"></i>
-          <span class="nav-label">Admission Pipeline</span>
-        </div>
-      </a>
-    <?php endif; ?>
-
+    <!-- 4. My Tasks (PDF Section 9.7) -->
     <?php if (can('tasks', 'view')): ?>
       <a href="<?= base_url('tasks/index.php') ?>" id="sidebar-nav-tasks" class="nav-item <?= ($activePage === 'tasks') ? 'active' : '' ?>">
         <div class="nav-item-content">
           <i class="fa-solid fa-list-check nav-icon"></i>
-          <span class="nav-label"><?= is_counselor() ? 'Calls & Follow-ups' : 'Daily Follow-ups' ?></span>
+          <span class="nav-label">My Tasks</span>
         </div>
         <?php if ($sidebarTotalTasks > 0): ?>
           <span class="nav-badge badge-warning" title="<?= $sidebarTotalTasks ?> pending items"><?= $sidebarTotalTasks ?></span>
@@ -196,198 +198,58 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       </a>
     <?php endif; ?>
 
-    <?php if (can('customers', 'view')): ?>
-      <a href="<?= base_url('customers/index.php') ?>" id="sidebar-nav-customers" class="nav-item <?= ($activePage === 'customers') ? 'active' : '' ?>">
+    <!-- 5. College Data (PDF Section 9.5) -->
+    <?php if (can('college_data', 'view')): ?>
+      <a href="<?= base_url('data/college_data.php') ?>" id="sidebar-nav-college-data" class="nav-item <?= in_array($activePage, ['college_data', 'import_college_data']) ? 'active' : '' ?>">
         <div class="nav-item-content">
-          <i class="fa-solid fa-certificate nav-icon"></i>
-          <span class="nav-label"><?= is_counselor() ? 'Enrolled Students' : 'Enrolled Clients' ?></span>
+          <i class="fa-solid fa-database nav-icon"></i>
+          <span class="nav-label">College Data</span>
         </div>
       </a>
     <?php endif; ?>
 
-    <!-- 3. INBOUND DATA & ALLOCATION (Manager & Super Admin) -->
-    <?php if (can('web_leads', 'view') || can('college_data', 'view')): 
-      $groupDataOpen = in_array($activePage, ['web_leads', 'college_data', 'import_college_data']);
-    ?>
-      <div class="nav-section-title">Lead Inbound</div>
-      <div class="nav-group <?= $groupDataOpen ? 'nav-group-open active' : '' ?>" id="sidebar-group-inbound">
-        <button type="button" class="nav-group-toggle" onclick="toggleNavGroup(this)">
-          <div class="nav-item-content">
-            <i class="fa-solid fa-bullseye nav-icon"></i>
-            <span class="nav-label">Lead Inbound & Triage</span>
-          </div>
-          <?php if ($sidebarWebLeadsCount > 0): ?>
-            <span class="nav-badge badge-blue" style="margin-left:auto; margin-right:8px;"><?= $sidebarWebLeadsCount ?></span>
-          <?php endif; ?>
-          <i class="fa-solid fa-chevron-down nav-arrow"></i>
-        </button>
-        <ul class="nav-submenu">
-          <?php if (can('web_leads', 'view')): ?>
-            <li>
-              <a href="<?= base_url('data/web_leads.php') ?>" id="sidebar-nav-web-leads" class="nav-subitem <?= ($activePage === 'web_leads') ? 'active' : '' ?>">
-                Digital Web & Social Leads
-                <?php if ($sidebarWebLeadsCount > 0): ?>
-                  <span class="nav-badge badge-blue" style="margin-left:auto;"><?= $sidebarWebLeadsCount ?></span>
-                <?php endif; ?>
-              </a>
-            </li>
-          <?php endif; ?>
-
-          <?php if (can('college_data', 'view')): ?>
-            <li>
-              <a href="<?= base_url('data/college_data.php') ?>" id="sidebar-nav-college-data" class="nav-subitem <?= ($activePage === 'college_data') ? 'active' : '' ?>">
-                College Data Pool
-              </a>
-            </li>
-          <?php endif; ?>
-
-          <?php if (can('college_data', 'add')): ?>
-            <li>
-              <a href="<?= base_url('data/import_college_data.php') ?>" id="sidebar-nav-import-data" class="nav-subitem <?= ($activePage === 'import_college_data') ? 'active' : '' ?>">
-                Import College List
-              </a>
-            </li>
-          <?php endif; ?>
-        </ul>
-      </div>
+    <!-- 6. Website Leads (PDF Section 11.0 / 12.0) -->
+    <?php if (can('web_leads', 'view')): ?>
+      <a href="<?= base_url('data/web_leads.php') ?>" id="sidebar-nav-web-leads" class="nav-item <?= ($activePage === 'web_leads') ? 'active' : '' ?>">
+        <div class="nav-item-content">
+          <i class="fa-solid fa-globe nav-icon"></i>
+          <span class="nav-label">Website Leads</span>
+        </div>
+        <?php if ($sidebarWebLeadsCount > 0): ?>
+          <span class="nav-badge badge-blue"><?= $sidebarWebLeadsCount ?></span>
+        <?php endif; ?>
+      </a>
     <?php endif; ?>
 
-    <!-- 4. OPERATIONS (Finance & Documents) -->
-    <?php 
-    $hasFinanceAccess = can('invoices', 'view');
-    $hasDocAccess = can('documents', 'view');
-    if ($hasFinanceAccess || $hasDocAccess): 
-      $groupOpsOpen = in_array($activePage, ['finance', 'invoices', 'payments', 'balances', 'create_invoice', 'documents', 'general_docs', 'dossiers']);
-    ?>
-      <div class="nav-section-title"><?= $hasFinanceAccess ? 'Operations' : 'Documents' ?></div>
-      
-      <?php if ($hasFinanceAccess): ?>
-        <div class="nav-group <?= $groupOpsOpen ? 'nav-group-open active' : '' ?>" id="sidebar-group-finance">
-          <button type="button" class="nav-group-toggle" onclick="toggleNavGroup(this)">
-            <div class="nav-item-content">
-              <i class="fa-solid fa-file-invoice-dollar nav-icon"></i>
-              <span class="nav-label">Finance & Invoices</span>
-            </div>
-            <i class="fa-solid fa-chevron-down nav-arrow"></i>
-          </button>
-          <ul class="nav-submenu">
-            <li>
-              <a href="<?= base_url('finance/invoices.php') ?>" class="nav-subitem <?= ($activePage === 'invoices') ? 'active' : '' ?>">
-                Invoices & Billings
-              </a>
-            </li>
-            <?php if (can('invoices', 'add')): ?>
-              <li>
-                <a href="<?= base_url('finance/create_invoice.php') ?>" class="nav-subitem <?= ($activePage === 'create_invoice') ? 'active' : '' ?>">
-                  Generate Invoice
-                </a>
-              </li>
-            <?php endif; ?>
-            <li>
-              <a href="<?= base_url('finance/payments.php') ?>" class="nav-subitem <?= ($activePage === 'payments') ? 'active' : '' ?>">
-                Payment Receipts
-              </a>
-            </li>
-            <li>
-              <a href="<?= base_url('finance/balances.php') ?>" class="nav-subitem <?= ($activePage === 'balances') ? 'active' : '' ?>">
-                Outstanding Balances
-              </a>
-            </li>
-          </ul>
+    <!-- 7. General Docs (PDF Section 10.0) -->
+    <?php if (can('documents', 'view')): ?>
+      <a href="<?= base_url('documents/general.php') ?>" id="sidebar-nav-general-docs" class="nav-item <?= ($activePage === 'general_docs') ? 'active' : '' ?>">
+        <div class="nav-item-content">
+          <i class="fa-solid fa-folder-open nav-icon"></i>
+          <span class="nav-label">General Docs</span>
         </div>
-      <?php endif; ?>
-
-      <?php if ($hasDocAccess): ?>
-        <div class="nav-group <?= in_array($activePage, ['documents', 'general_docs', 'dossiers']) ? 'nav-group-open active' : '' ?>" id="sidebar-group-docs">
-          <button type="button" class="nav-group-toggle" onclick="toggleNavGroup(this)">
-            <div class="nav-item-content">
-              <i class="fa-solid fa-folder-open nav-icon"></i>
-              <span class="nav-label">Document Hub</span>
-            </div>
-            <i class="fa-solid fa-chevron-down nav-arrow"></i>
-          </button>
-          <ul class="nav-submenu">
-            <li>
-              <a href="<?= base_url('documents/dossiers.php') ?>" class="nav-subitem <?= ($activePage === 'dossiers') ? 'active' : '' ?>">
-                Student Dossiers
-              </a>
-            </li>
-            <li>
-              <a href="<?= base_url('documents/general.php') ?>" class="nav-subitem <?= ($activePage === 'general_docs') ? 'active' : '' ?>">
-                Country Checklists & Guidelines
-              </a>
-            </li>
-          </ul>
-        </div>
-      <?php endif; ?>
+      </a>
     <?php endif; ?>
 
-    <!-- 5. MANAGEMENT & GOVERNANCE (Manager & Super Admin) -->
-    <?php if (can('staff', 'view') || can('reports', 'view') || can('roles', 'view')): 
-      $groupMgmtOpen = in_array($activePage, ['organization_users', 'roles', 'branches', 'reports', 'activity_logs', 'system_settings', 'archive']);
-    ?>
+    <!-- 8. Archived (PDF Section 9.6) -->
+    <?php if (can('archive', 'view')): ?>
+      <a href="<?= base_url('archive/index.php') ?>" id="sidebar-nav-archive" class="nav-item <?= ($activePage === 'archive') ? 'active' : '' ?>">
+        <div class="nav-item-content">
+          <i class="fa-solid fa-box-archive nav-icon"></i>
+          <span class="nav-label">Archived</span>
+        </div>
+      </a>
+    <?php endif; ?>
+
+    <!-- 9. Administration (PDF Section 1.1, 4.2 & Page 6 - Staff Caseload Management for Managers & Admin) -->
+    <?php if (can('staff', 'view')): ?>
       <div class="nav-section-title">Administration</div>
-
-      <?php if (can('staff', 'view')): ?>
-        <a href="<?= base_url('organization/users.php') ?>" id="sidebar-nav-staff" class="nav-item <?= ($activePage === 'organization_users') ? 'active' : '' ?>">
-          <div class="nav-item-content">
-            <i class="fa-solid fa-users nav-icon"></i>
-            <span class="nav-label">Staff & Team</span>
-          </div>
-        </a>
-      <?php endif; ?>
-
-      <?php if (can('branches', 'view')): ?>
-        <a href="<?= base_url('organization/branches.php') ?>" id="sidebar-nav-branches" class="nav-item <?= ($activePage === 'branches') ? 'active' : '' ?>">
-          <div class="nav-item-content">
-            <i class="fa-solid fa-building nav-icon"></i>
-            <span class="nav-label">Campus Branches</span>
-          </div>
-        </a>
-      <?php endif; ?>
-
-      <?php if (is_super_admin()): ?>
-        <a href="<?= base_url('organization/roles.php') ?>" id="sidebar-nav-roles" class="nav-item <?= ($activePage === 'roles') ? 'active' : '' ?>">
-          <div class="nav-item-content">
-            <i class="fa-solid fa-shield-halved nav-icon"></i>
-            <span class="nav-label">Roles & Permissions</span>
-          </div>
-        </a>
-      <?php endif; ?>
-
-      <?php if (can('reports', 'view')): ?>
-        <a href="<?= base_url('reports/index.php') ?>" id="sidebar-nav-reports" class="nav-item <?= ($activePage === 'reports') ? 'active' : '' ?>">
-          <div class="nav-item-content">
-            <i class="fa-solid fa-chart-pie nav-icon"></i>
-            <span class="nav-label">Performance Reports</span>
-          </div>
-        </a>
-      <?php endif; ?>
-
-      <?php if (is_super_admin()): ?>
-        <a href="<?= base_url('system/settings.php') ?>" id="sidebar-nav-settings" class="nav-item <?= ($activePage === 'system_settings') ? 'active' : '' ?>">
-          <div class="nav-item-content">
-            <i class="fa-solid fa-sliders nav-icon"></i>
-            <span class="nav-label">System Settings</span>
-          </div>
-        </a>
-
-        <a href="<?= base_url('system/activity_logs.php') ?>" id="sidebar-nav-logs" class="nav-item <?= ($activePage === 'activity_logs') ? 'active' : '' ?>">
-          <div class="nav-item-content">
-            <i class="fa-solid fa-clock-rotate-left nav-icon"></i>
-            <span class="nav-label">Audit Activity Trail</span>
-          </div>
-        </a>
-      <?php endif; ?>
-
-      <?php if (can('archive', 'view')): ?>
-        <a href="<?= base_url('archive/index.php') ?>" id="sidebar-nav-archive" class="nav-item <?= ($activePage === 'archive') ? 'active' : '' ?>">
-          <div class="nav-item-content">
-            <i class="fa-solid fa-box-archive nav-icon"></i>
-            <span class="nav-label">Archive Repository</span>
-          </div>
-        </a>
-      <?php endif; ?>
+      <a href="<?= base_url('organization/users.php') ?>" id="sidebar-nav-staff" class="nav-item <?= in_array($activePage, ['organization_users', 'users']) ? 'active' : '' ?>">
+        <div class="nav-item-content">
+          <i class="fa-solid fa-users nav-icon"></i>
+          <span class="nav-label">Administration</span>
+        </div>
+      </a>
     <?php endif; ?>
 
   </nav>

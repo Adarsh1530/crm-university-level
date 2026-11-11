@@ -128,11 +128,6 @@ include __DIR__ . '/../includes/header.php';
     </p>
   </div>
   <div style="display:flex; gap:0.5rem; align-items:center;">
-    <?php if (is_super_admin()): ?>
-      <a href="<?= base_url('organization/roles.php') ?>" class="btn btn-secondary btn-sm">
-        <i class="fa-solid fa-shield-halved"></i> Permissions Matrix
-      </a>
-    <?php endif; ?>
     <?php if (can('staff', 'add')): ?>
       <button type="button" class="btn btn-primary btn-sm" onclick="openStaffModal()">
         <i class="fa-solid fa-user-plus"></i> Add Staff Account

@@ -96,6 +96,31 @@ $customers = $stmt->fetchAll();
 include __DIR__ . '/../includes/header.php';
 ?>
 
+<!-- PDF Section 9.0: Student Module Top Tab Bar -->
+<div class="pdf-student-nav-tabs" style="display:flex; gap:0.25rem; border-bottom:2px solid var(--border-color); margin-bottom:1.25rem; overflow-x:auto; padding-bottom:1px;">
+  <a href="<?= base_url('leads/index.php?type=all') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+    <i class="fa-solid fa-users"></i> All
+  </a>
+  <a href="<?= base_url('leads/index.php?type=leads') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+    <i class="fa-solid fa-user-graduate"></i> Leads
+  </a>
+  <a href="<?= base_url('customers/index.php') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--primary); border-bottom:3px solid var(--primary); background:#f5f3ff; white-space:nowrap;">
+    <i class="fa-solid fa-certificate"></i> Customers <span class="badge badge-success" style="margin-left:4px; font-size:0.75rem;"><?= (int)($custStats['total_customers'] ?? 0) ?></span>
+  </a>
+  <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+    <i class="fa-solid fa-phone-volume"></i> Follow-ups
+  </a>
+  <a href="<?= base_url('data/college_data.php') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+    <i class="fa-solid fa-database"></i> College Datas
+  </a>
+  <a href="<?= base_url('archive/index.php') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+    <i class="fa-solid fa-box-archive"></i> Archived
+  </a>
+  <a href="<?= base_url('tasks/index.php') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+    <i class="fa-solid fa-list-check"></i> My Tasks
+  </a>
+</div>
+
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
   <div>
     <h1 style="font-size:1.5rem; font-weight:700; color:var(--text-heading); margin:0 0 0.35rem 0;">Customers (Invoiced Clients)</h1>
