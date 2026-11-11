@@ -454,59 +454,6 @@ include __DIR__ . '/../includes/header.php';
   </div>
 <?php endif; ?>
 
-<!-- 4. MANAGER & ADMIN: UNASSIGNED WEB LEADS TRIAGE -->
-<?php if (!empty($unassignedWebLeads) && !$isCounselor): ?>
-  <div class="card" id="widget-unassigned-leads" style="margin-bottom:1.5rem; padding:1.25rem; border-left:4px solid #0284c7; border-radius:12px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
-      <div>
-        <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin:0; display:flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-bolt" style="color:#0284c7;"></i> Fresh Digital Leads Awaiting Allocation
-          <span class="badge badge-blue"><?= count($unassignedWebLeads) ?> Pending</span>
-        </h3>
-        <p style="font-size:0.8rem; color:var(--text-muted); margin:2px 0 0 0;">Inbound submissions from Meta / Google ads awaiting counselor assignment.</p>
-      </div>
-      <a href="<?= base_url('data/web_leads.php') ?>" class="btn btn-outline btn-sm">Full Triage Board &rarr;</a>
-    </div>
-
-    <div class="table-responsive">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Candidate</th>
-            <th>Phone</th>
-            <th>Study Interest</th>
-            <th>Channel</th>
-            <th>Received</th>
-            <th style="text-align:right;">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($unassignedWebLeads as $wl): 
-            $cName = !empty($wl['full_name']) ? $wl['full_name'] : (!empty($wl['student_name']) ? $wl['student_name'] : 'Candidate');
-            $cPhone = !empty($wl['phone']) ? $wl['phone'] : (!empty($wl['mobile_number']) ? $wl['mobile_number'] : '-');
-            $cCountry = !empty($wl['target_country']) ? $wl['target_country'] : (!empty($wl['preferred_country']) ? $wl['preferred_country'] : 'Global');
-            $cCourse = !empty($wl['target_course']) ? $wl['target_course'] : (!empty($wl['preferred_course']) ? $wl['preferred_course'] : 'Higher Education');
-            $cSource = !empty($wl['source']) ? $wl['source'] : (!empty($wl['source_campaign']) ? $wl['source_campaign'] : 'Inbound Web');
-          ?>
-            <tr>
-              <td><strong><?= htmlspecialchars((string)$cName) ?></strong></td>
-              <td style="font-family:monospace; font-weight:700;"><?= htmlspecialchars((string)$cPhone) ?></td>
-              <td><?= htmlspecialchars((string)$cCountry) ?> &bull; <?= htmlspecialchars((string)$cCourse) ?></td>
-              <td><span class="badge badge-secondary"><?= htmlspecialchars((string)$cSource) ?></span></td>
-              <td style="font-size:0.8rem; color:var(--text-muted);"><?= time_ago($wl['created_at'] ?? 'now') ?></td>
-              <td style="text-align:right;">
-                <a href="<?= base_url('data/web_leads.php') ?>" class="btn btn-primary btn-sm" style="font-size:0.75rem; padding:3px 10px; font-weight:700;">
-                  Allocate &rarr;
-                </a>
-              </td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-  </div>
-<?php endif; ?>
-
 <!-- 5. BRANCH MANAGER: COUNSELOR CASELOAD & PERFORMANCE BALANCE -->
 <?php if ($isManager && !empty($branchCounselors)): ?>
   <div class="card" id="widget-counselor-caseload" style="margin-bottom:1.5rem; padding:1.25rem; border-radius:12px;">
@@ -560,54 +507,6 @@ include __DIR__ . '/../includes/header.php';
               <td style="text-align:right;">
                 <a href="<?= base_url('leads/index.php?counselor_id=' . $bc['id']) ?>" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:3px 10px; font-weight:600;">
                   View Leads &rarr;
-                </a>
-              </td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-  </div>
-<?php endif; ?>
-
-<!-- 6. SUPER ADMIN: CAMPUS BRANCHES PERFORMANCE -->
-<?php if ($isSuperAdmin && !empty($branchStats)): ?>
-  <div class="card" style="margin-bottom:1.5rem; padding:1.25rem; border-radius:12px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
-      <div>
-        <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin:0; display:flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-building" style="color:var(--primary);"></i> Campus Branches Performance Overview
-        </h3>
-        <p style="font-size:0.8rem; color:var(--text-muted); margin:2px 0 0 0;">Institutional intake volumes, enrolled conversions, and revenue yields by campus hub.</p>
-      </div>
-      <a href="<?= base_url('leads/index.php') ?>" class="btn btn-outline btn-sm">Students &rarr;</a>
-    </div>
-
-    <div class="table-responsive">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Campus Branch</th>
-            <th>Location</th>
-            <th>Active Inquiries</th>
-            <th>Enrolled Students</th>
-            <th>Collected Revenue</th>
-            <th style="text-align:right;">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($branchStats as $bs): ?>
-            <tr>
-              <td>
-                <strong><?= htmlspecialchars($bs['branch_name']) ?></strong>
-              </td>
-              <td style="font-size:0.85rem; color:var(--text-muted);"><?= htmlspecialchars($bs['city']) ?></td>
-              <td><span class="badge badge-primary" style="font-weight:700;"><?= number_format($bs['lead_count']) ?></span></td>
-              <td><span class="badge badge-success" style="font-weight:700;"><?= number_format($bs['enrolled_count']) ?></span></td>
-              <td><strong style="color:#059669;"><?= format_currency($bs['collected_amount']) ?></strong></td>
-              <td style="text-align:right;">
-                <a href="<?= base_url('leads/index.php?branch_id=' . $bs['id']) ?>" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:3px 10px;">
-                  Leads &rarr;
                 </a>
               </td>
             </tr>
