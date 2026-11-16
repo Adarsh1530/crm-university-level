@@ -120,7 +120,7 @@ include __DIR__ . '/../includes/header.php';
         <?= htmlspecialchars($invoice['invoice_number']) ?>
       </div>
       <div style="font-size:0.825rem; color:var(--text-muted); line-height:1.4;">
-        Issue Date: <strong><?= date('d M Y', strtotime($invoice['issue_date'])) ?></strong><br>
+        Issue Date: <strong><?= date('d M Y', strtotime($invoice['issue_date'] ?: $invoice['invoice_date'])) ?></strong><br>
         Due Date: <strong><?= date('d M Y', strtotime($invoice['due_date'])) ?></strong>
       </div>
     </div>
@@ -165,10 +165,10 @@ include __DIR__ . '/../includes/header.php';
         <?php foreach ($items as $idx => $it): ?>
           <tr>
             <td style="font-weight:600; color:var(--text-muted); width:40px;"><?= $idx + 1 ?></td>
-            <td style="font-weight:600; color:var(--text-heading);"><?= htmlspecialchars($it['description']) ?></td>
+            <td style="font-weight:600; color:var(--text-heading);"><?= htmlspecialchars($it['description'] ?: ($it['service_description'] ?? 'Consultancy Service')) ?></td>
             <td style="text-align:center;"><?= (int)$it['quantity'] ?></td>
-            <td style="text-align:right; font-family:monospace;"><?= format_currency($it['unit_price']) ?></td>
-            <td style="text-align:right; font-family:monospace; font-weight:700;"><?= format_currency($it['line_total']) ?></td>
+            <td style="text-align:right; font-family:monospace;"><?= format_currency($it['unit_price'] ?: ($it['unit_rate'] ?? 0)) ?></td>
+            <td style="text-align:right; font-family:monospace; font-weight:700;"><?= format_currency($it['line_total'] ?: ($it['subtotal'] ?? 0)) ?></td>
           </tr>
         <?php endforeach; ?>
       </tbody>
@@ -257,9 +257,9 @@ include __DIR__ . '/../includes/header.php';
             <tr>
               <td style="font-family:monospace; font-weight:700;"><?= htmlspecialchars($p['receipt_number']) ?></td>
               <td style="font-size:0.85rem;"><?= date('d M Y', strtotime($p['payment_date'])) ?></td>
-              <td><span class="badge badge-secondary"><?= htmlspecialchars($p['payment_method']) ?></span></td>
+              <td><span class="badge badge-secondary"><?= htmlspecialchars($p['payment_method'] ?: ($p['payment_mode'] ?? 'Payment')) ?></span></td>
               <td style="font-family:monospace; font-size:0.8rem;"><?= htmlspecialchars($p['transaction_reference'] ?: '—') ?></td>
-              <td style="font-weight:700; color:#15803d;"><?= format_currency($p['amount']) ?></td>
+              <td style="font-weight:700; color:#15803d;"><?= format_currency($p['amount'] ?: ($p['amount_paid'] ?? 0)) ?></td>
               <td style="font-size:0.75rem; color:var(--text-muted);"><?= htmlspecialchars($p['recorded_by_name'] ?? 'Staff') ?></td>
             </tr>
           <?php endforeach; ?>

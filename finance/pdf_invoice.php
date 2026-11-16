@@ -223,10 +223,10 @@ $payments = $pmtStmt->fetchAll();
       <?php foreach ($items as $idx => $it): ?>
         <tr>
           <td><?= $idx + 1 ?></td>
-          <td style="font-weight:600; color:#0f172a;"><?= htmlspecialchars($it['description']) ?></td>
+          <td style="font-weight:600; color:#0f172a;"><?= htmlspecialchars($it['description'] ?: ($it['service_description'] ?? 'Consultancy Service')) ?></td>
           <td style="text-align:center;"><?= (int)$it['quantity'] ?></td>
-          <td style="text-align:right; font-family:monospace;"><?= format_currency($it['unit_price']) ?></td>
-          <td style="text-align:right; font-family:monospace; font-weight:700;"><?= format_currency($it['line_total']) ?></td>
+          <td style="text-align:right; font-family:monospace;"><?= format_currency($it['unit_price'] ?: ($it['unit_rate'] ?? 0)) ?></td>
+          <td style="text-align:right; font-family:monospace; font-weight:700;"><?= format_currency($it['line_total'] ?: ($it['subtotal'] ?? 0)) ?></td>
         </tr>
       <?php endforeach; ?>
     </tbody>

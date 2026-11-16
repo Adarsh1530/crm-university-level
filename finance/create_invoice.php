@@ -84,17 +84,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $pdo->beginTransaction();
 
-                // 1. Insert Invoice
+                // 1. Insert Invoice (populates both legacy and modern schema columns to prevent NOT NULL errors)
                 $stmtInv = $pdo->prepare("
                     INSERT INTO invoices (
-                        invoice_number, lead_id, branch_id, issue_date, due_date,
-                        subtotal, discount_amount, tax_percentage, tax_amount, grand_total,
-                        paid_amount, balance_due, payment_status, payment_terms, bank_details,
+                        invoice_number, lead_id, branch_id, invoice_date, issue_date, due_date,
+                        subtotal, discount_total, discount_amount, tax_total, tax_percentage, tax_amount, grand_total,
+                        paid_total, paid_amount, balance_total, balance_due, payment_status, status, payment_terms, bank_details,
                         notes, created_by
                     ) VALUES (
-                        ?, ?, ?, ?, ?,
-                        ?, ?, ?, ?, ?,
-                        0.00, ?, 'Unpaid', ?, ?,
+                        ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?, ?,
+                        0.00, 0.00, ?, ?, 'Unpaid', 'Active', ?, ?,
                         ?, ?
                     )
                 ");
@@ -105,20 +105,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $leadMeta = $lbStmt->fetch();
 
                 $stmtInv->execute([
-                    $invoiceNumber, $leadId, $leadMeta['branch_id'], $issueDate, $dueDate,
-                    $subtotal, $discountAmount, $taxPercent, $taxAmount, $grandTotal,
-                    $grandTotal, $paymentTerms, $bankDetails,
+                    $invoiceNumber, $leadId, $leadMeta['branch_id'], $issueDate, $issueDate, $dueDate,
+                    $subtotal, $discountAmount, $discountAmount, $taxAmount, $taxPercent, $taxAmount, $grandTotal,
+                    $grandTotal, $grandTotal, $paymentTerms, $bankDetails,
                     $notes, $currentUser['id']
                 ]);
                 $invoiceId = $pdo->lastInsertId();
 
-                // 2. Insert Line Items
+                // 2. Insert Line Items (populates both service_description and description)
                 $stmtItem = $pdo->prepare("
-                    INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, line_total)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO invoice_items (
+                        invoice_id, service_description, description, quantity,
+                        unit_rate, unit_price, discount_amount, tax_percent, tax_amount,
+                        subtotal, line_total
+                    ) VALUES (?, ?, ?, ?, ?, ?, 0.00, 0.00, 0.00, ?, ?)
                 ");
                 foreach ($validItems as $vi) {
-                    $stmtItem->execute([$invoiceId, $vi['description'], $vi['quantity'], $vi['unit_price'], $vi['line_total']]);
+                    $stmtItem->execute([
+                        $invoiceId,
+                        $vi['description'],
+                        $vi['description'],
+                        $vi['quantity'],
+                        $vi['unit_price'],
+                        $vi['unit_price'],
+                        $vi['line_total'],
+                        $vi['line_total']
+                    ]);
                 }
 
                 // 3. Formally Classify Student as Customer (is_customer = 1)
@@ -229,33 +241,16 @@ include __DIR__ . '/../includes/header.php';
         <tbody id="itemsTbody">
           <tr>
             <td>
-              <input type="text" name="item_description[]" class="form-control" placeholder="e.g. University Admissions Consultation & Processing" required value="University Admissions Consultation & Processing">
+              <input type="text" name="item_description[]" class="form-control" placeholder="Enter service description" required value="">
             </td>
             <td>
               <input type="number" name="item_quantity[]" class="form-control item-qty" value="1" min="1" required oninput="calculateInvoice()">
             </td>
             <td>
-              <input type="number" step="0.01" name="item_price[]" class="form-control item-price" value="25000" min="0" required oninput="calculateInvoice()">
+              <input type="number" step="0.01" name="item_price[]" class="form-control item-price" placeholder="0.00" value="" min="0" required oninput="calculateInvoice()">
             </td>
             <td>
-              <input type="text" class="form-control item-total" value="₹25,000.00" disabled style="background:#f8fafc; font-weight:700;">
-            </td>
-            <td style="text-align:right;">
-              <button type="button" class="btn btn-ghost btn-sm" onclick="removeItemRow(this)" style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <input type="text" name="item_description[]" class="form-control" placeholder="e.g. Visa Filing & Financial Dossier Review" required value="Visa Filing & Financial Dossier Review">
-            </td>
-            <td>
-              <input type="number" name="item_quantity[]" class="form-control item-qty" value="1" min="1" required oninput="calculateInvoice()">
-            </td>
-            <td>
-              <input type="number" step="0.01" name="item_price[]" class="form-control item-price" value="15000" min="0" required oninput="calculateInvoice()">
-            </td>
-            <td>
-              <input type="text" class="form-control item-total" value="₹15,000.00" disabled style="background:#f8fafc; font-weight:700;">
+              <input type="text" class="form-control item-total" value="₹0.00" disabled style="background:#f8fafc; font-weight:700;">
             </td>
             <td style="text-align:right;">
               <button type="button" class="btn btn-ghost btn-sm" onclick="removeItemRow(this)" style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>
@@ -270,7 +265,7 @@ include __DIR__ . '/../includes/header.php';
       <div style="width:340px; display:flex; flex-direction:column; gap:0.75rem; font-size:0.9rem;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span style="color:var(--text-muted);">Subtotal:</span>
-          <strong id="display_subtotal" style="font-size:1.05rem;">₹40,000.00</strong>
+          <strong id="display_subtotal" style="font-size:1.05rem;">₹0.00</strong>
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -285,12 +280,12 @@ include __DIR__ . '/../includes/header.php';
 
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span style="color:var(--text-muted);">Tax Amount:</span>
-          <strong id="display_tax">₹7,200.00</strong>
+          <strong id="display_tax">₹0.00</strong>
         </div>
 
         <div style="border-top:2px solid var(--border-color); padding-top:0.75rem; display:flex; justify-content:space-between; align-items:center;">
           <span style="font-weight:800; font-size:1.1rem; color:var(--text-heading);">Grand Total:</span>
-          <strong id="display_grand_total" style="font-weight:800; font-size:1.3rem; color:var(--primary);">₹47,200.00</strong>
+          <strong id="display_grand_total" style="font-weight:800; font-size:1.3rem; color:var(--primary);">₹0.00</strong>
         </div>
       </div>
     </div>
@@ -329,16 +324,16 @@ function addItemRow() {
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td>
-      <input type="text" name="item_description[]" class="form-control" placeholder="e.g. CAS Letter Issuance & University Liaison" required>
+      <input type="text" name="item_description[]" class="form-control" placeholder="Enter service description" required>
     </td>
     <td>
       <input type="number" name="item_quantity[]" class="form-control item-qty" value="1" min="1" required oninput="calculateInvoice()">
     </td>
     <td>
-      <input type="number" step="0.01" name="item_price[]" class="form-control item-price" value="10000" min="0" required oninput="calculateInvoice()">
+      <input type="number" step="0.01" name="item_price[]" class="form-control item-price" placeholder="0.00" min="0" required oninput="calculateInvoice()">
     </td>
     <td>
-      <input type="text" class="form-control item-total" value="₹10,000.00" disabled style="background:#f8fafc; font-weight:700;">
+      <input type="text" class="form-control item-total" value="₹0.00" disabled style="background:#f8fafc; font-weight:700;">
     </td>
     <td style="text-align:right;">
       <button type="button" class="btn btn-ghost btn-sm" onclick="removeItemRow(this)" style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>

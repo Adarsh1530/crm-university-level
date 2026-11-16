@@ -60,32 +60,45 @@ $receiptNumber = sprintf("RCT-%s-%04d", $currYear, $seq);
 try {
     $pdo->beginTransaction();
 
-    // 1. Insert payment record
+    // Map payment method to valid enum for payment_mode ('Cash','Bank Transfer','Online / UPI')
+    $paymentMode = 'Bank Transfer';
+    $methodLower = strtolower($method);
+    if (strpos($methodLower, 'cash') !== false) {
+        $paymentMode = 'Cash';
+    } elseif (strpos($methodLower, 'upi') !== false || strpos($methodLower, 'online') !== false || strpos($methodLower, 'card') !== false) {
+        $paymentMode = 'Online / UPI';
+    }
+
+    // 1. Insert payment record (populates both legacy and modern schema columns)
     $insPmt = $pdo->prepare("
         INSERT INTO payments (
-            receipt_number, invoice_id, lead_id, branch_id, amount,
-            payment_date, payment_method, transaction_reference, notes, recorded_by
+            receipt_number, invoice_id, lead_id, branch_id,
+            payment_date, amount_paid, amount, payment_mode, payment_method,
+            transaction_reference, notes, received_by, recorded_by
         ) VALUES (
+            ?, ?, ?, ?,
             ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?
+            ?, ?, ?, ?
         )
     ");
     $insPmt->execute([
-        $receiptNumber, $invoiceId, $invoice['lead_id'], $invoice['branch_id'], $amount,
-        $paymentDate, $method, $txnRef, $notes, $currentUser['id']
+        $receiptNumber, $invoiceId, $invoice['lead_id'], $invoice['branch_id'],
+        $paymentDate, $amount, $amount, $paymentMode, $method,
+        $txnRef, $notes, $currentUser['id'], $currentUser['id']
     ]);
 
     // 2. Update Invoice balance & status
-    $newPaidAmount = (float)$invoice['paid_amount'] + $amount;
+    $currentPaid = (float)($invoice['paid_amount'] ?: ($invoice['paid_total'] ?? 0));
+    $newPaidAmount = $currentPaid + $amount;
     $newBalanceDue = max(0, (float)$invoice['grand_total'] - $newPaidAmount);
     $newStatus = ($newBalanceDue <= 0) ? 'Paid' : 'Partially Paid';
 
     $updInv = $pdo->prepare("
         UPDATE invoices 
-        SET paid_amount = ?, balance_due = ?, payment_status = ?
+        SET paid_amount = ?, paid_total = ?, balance_due = ?, balance_total = ?, payment_status = ?
         WHERE id = ?
     ");
-    $updInv->execute([$newPaidAmount, $newBalanceDue, $newStatus, $invoiceId]);
+    $updInv->execute([$newPaidAmount, $newPaidAmount, $newBalanceDue, $newBalanceDue, $newStatus, $invoiceId]);
 
     // 3. Update Lead balance totals
     $updLead = $pdo->prepare("
