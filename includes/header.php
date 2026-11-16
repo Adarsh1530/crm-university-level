@@ -193,19 +193,11 @@ $currentUri = $_SERVER['REQUEST_URI'] ?? '';
             </div>
             <div style="padding: 0.5rem;">
               <a href="<?= base_url('tasks/index.php') ?>" class="notif-item" style="border:none; border-radius:var(--radius-sm); padding:0.55rem 0.85rem;">
-                <i class="fa-solid fa-list-check" style="color:var(--primary); width:20px;"></i> My Operational Tasks
+                <i class="fa-solid fa-list-check" style="color:var(--primary); width:20px;"></i> My Tasks
               </a>
-              <a href="<?= base_url('reports/index.php?report=counselors') ?>" class="notif-item" style="border:none; border-radius:var(--radius-sm); padding:0.55rem 0.85rem;">
-                <i class="fa-solid fa-chart-pie" style="color:var(--warning); width:20px;"></i> Performance Analytics
+              <a href="<?= base_url('documents/general.php') ?>" class="notif-item" style="border:none; border-radius:var(--radius-sm); padding:0.55rem 0.85rem;">
+                <i class="fa-solid fa-folder-open" style="color:var(--primary); width:20px;"></i> General Docs
               </a>
-              <?php if (is_super_admin()): ?>
-                <a href="<?= base_url('organization/roles.php') ?>" class="notif-item" style="border:none; border-radius:var(--radius-sm); padding:0.55rem 0.85rem;">
-                  <i class="fa-solid fa-shield-halved" style="color:#7008E7; width:20px;"></i> Permissions Matrix
-                </a>
-                <a href="<?= base_url('system/settings.php') ?>" class="notif-item" style="border:none; border-radius:var(--radius-sm); padding:0.55rem 0.85rem;">
-                  <i class="fa-solid fa-gear" style="color:var(--primary); width:20px;"></i> System Governance
-                </a>
-              <?php endif; ?>
               <div style="border-top: 1px solid var(--border-color); margin: 0.4rem 0;"></div>
               <a href="<?= base_url('logout.php') ?>" class="notif-item" style="border:none; border-radius:var(--radius-sm); padding:0.55rem 0.85rem; color:var(--danger);">
                 <i class="fa-solid fa-right-from-bracket" style="width:20px;"></i> Sign Out
