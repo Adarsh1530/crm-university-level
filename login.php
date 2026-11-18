@@ -52,20 +52,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     if (empty($loginInput) || empty($password)) {
         $error = 'Please enter both your institutional username/email and password.';
     } else {
-        // Support email, username, or alias login
+        // Support email, username, or role alias login safely across all database schemas
         $stmt = $pdo->prepare("
             SELECT u.*, r.name AS role_name, r.label AS role_label 
             FROM users u 
             JOIN roles r ON u.role_id = r.id 
             WHERE u.email = ? 
-               OR u.username = ?
                OR (u.id = 1 AND ? IN ('superadmin', 'admin', 'superadmin@unicrm.edu', 'admin@unicrm.edu'))
                OR (u.id = 2 AND ? IN ('admissionmanager', 'manager', 'admissionmanager@unicrm.edu'))
                OR (u.id = 3 AND ? IN ('academiccounselor', 'counselor', 'academiccounselor@unicrm.edu'))
                OR (u.id = 4 AND ? IN ('admissionadvisor', 'advisor', 'admissionadvisor@unicrm.edu'))
             LIMIT 1
         ");
-        $stmt->execute([$loginInput, $loginInput, $loginInput, $loginInput, $loginInput, $loginInput]);
+        $stmt->execute([$loginInput, $loginInput, $loginInput, $loginInput, $loginInput]);
         $user = $stmt->fetch();
 
         // Allow requested demo password '123' as well as standard 'admin123' or password_verify

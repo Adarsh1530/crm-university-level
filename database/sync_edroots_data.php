@@ -86,16 +86,38 @@ function sync_institutional_data(PDO $pdo) {
             10 => [9, 3, 2, 'Olivia Brown', 'oliviabrown', 'olivia.brown@unicrm.edu', '+91 7511 140594', 'Academic Counselor (Trivandrum)']
         ];
 
-        $stmtUser = $pdo->prepare("
-            INSERT INTO users (id, branch_id, role_id, manager_id, name, username, email, password, phone, designation, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')
-            ON DUPLICATE KEY UPDATE 
-                branch_id = VALUES(branch_id), role_id = VALUES(role_id), manager_id = VALUES(manager_id),
-                name = VALUES(name), username = VALUES(username), email = VALUES(email), password = VALUES(password),
-                phone = VALUES(phone), designation = VALUES(designation), status = 'Active'
-        ");
-        foreach ($staffUsers as $id => $u) {
-            $stmtUser->execute([$id, $u[0], $u[1], $u[2], $u[3], $u[4], $u[5], $defaultPassword, $u[6], $u[7]]);
+        try {
+            $pdo->exec("ALTER TABLE users ADD COLUMN username VARCHAR(100) NULL AFTER name");
+        } catch (Exception $e) {}
+
+        // Check if username column exists
+        $userCols = $pdo->query("SHOW COLUMNS FROM users LIKE 'username'")->fetchAll();
+        $hasUsernameCol = !empty($userCols);
+
+        if ($hasUsernameCol) {
+            $stmtUser = $pdo->prepare("
+                INSERT INTO users (id, branch_id, role_id, manager_id, name, username, email, password, phone, designation, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')
+                ON DUPLICATE KEY UPDATE 
+                    branch_id = VALUES(branch_id), role_id = VALUES(role_id), manager_id = VALUES(manager_id),
+                    name = VALUES(name), username = VALUES(username), email = VALUES(email), password = VALUES(password),
+                    phone = VALUES(phone), designation = VALUES(designation), status = 'Active'
+            ");
+            foreach ($staffUsers as $id => $u) {
+                $stmtUser->execute([$id, $u[0], $u[1], $u[2], $u[3], $u[4], $u[5], $defaultPassword, $u[6], $u[7]]);
+            }
+        } else {
+            $stmtUser = $pdo->prepare("
+                INSERT INTO users (id, branch_id, role_id, manager_id, name, email, password, phone, designation, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')
+                ON DUPLICATE KEY UPDATE 
+                    branch_id = VALUES(branch_id), role_id = VALUES(role_id), manager_id = VALUES(manager_id),
+                    name = VALUES(name), email = VALUES(email), password = VALUES(password),
+                    phone = VALUES(phone), designation = VALUES(designation), status = 'Active'
+            ");
+            foreach ($staffUsers as $id => $u) {
+                $stmtUser->execute([$id, $u[0], $u[1], $u[2], $u[3], $u[5], $defaultPassword, $u[6], $u[7]]);
+            }
         }
 
         // 4. Recognized Global Partner Universities
