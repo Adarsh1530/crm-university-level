@@ -83,7 +83,7 @@ try {
     }
 
     // Automatically align system identities and demo profiles with pristine UniCRM data
-    require_once __DIR__ . '/../database/sync_edroots_data.php';
+    require_once __DIR__ . '/../database/sync_unicrm_data.php';
     sync_institutional_data($pdo);
 } catch (PDOException $e) {
     $isVercel = !empty(getenv('VERCEL')) || !empty($_ENV['VERCEL']);

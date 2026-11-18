@@ -10,7 +10,13 @@
  */
 
 function sync_institutional_data(PDO $pdo) {
-    if (!empty($_SESSION['unicrm_fresh_clean_synced_v3'])) {
+    // 1. Immediately delete any attached user manual / SOP placeholder documents from the database
+    try {
+        $pdo->exec("DELETE FROM general_documents WHERE file_path LIKE '%manual%' OR file_path LIKE '%assets/docs%' OR file_path LIKE '%edroots%' OR file_name LIKE '%manual%' OR file_name LIKE '%playbook%' OR file_name LIKE '%sop%' OR id IN (1, 2, 3, 4)");
+        $pdo->exec("DELETE FROM general_documents");
+    } catch (Exception $delEx) {}
+
+    if (!empty($_SESSION['unicrm_fresh_clean_synced_v4'])) {
         return;
     }
 
@@ -29,7 +35,7 @@ function sync_institutional_data(PDO $pdo) {
         $hasAarav = $leadCheck && $leadCheck->fetch();
 
         if ($hasArthur && $hasAarav && $hasU4) {
-            $_SESSION['unicrm_fresh_clean_synced_v3'] = true;
+            $_SESSION['unicrm_fresh_clean_synced_v4'] = true;
             return;
         }
 
@@ -313,18 +319,10 @@ function sync_institutional_data(PDO $pdo) {
             $stmtWl->execute($wl);
         }
 
-        // 8. General Training Documents (Institutional SOPs)
-        $pdo->exec("
-            INSERT INTO general_documents (id, title, category, country, description, file_path, file_name, file_size, uploaded_by)
-            VALUES 
-            (1, 'UniCRM - Standard Operating Procedures & Operations Playbook', 'General Guidelines', 'Global', 'Comprehensive operations manual and step-by-step counselor onboarding guide.', 'assets/docs/unicrm_operations_manual.pdf', 'unicrm_sop_playbook.pdf', 2393736, 1),
-            (2, 'UK University Admissions Process & CAS Guidelines', 'Partner University Lists', 'United Kingdom', 'Comprehensive UK university entry requirements, CAS issuing timelines, and visa interview guidelines.', 'assets/docs/unicrm_operations_manual.pdf', 'uk_admissions_handbook_2026.pdf', 1820000, 1),
-            (3, 'Canada Student Direct Stream (SDS) Checklist', 'Visa Checklists', 'Canada', 'Checklist for Canadian study permit under SDS pathway including GIC and medical proof.', 'assets/docs/unicrm_operations_manual.pdf', 'canada_sds_visa_guide.pdf', 2140000, 2),
-            (4, 'Global University SOP & Statement of Purpose Master Framework', 'SOP Guidelines & Templates', 'Global', 'Standardized structure and writing prompt for university statement of purpose.', 'assets/docs/unicrm_operations_manual.pdf', 'university_sop_master_framework.pdf', 940000, 1)
-            ON DUPLICATE KEY UPDATE 
-                title = VALUES(title), category = VALUES(category), country = VALUES(country), 
-                description = VALUES(description), file_path = VALUES(file_path), file_name = VALUES(file_name)
-        ");
+        // 8. General Documents: Ensure no PDF manual files or placeholders exist
+        try {
+            $pdo->exec("DELETE FROM general_documents");
+        } catch (Exception $gDocEx) {}
 
         // 9. Follow-up Interaction Queues
         try {

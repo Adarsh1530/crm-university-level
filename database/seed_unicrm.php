@@ -7,7 +7,7 @@
 require_once __DIR__ . '/../config/database.php';
 
 echo "========================================================\n";
-echo "SEEDING EDROOTS-CRM ENTERPRISE DATA\n";
+echo "SEEDING UniCRM ENTERPRISE DATA\n";
 echo "========================================================\n";
 
 $pdo->beginTransaction();
@@ -16,22 +16,22 @@ try {
     // 1. Company
     $pdo->exec("
         INSERT INTO companies (name, email, phone, website, address)
-        VALUES ('UniCRM Global Education Pvt. Ltd.', 'admissions@edroots.com', '+91 484 288 9000', 'https://edroots.com', 'UniCRM Tower, MG Road, Kochi, Kerala 682016, India')
+        VALUES ('UniCRM Global Education Pvt. Ltd.', 'admissions@unicrm.edu', '+91 484 288 9000', 'https://unicrm.edu', 'UniCRM Tower, MG Road, Kochi, Kerala 682016, India')
     ");
     $companyId = $pdo->lastInsertId();
     echo "  [OK] Company seeded\n";
 
     // 2. Branches
     $branchesData = [
-        ['Kochi', 'KOC', 'Kochi', 'Kerala', 'India', '+91 484 288 9001', 'kochi@edroots.com', 'UniCRM Tower, MG Road, Kochi'],
-        ['Calicut', 'CLT', 'Calicut', 'Kerala', 'India', '+91 495 277 8001', 'calicut@edroots.com', 'Skyline Plaza, Mavoor Road, Calicut'],
-        ['Kannur', 'KNR', 'Kannur', 'Kerala', 'India', '+91 497 270 7001', 'kannur@edroots.com', 'Fort Road Commercial Centre, Kannur'],
-        ['Kasaragod', 'KSD', 'Kasaragod', 'Kerala', 'India', '+91 499 423 6001', 'kasaragod@edroots.com', 'Bank Road Junction, Kasaragod'],
-        ['Kanhangad', 'KHD', 'Kanhangad', 'Kerala', 'India', '+91 467 220 5001', 'kanhangad@edroots.com', 'Main Street Mall, Kanhangad'],
-        ['Perinthalmanna', 'PMNA', 'Perinthalmanna', 'Kerala', 'India', '+91 493 322 4001', 'perinthalmanna@edroots.com', 'Bypass Junction, Perinthalmanna'],
-        ['Trivandrum', 'TVM', 'Trivandrum', 'Kerala', 'India', '+91 471 233 3001', 'trivandrum@edroots.com', 'Statue Junction, MG Road, Trivandrum'],
-        ['Mangalore', 'MNG', 'Mangalore', 'Karnataka', 'India', '+91 824 244 2001', 'mangalore@edroots.com', 'KSR Road, Hampankatta, Mangalore'],
-        ['London', 'LDN', 'London', 'Greater London', 'United Kingdom', '+44 20 7946 0991', 'london@edroots.com', '120 Fenchurch Street, London EC3M 5BA']
+        ['Kochi', 'KOC', 'Kochi', 'Kerala', 'India', '+91 484 288 9001', 'kochi@unicrm.edu', 'UniCRM Tower, MG Road, Kochi'],
+        ['Calicut', 'CLT', 'Calicut', 'Kerala', 'India', '+91 495 277 8001', 'calicut@unicrm.edu', 'Skyline Plaza, Mavoor Road, Calicut'],
+        ['Kannur', 'KNR', 'Kannur', 'Kerala', 'India', '+91 497 270 7001', 'kannur@unicrm.edu', 'Fort Road Commercial Centre, Kannur'],
+        ['Kasaragod', 'KSD', 'Kasaragod', 'Kerala', 'India', '+91 499 423 6001', 'kasaragod@unicrm.edu', 'Bank Road Junction, Kasaragod'],
+        ['Kanhangad', 'KHD', 'Kanhangad', 'Kerala', 'India', '+91 467 220 5001', 'kanhangad@unicrm.edu', 'Main Street Mall, Kanhangad'],
+        ['Perinthalmanna', 'PMNA', 'Perinthalmanna', 'Kerala', 'India', '+91 493 322 4001', 'perinthalmanna@unicrm.edu', 'Bypass Junction, Perinthalmanna'],
+        ['Trivandrum', 'TVM', 'Trivandrum', 'Kerala', 'India', '+91 471 233 3001', 'trivandrum@unicrm.edu', 'Statue Junction, MG Road, Trivandrum'],
+        ['Mangalore', 'MNG', 'Mangalore', 'Karnataka', 'India', '+91 824 244 2001', 'mangalore@unicrm.edu', 'KSR Road, Hampankatta, Mangalore'],
+        ['London', 'LDN', 'London', 'Greater London', 'United Kingdom', '+44 20 7946 0991', 'london@unicrm.edu', '120 Fenchurch Street, London EC3M 5BA']
     ];
 
     $insBranch = $pdo->prepare("INSERT INTO branches (name, code, city, state, country, phone, email, address, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Active')");
@@ -147,15 +147,15 @@ try {
     $passwordHash = password_hash('admin123', PASSWORD_BCRYPT);
     $usersData = [
         // Super Admin
-        [null, $roleMap['super_admin'], null, 'Noufal Peediyakkal', 'noufal@edroots.in', $passwordHash, '+91 4933 224333', 'Super Admin & Case Manager'],
+        [null, $roleMap['super_admin'], null, 'Noufal Peediyakkal', 'noufal@unicrm.edu', $passwordHash, '+91 4933 224333', 'Super Admin & Case Manager'],
         // Admissions Manager (Single Manager)
-        [$branchMap['PMNA'], $roleMap['manager'], null, 'Vidya Harish', 'vidya@edroots.in', $passwordHash, '+91 9074 134910', 'Admissions & Branch Head'],
+        [$branchMap['PMNA'], $roleMap['manager'], null, 'Vidya Harish', 'vidya@unicrm.edu', $passwordHash, '+91 9074 134910', 'Admissions & Branch Head'],
         // Admissions Counselors & Advisors (All reporting to Vidya Harish)
-        [$branchMap['KHD'], $roleMap['counselor'], 2, 'Athira Ashok', 'athira@edroots.in', $passwordHash, '+91 8547 597476', 'Senior Academic Counselor'],
-        [$branchMap['KOC'], $roleMap['counselor'], 2, 'Syamily S', 'syamily@edroots.in', $passwordHash, '+91 9633 371111', 'Admissions Advisor & Counselor'],
-        [$branchMap['CLT'], $roleMap['counselor'], 2, 'Ambili CO', 'ambili@edroots.in', $passwordHash, '+91 9895 716710', 'Academic Counselor'],
-        [$branchMap['KOC'], $roleMap['counselor'], 2, 'Sharanya M P', 'sharanya@edroots.in', $passwordHash, '+91 9947 921306', 'Academic Counselor'],
-        [$branchMap['CLT'], $roleMap['counselor'], 2, 'Soumya Ajith', 'soumya@edroots.in', $passwordHash, '+91 9061 253555', 'Academic Counselor']
+        [$branchMap['KHD'], $roleMap['counselor'], 2, 'Athira Ashok', 'athira@unicrm.edu', $passwordHash, '+91 8547 597476', 'Senior Academic Counselor'],
+        [$branchMap['KOC'], $roleMap['counselor'], 2, 'Syamily S', 'syamily@unicrm.edu', $passwordHash, '+91 9633 371111', 'Admissions Advisor & Counselor'],
+        [$branchMap['CLT'], $roleMap['counselor'], 2, 'Ambili CO', 'ambili@unicrm.edu', $passwordHash, '+91 9895 716710', 'Academic Counselor'],
+        [$branchMap['KOC'], $roleMap['counselor'], 2, 'Sharanya M P', 'sharanya@unicrm.edu', $passwordHash, '+91 9947 921306', 'Academic Counselor'],
+        [$branchMap['CLT'], $roleMap['counselor'], 2, 'Soumya Ajith', 'soumya@unicrm.edu', $passwordHash, '+91 9061 253555', 'Academic Counselor']
     ];
 
     $insUser = $pdo->prepare("INSERT INTO users (branch_id, role_id, manager_id, name, email, password, phone, designation, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Active')");
@@ -544,18 +544,8 @@ try {
 
     echo "  [OK] 4 Invoices & Payments seeded (generating Customers classification)\n";
 
-    // 14. General Documents Repository
-    $genDocs = [
-        ['UniCRM CRM - Official User Guide & Training Manual', 'Training Documents', 'Global', 'assets/docs/unicrm_operations_manual.pdf', 'unicrm_operations_manual.pdf', 3450000, $userMap['Noufal Peediyakkal']],
-        ['UK University Admissions Master Handbook & CAS Guide', 'University Prospectuses', 'United Kingdom', 'assets/docs/uk_admissions_handbook_2026.pdf', 'uk_admissions_handbook_2026.pdf', 1820000, $userMap['Noufal Peediyakkal']],
-        ['Canada SDS Visa Guidelines & Document Checklist', 'Country Guidelines', 'Canada', 'assets/docs/canada_sds_visa_guide.pdf', 'canada_sds_visa_guide.pdf', 2140000, $userMap['Noufal Peediyakkal']],
-        ['UniCRM SOP & Statement of Purpose Master Template', 'Training Documents', 'Global', 'assets/docs/edroots_sop_master_template.pdf', 'edroots_sop_master_template.pdf', 940000, $userMap['Vidya Harish']]
-    ];
-    $insGenDoc = $pdo->prepare("INSERT INTO general_documents (title, category, country, file_path, file_name, file_size, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    foreach ($genDocs as $gd) {
-        $insGenDoc->execute($gd);
-    }
-    echo "  [OK] 4 General Reference Documents seeded\n";
+    // 14. General Documents Repository (Empty by default)
+    echo "  [OK] General Documents repository ready\n";
 
     // 15. Student Academic Dossiers
     $studentDocs = [
@@ -622,7 +612,7 @@ try {
     $pdo->commit();
 
     echo "\n========================================================\n";
-    echo "SUCCESS: ALL EDROOTS-CRM DATA SEEDED COMPLETELY!\n";
+    echo "SUCCESS: ALL UniCRM DATA SEEDED COMPLETELY!\n";
     echo "========================================================\n";
 
 } catch (Exception $e) {

@@ -11,7 +11,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 echo "========================================================\n";
-echo "STARTING EDROOTS-CRM DATABASE SETUP & SEEDING\n";
+echo "STARTING UniCRM DATABASE SETUP & SEEDING\n";
 echo "========================================================\n";
 
 try {
