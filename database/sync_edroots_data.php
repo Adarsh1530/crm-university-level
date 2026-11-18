@@ -10,22 +10,26 @@
  */
 
 function sync_institutional_data(PDO $pdo) {
-    if (!empty($_SESSION['unicrm_fresh_clean_synced_v1'])) {
+    if (!empty($_SESSION['unicrm_fresh_clean_synced_v3'])) {
         return;
     }
 
     try {
-        // Fast test: Check if Dr. Arthur Vance exists as user 1
+        // Fast test: Check if Dr. Arthur Vance exists as user 1 and user 4 is properly configured
         $userCheck = $pdo->query("SELECT name FROM users WHERE id = 1 LIMIT 1");
         $user1 = $userCheck ? $userCheck->fetch() : null;
         $hasArthur = $user1 && $user1['name'] === 'Dr. Arthur Vance';
+
+        $user4Check = $pdo->query("SELECT id, role_id, status FROM users WHERE id = 4 LIMIT 1");
+        $u4 = $user4Check ? $user4Check->fetch() : null;
+        $hasU4 = $u4 && (int)$u4['role_id'] === 3 && $u4['status'] === 'Active';
 
         // Check if Aarav Sharma exists as lead 1
         $leadCheck = $pdo->query("SELECT id FROM leads WHERE full_name = 'Aarav Sharma' LIMIT 1");
         $hasAarav = $leadCheck && $leadCheck->fetch();
 
-        if ($hasArthur && $hasAarav) {
-            $_SESSION['unicrm_fresh_clean_synced_v1'] = true;
+        if ($hasArthur && $hasAarav && $hasU4) {
+            $_SESSION['unicrm_fresh_clean_synced_v3'] = true;
             return;
         }
 
@@ -77,7 +81,7 @@ function sync_institutional_data(PDO $pdo) {
             1 => [1, 1, null, 'Dr. Arthur Vance', 'superadmin', 'superadmin@unicrm.edu', '+91 484 288 9000', 'Global Admissions Director & Super Admin'],
             2 => [1, 2, null, 'Sarah Jenkins', 'admissionmanager', 'admissionmanager@unicrm.edu', '+91 9074 134910', 'Regional Admissions Manager (Kochi Hub)'],
             3 => [1, 3, 2, 'Michael Chang', 'academiccounselor', 'academiccounselor@unicrm.edu', '+91 9633 371111', 'Senior Academic Counselor'],
-            4 => [1, 4, 2, 'Emily Watson', 'admissionadvisor', 'admissionadvisor@unicrm.edu', '+91 8547 597476', 'Admissions Advisor & Intake Specialist'],
+            4 => [1, 3, 2, 'Emily Watson', 'admissionadvisor', 'admissionadvisor@unicrm.edu', '+91 8547 597476', 'Admissions Advisor & Intake Specialist'],
             5 => [2, 3, 2, 'David Miller', 'davidmiller', 'david.miller@unicrm.edu', '+91 9895 716710', 'Academic Counselor (Bangalore)'],
             6 => [3, 3, 2, 'Jessica Taylor', 'jessicataylor', 'jessica.taylor@unicrm.edu', '+91 9947 921306', 'Academic Counselor (Calicut)'],
             7 => [4, 3, 2, 'Daniel Roberts', 'danielroberts', 'daniel.roberts@unicrm.edu', '+91 9061 253555', 'Academic Counselor (Kannur)'],
