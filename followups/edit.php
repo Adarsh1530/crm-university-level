@@ -1,7 +1,7 @@
 <?php
 /**
  * Edit Follow-up Consultation
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';

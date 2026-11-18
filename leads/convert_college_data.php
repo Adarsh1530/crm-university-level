@@ -1,7 +1,7 @@
 <?php
 /**
  * Convert College Data Pool Record to Active Lead
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -44,7 +44,7 @@ if ($cData['converted_to_lead']) {
     redirect('leads/view.php?id=' . $cData['lead_id']);
 }
 
-// Canonical phone deduplication (User Manual Section 9.5.3)
+// Canonical phone deduplication
 $cleanPhone = normalize_phone($cData['phone']);
 $duplicateLead = check_phone_duplicate($cleanPhone);
 

@@ -1,7 +1,7 @@
 <?php
 /**
  * Converted / Customer Activation Redirect
- * In Edroots CRM, leads are activated to Customers via finance/create_invoice.php
+ * In UniCRM CRM, leads are activated to Customers via finance/create_invoice.php
  */
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/helpers.php';

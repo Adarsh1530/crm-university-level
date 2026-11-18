@@ -1,7 +1,7 @@
 <?php
 /**
  * Admission Pipeline Stage Transition Engine
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';

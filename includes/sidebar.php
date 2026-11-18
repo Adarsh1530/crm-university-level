@@ -138,10 +138,10 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       </div>
       <div class="brand-text">
         <div class="brand-title-row">
-          <h1 class="brand-title">EdrootsCRM</h1>
+          <h1 class="brand-title">UniCRM</h1>
           <span class="sidebar-role-badge sidebar-demo-badge" title="<?= htmlspecialchars($rawRoleLabel) ?>"><?= htmlspecialchars($headerRoleBadge) ?></span>
         </div>
-        <span class="brand-subtitle">Edroots International</span>
+        <span class="brand-subtitle">Admissions Cloud</span>
       </div>
     </a>
   </div>
@@ -151,7 +151,7 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
     
     <div class="nav-section-title">Core CRM</div>
 
-    <!-- 1. Dashboard (PDF Section 4.0) -->
+    <!-- 1. Dashboard  -->
     <?php if (can('dashboard', 'view')): ?>
       <a href="<?= base_url('dashboard/index.php') ?>" id="sidebar-nav-dashboard" class="nav-item <?= ($activePage === 'dashboard') ? 'active' : '' ?>">
         <div class="nav-item-content">
@@ -161,7 +161,7 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       </a>
     <?php endif; ?>
 
-    <!-- 2. Notifications (PDF Section 5.0) -->
+    <!-- 2. Notifications  -->
     <a href="<?= base_url('notifications/index.php') ?>" id="sidebar-nav-notifications" class="nav-item <?= ($activePage === 'notifications') ? 'active' : '' ?>">
       <div class="nav-item-content">
         <i class="fa-solid fa-bell nav-icon"></i>
@@ -172,7 +172,7 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       <?php endif; ?>
     </a>
 
-    <!-- 3. Students (PDF Section 9.0) -->
+    <!-- 3. Students  -->
     <?php if (can('leads', 'view')): ?>
       <a href="<?= base_url('leads/index.php') ?>" id="sidebar-nav-leads" class="nav-item <?= in_array($activePage, ['leads', 'add_lead']) ? 'active' : '' ?>">
         <div class="nav-item-content">
@@ -185,7 +185,7 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       </a>
     <?php endif; ?>
 
-    <!-- 4. My Tasks (PDF Section 9.7) -->
+    <!-- 4. My Tasks  -->
     <?php if (can('tasks', 'view')): ?>
       <a href="<?= base_url('tasks/index.php') ?>" id="sidebar-nav-tasks" class="nav-item <?= ($activePage === 'tasks') ? 'active' : '' ?>">
         <div class="nav-item-content">
@@ -198,7 +198,7 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       </a>
     <?php endif; ?>
 
-    <!-- 5. College Data (PDF Section 9.5) -->
+    <!-- 5. College Data  -->
     <?php if (can('college_data', 'view')): ?>
       <a href="<?= base_url('data/college_data.php') ?>" id="sidebar-nav-college-data" class="nav-item <?= in_array($activePage, ['college_data', 'import_college_data']) ? 'active' : '' ?>">
         <div class="nav-item-content">
@@ -208,7 +208,7 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       </a>
     <?php endif; ?>
 
-    <!-- 6. Website Leads (PDF Section 11.0 / 12.0) -->
+    <!-- 6. Website Leads  -->
     <?php if (can('web_leads', 'view')): ?>
       <a href="<?= base_url('data/web_leads.php') ?>" id="sidebar-nav-web-leads" class="nav-item <?= ($activePage === 'web_leads') ? 'active' : '' ?>">
         <div class="nav-item-content">
@@ -221,7 +221,7 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       </a>
     <?php endif; ?>
 
-    <!-- 7. General Docs (PDF Section 10.0) -->
+    <!-- 7. General Docs  -->
     <?php if (can('documents', 'view')): ?>
       <a href="<?= base_url('documents/general.php') ?>" id="sidebar-nav-general-docs" class="nav-item <?= ($activePage === 'general_docs') ? 'active' : '' ?>">
         <div class="nav-item-content">
@@ -231,7 +231,7 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       </a>
     <?php endif; ?>
 
-    <!-- 8. Archived (PDF Section 9.6) -->
+    <!-- 8. Archived  -->
     <?php if (can('archive', 'view')): ?>
       <a href="<?= base_url('archive/index.php') ?>" id="sidebar-nav-archive" class="nav-item <?= ($activePage === 'archive') ? 'active' : '' ?>">
         <div class="nav-item-content">
@@ -241,7 +241,7 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       </a>
     <?php endif; ?>
 
-    <!-- 9. Administration (PDF Section 1.1, 4.2 & Page 6 - Staff Caseload Management for Managers & Admin) -->
+    <!-- 9. Administration & System Governance -->
     <?php if (can('staff', 'view')): ?>
       <div class="nav-section-title">Administration</div>
       <a href="<?= base_url('organization/users.php') ?>" id="sidebar-nav-staff" class="nav-item <?= in_array($activePage, ['organization_users', 'users']) ? 'active' : '' ?>">

@@ -1,7 +1,7 @@
 <?php
 /**
  * Fast Inline / Modal Metadata Updater for Leads
- * Supports 1-Click Update for Prospectivity and InTake (EdrootsCRM Manual Section 9.2.3 & 9.2.4)
+ * Supports 1-Click Update for Prospectivity and InTake (UniCRM Manual Section 9.2.3 & 9.2.4)
  */
 
 require_once __DIR__ . '/../config/database.php';

@@ -3,10 +3,10 @@
     <!-- App Global Footer (Steady Fixed & Perfectly Aligned with Sidebar Footer) -->
     <footer id="app-footer">
       <div class="footer-left">
-        <strong>EdrootsCRM</strong> &bull; Edroots International Admissions Cloud
+        <strong>UniCRM</strong> &bull; Global University Admissions Cloud
       </div>
       <div class="footer-right">
-        <span>&copy; <?= date('Y') ?> Edroots International. Multi-branch University Admissions CRM.</span>
+        <span>&copy; <?= date('Y') ?> UniCRM. Multi-branch University Admissions & Enrollment Management System.</span>
       </div>
     </footer>
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Operational Task Queues Hub (EdrootsCRM Engine)
+ * Operational Task Queues Hub (UniCRM Admissions Engine)
  * 4 Dedicated Work Queues: Scheduled, Pending Follow-ups, Today Leads, Pending Leads
  */
 
@@ -41,7 +41,7 @@ $countPendingLeads = (int)$pdo->query("
     WHERE DATE(l.assigned_at) < CURDATE() AND l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
 ")->fetchColumn();
 
-// 5. Website/Social Media Leads (PDF Section 9.7.5)
+// 5. Website/Social Media Leads
 $countWebLeads = 0;
 try {
     $countWebLeads = (int)$pdo->query("SELECT COUNT(*) FROM web_leads WHERE status = 'Pending'")->fetchColumn();
@@ -122,7 +122,7 @@ if ($queue === 'scheduled') {
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- PDF Section 9.0: Student Module Top Tab Bar -->
+<!-- Student Module Top Tab Bar -->
 <div class="pdf-student-nav-tabs" style="display:flex; gap:0.25rem; border-bottom:2px solid var(--border-color); margin-bottom:1.25rem; overflow-x:auto; padding-bottom:1px;">
   <a href="<?= base_url('leads/index.php?type=all') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
     <i class="fa-solid fa-users"></i> All
@@ -161,7 +161,7 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- PDF Section 9.7: 5 Work Queues (Scheduled Followup, Pending Followup, Today Leads, Pending Leads, Website/Social Media Leads) -->
+<!-- 5 Work Queues (Scheduled Followup, Pending Followup, Today Leads, Pending Leads, Website/Social Media Leads) -->
 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
   <!-- Queue 1: Scheduled Follow-ups (PDF 9.7.1) -->
   <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="card" style="padding:1.1rem; text-decoration:none; border:2px solid <?= $queue === 'scheduled' ? 'var(--primary)' : 'transparent' ?>; background:<?= $queue === 'scheduled' ? 'var(--primary-subtle)' : '#fff' ?>;">
@@ -276,7 +276,7 @@ include __DIR__ . '/../includes/header.php';
         <?php else: ?>
           <?php foreach ($records as $row): 
             $dialUrl = "tel:" . preg_replace('/[^0-9+]/', '', $row['phone']);
-            $waMsg = get_whatsapp_message($row['stage'] ?? 'ENQUIRY', $row['full_name'], $currentUser['name'] ?? 'Edroots', $row['preferred_country'] ?? 'UK', $row['preferred_course'] ?? 'Higher Ed');
+            $waMsg = get_whatsapp_message($row['stage'] ?? 'ENQUIRY', $row['full_name'], $currentUser['name'] ?? 'UniCRM Admissions', $row['preferred_country'] ?? 'UK', $row['preferred_course'] ?? 'Higher Ed');
             $waUrl = "https://wa.me/91" . normalize_phone($row['phone']) . "?text=" . urlencode($waMsg);
           ?>
             <tr>

@@ -1,7 +1,7 @@
 <?php
 /**
- * Document Deletion Handler (PDF Section 10.3)
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Document Deletion Handler
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';

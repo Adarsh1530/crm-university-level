@@ -1,7 +1,7 @@
 <?php
 /**
  * Customers Directory - Formally Invoiced Student Clients
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -96,7 +96,7 @@ $customers = $stmt->fetchAll();
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- PDF Section 9.0: Student Module Top Tab Bar -->
+<!-- Student Module Top Tab Bar -->
 <div class="pdf-student-nav-tabs" style="display:flex; gap:0.25rem; border-bottom:2px solid var(--border-color); margin-bottom:1.25rem; overflow-x:auto; padding-bottom:1px;">
   <a href="<?= base_url('leads/index.php?type=all') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
     <i class="fa-solid fa-users"></i> All

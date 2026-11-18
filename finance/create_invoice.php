@@ -1,7 +1,7 @@
 <?php
 /**
  * Generate Service Invoice (Multi-line Item Billing)
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -304,7 +304,7 @@ include __DIR__ . '/../includes/header.php';
       </div>
       <div class="form-group">
         <label class="form-label">Bank Remittance Wire Details</label>
-        <textarea name="bank_details" class="form-control" rows="2">HDFC Bank - Edroots Education Consultancy Ltd.
+        <textarea name="bank_details" class="form-control" rows="2">HDFC Bank - UniCRM Education Consultancy Ltd.
 Account: 50200088991122 | IFSC: HDFC0000240 | Kochi Branch</textarea>
       </div>
     </div>

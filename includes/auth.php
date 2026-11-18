@@ -1,7 +1,7 @@
 <?php
 /**
  * Authentication and Multi-Branch Authorization Layer
- * University-Level Education Consultancy CRM (EdrootsCRM Engine)
+ * University-Level Education Consultancy CRM (UniCRM Admissions Engine)
  */
 
 require_once __DIR__ . '/../config/database.php';

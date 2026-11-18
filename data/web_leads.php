@@ -1,7 +1,7 @@
 <?php
 /**
  * Website & Social Leads Staging Queue
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -415,7 +415,7 @@ include __DIR__ . '/../includes/header.php';
                       <?= csrf_field() ?>
                       <input type="hidden" name="action" value="delete">
                       <input type="hidden" name="web_lead_id" value="<?= $lead['id'] ?>">
-                      <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Website Lead (User Manual Section 12.0)">
+                      <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Website Lead">
                         <i class="fa-solid fa-trash-can"></i>
                       </button>
                     </form>

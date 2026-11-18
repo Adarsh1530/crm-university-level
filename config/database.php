@@ -82,9 +82,9 @@ try {
         }
     }
 
-    // Automatically align system identities and demo profiles with official EdrootsCRM Manual
+    // Automatically align system identities and demo profiles with pristine UniCRM data
     require_once __DIR__ . '/../database/sync_edroots_data.php';
-    sync_edroots_database_data($pdo);
+    sync_institutional_data($pdo);
 } catch (PDOException $e) {
     $isVercel = !empty(getenv('VERCEL')) || !empty($_ENV['VERCEL']);
     

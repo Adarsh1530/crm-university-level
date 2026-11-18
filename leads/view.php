@@ -1,7 +1,7 @@
 <?php
 /**
  * 360-Degree Student Lead Profile & Dossier
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -135,7 +135,7 @@ include __DIR__ . '/../includes/header.php';
               <i class="fa-solid fa-certificate"></i> OFFICIAL CUSTOMER
             </span>
           <?php endif; ?>
-          <span onclick="openChangeProspectivityModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['priority']) ?>')" style="cursor:pointer;" title="Click to change Prospectivity (Section 9.2.3)">
+          <span onclick="openChangeProspectivityModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['priority']) ?>')" style="cursor:pointer;" title="Click to change Prospectivity">
             <?= priority_badge($lead['priority']) ?>
             <i class="fa-solid fa-pen" style="font-size:0.65rem; color:var(--text-light); margin-left:2px;"></i>
           </span>
@@ -146,7 +146,7 @@ include __DIR__ . '/../includes/header.php';
             <strong style="color:var(--text-heading);"><?= htmlspecialchars($lead['phone']) ?></strong>
             <a href="tel:<?= preg_replace('/[^0-9+]/', '', $lead['phone']) ?>" class="btn btn-outline btn-sm" style="padding:1px 6px; margin-left:4px;" title="Call"><i class="fa-solid fa-phone"></i></a>
             <?php 
-              $viewWaMsg = get_whatsapp_message($lead['stage'], $lead['full_name'], $currentUser['name'] ?? 'Edroots', $lead['preferred_country'] ?? 'UK', $lead['preferred_course'] ?? 'Higher Ed');
+              $viewWaMsg = get_whatsapp_message($lead['stage'], $lead['full_name'], $currentUser['name'] ?? 'UniCRM Admissions', $lead['preferred_country'] ?? 'UK', $lead['preferred_course'] ?? 'Higher Ed');
             ?>
             <a href="https://wa.me/91<?= normalize_phone($lead['phone']) ?>?text=<?= urlencode($viewWaMsg) ?>" target="_blank" class="btn btn-outline btn-sm" style="padding:1px 6px; margin-left:2px;" title="WhatsApp Candidate"><i class="fa-brands fa-whatsapp" style="color:#25d366;"></i></a>
           </span>
@@ -157,7 +157,7 @@ include __DIR__ . '/../includes/header.php';
           <span>
             <i class="fa-solid fa-headset"></i> <?= htmlspecialchars($lead['counselor_name'] ?? 'Counselor') ?>
             <?php if (can('leads', 'assign')): ?>
-              <button type="button" class="btn btn-outline btn-sm" onclick="openChangeCounselorModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', <?= (int)$lead['assigned_counselor_id'] ?>)" style="padding:1px 7px; font-size:0.75rem; margin-left:4px; font-weight:700;" title="ReAssign Counselor (Section 9.3.3)">Change</button>
+              <button type="button" class="btn btn-outline btn-sm" onclick="openChangeCounselorModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', <?= (int)$lead['assigned_counselor_id'] ?>)" style="padding:1px 7px; font-size:0.75rem; margin-left:4px; font-weight:700;" title="ReAssign Counselor">Change</button>
             <?php endif; ?>
           </span>
         </div>
@@ -176,7 +176,7 @@ include __DIR__ . '/../includes/header.php';
 
       <?php if (can('invoices', 'add')): ?>
         <?php if (!$lead['is_customer']): ?>
-          <a href="<?= base_url('finance/create_invoice.php?lead_id=' . $lead['id']) ?>" class="btn btn-success btn-sm" title="Convert to Customer by creating invoice (Section 9.3.2)">
+          <a href="<?= base_url('finance/create_invoice.php?lead_id=' . $lead['id']) ?>" class="btn btn-success btn-sm" title="Convert to Customer by creating invoice">
             <i class="fa-solid fa-certificate"></i> Convert to Customer
           </a>
         <?php else: ?>
@@ -317,7 +317,7 @@ include __DIR__ . '/../includes/header.php';
         </div>
         <div>
           <span style="color:var(--text-muted); display:block; font-size:0.75rem;">Target Intake</span>
-          <div onclick="openChangeIntakeModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['intake_term']) ?>', '<?= htmlspecialchars($lead['intake_year']) ?>')" style="cursor:pointer;" title="Click to change Intake (Section 9.2.4)">
+          <div onclick="openChangeIntakeModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['intake_term']) ?>', '<?= htmlspecialchars($lead['intake_year']) ?>')" style="cursor:pointer;" title="Click to change Intake">
             <strong><?= htmlspecialchars($lead['intake_term']) ?> <?= htmlspecialchars($lead['intake_year']) ?></strong>
             <i class="fa-solid fa-pen" style="font-size:0.65rem; color:var(--text-light); margin-left:4px;"></i>
           </div>

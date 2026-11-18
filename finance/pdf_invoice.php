@@ -268,7 +268,7 @@ $payments = $pmtStmt->fetchAll();
     </div>
     <div style="text-align:right;">
       <strong>Authorized Signatory</strong><br>
-      Edroots Consultancy Admissions
+      Nexus Global Admissions Directorate
     </div>
   </div>
 </div>

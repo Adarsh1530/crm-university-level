@@ -277,7 +277,7 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
   </div>
 </div>
 
-<!-- 5. CHANGE PROSPECTIVITY MODAL (EdrootsCRM User Manual Section 9.2.3) -->
+<!-- 5. CHANGE PROSPECTIVITY MODAL -->
 <div class="modal fade" id="changeProspectivityModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
   <div class="modal-dialog" style="background:#fff; border-radius:14px; max-width:400px; width:92%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden;">
     <form method="POST" action="<?= base_url('leads/update_meta.php') ?>">
@@ -311,7 +311,7 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
   </div>
 </div>
 
-<!-- 6. CHANGE INTAKE MODAL (EdrootsCRM User Manual Section 9.2.4) -->
+<!-- 6. CHANGE INTAKE MODAL -->
 <div class="modal fade" id="changeIntakeModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
   <div class="modal-dialog" style="background:#fff; border-radius:14px; max-width:420px; width:92%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden;">
     <form method="POST" action="<?= base_url('leads/update_meta.php') ?>">
@@ -352,7 +352,7 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
   </div>
 </div>
 
-<!-- 7. REASSIGN COUNSELOR MODAL (EdrootsCRM User Manual Section 9.3.3) -->
+<!-- 7. REASSIGN COUNSELOR MODAL -->
 <div class="modal fade" id="changeCounselorModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
   <div class="modal-dialog" style="background:#fff; border-radius:14px; max-width:440px; width:92%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden;">
     <form method="POST" action="<?= base_url('leads/assign.php') ?>">
@@ -933,7 +933,7 @@ function updateDateWorkloadNotice(dateVal) {
     .catch(() => {});
 }
 
-// Real-time Phone Duplicate Verification (EdrootsCRM User Manual Page 13)
+// Real-time Phone Duplicate Verification Engine
 let phoneCheckTimeout = null;
 function checkLeadPhoneDuplicate(phoneVal, feedbackElemId, submitBtnId) {
   const feedback = document.getElementById(feedbackElemId);
@@ -979,7 +979,7 @@ function checkLeadPhoneDuplicate(phoneVal, feedbackElemId, submitBtnId) {
   }, 300);
 }
 
-// 5. Change Prospectivity Modal Controller (Section 9.2.3)
+// 5. Change Prospectivity Modal Controller
 function openChangeProspectivityModal(leadId, studentName, currentProspectivity) {
   const m = document.getElementById('changeProspectivityModal');
   if (!m) return;
@@ -994,7 +994,7 @@ function closeChangeProspectivityModal() {
   if (m) m.style.display = 'none';
 }
 
-// 6. Change Intake Modal Controller (Section 9.2.4)
+// 6. Change Intake Modal Controller
 function openChangeIntakeModal(leadId, studentName, currentTerm, currentYear) {
   const m = document.getElementById('changeIntakeModal');
   if (!m) return;
@@ -1009,7 +1009,7 @@ function closeChangeIntakeModal() {
   if (m) m.style.display = 'none';
 }
 
-// 7. Change Counselor Modal Controller (Section 9.3.3)
+// 7. Change Counselor Modal Controller
 function openChangeCounselorModal(leadId, studentName, currentCounselorId) {
   const m = document.getElementById('changeCounselorModal');
   if (!m) return;

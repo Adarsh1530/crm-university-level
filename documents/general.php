@@ -1,7 +1,7 @@
 <?php
 /**
  * General Documents Repository (Institutional Guidelines & Guidelines)
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -147,7 +147,7 @@ include __DIR__ . '/../includes/header.php';
                 <input type="hidden" name="type" value="general">
                 <input type="hidden" name="id" value="<?= $d['id'] ?>">
                 <input type="hidden" name="return_url" value="<?= base_url('documents/general.php') ?>">
-                <button type="submit" class="btn btn-outline-danger btn-sm" style="font-size:0.75rem; padding:3px 7px;" title="Delete Document (User Manual Section 10.3)">
+                <button type="submit" class="btn btn-outline-danger btn-sm" style="font-size:0.75rem; padding:3px 7px;" title="Delete Document">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
               </form>

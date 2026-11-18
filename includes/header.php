@@ -18,7 +18,7 @@ $currentUri = $_SERVER['REQUEST_URI'] ?? '';
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= htmlspecialchars($pageTitle) ?> | EdrootsCRM - Edroots International</title>
+  <title><?= htmlspecialchars($pageTitle) ?> | UniCRM - Admissions Cloud</title>
   
   <!-- Google Fonts: Instrument Sans & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">

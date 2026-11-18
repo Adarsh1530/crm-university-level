@@ -1,7 +1,7 @@
 <?php
 /**
  * Main Institutional Dashboard - Multi-Branch Hierarchy
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  * Ultra-Simple, Clean & Fast Daily Workflow for All Roles
  */
 
@@ -163,7 +163,7 @@ if (!$isCounselor) {
     ")->fetchAll();
 }
 
-// 10. General Training Documents (PDF Section 4.3)
+// 10. General Training Documents
 $generalDocs = [];
 try {
     $generalDocs = $pdo->query("SELECT * FROM general_documents ORDER BY id DESC LIMIT 5")->fetchAll();
@@ -415,7 +415,7 @@ include __DIR__ . '/../includes/header.php';
           <tbody>
             <?php foreach ($urgentCalls as $call): 
               $dialUrl = "tel:" . preg_replace('/[^0-9+]/', '', $call['phone']);
-              $waMsg = get_whatsapp_message($call['stage'], $call['full_name'], $currentUser['name'] ?? 'Edroots', $call['preferred_country'] ?? 'UK');
+              $waMsg = get_whatsapp_message($call['stage'], $call['full_name'], $currentUser['name'] ?? 'UniCRM Admissions', $call['preferred_country'] ?? 'UK');
               $waUrl = "https://wa.me/91" . normalize_phone($call['phone']) . "?text=" . urlencode($waMsg);
             ?>
               <tr>
@@ -666,7 +666,7 @@ include __DIR__ . '/../includes/header.php';
           <?php else: ?>
             <?php foreach ($recentLeads as $rl): 
               $dialUrl = "tel:" . preg_replace('/[^0-9+]/', '', $rl['phone']);
-              $waMsg = get_whatsapp_message($rl['stage'], $rl['full_name'], $currentUser['name'] ?? 'Edroots', $rl['preferred_country'] ?? 'UK');
+              $waMsg = get_whatsapp_message($rl['stage'], $rl['full_name'], $currentUser['name'] ?? 'UniCRM Admissions', $rl['preferred_country'] ?? 'UK');
               $waUrl = "https://wa.me/91" . normalize_phone($rl['phone']) . "?text=" . urlencode($waMsg);
             ?>
               <tr>
@@ -703,7 +703,7 @@ include __DIR__ . '/../includes/header.php';
     </div>
   </div>
 
-  <!-- PDF Section 4.3: General Documents (Displays training docs in PDF format, click opens in new tab) -->
+  <!-- General Documents (Displays training docs in PDF format, click opens in new tab) -->
   <div class="card" style="padding:1.5rem; border-radius:12px;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
       <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-heading); margin:0;">

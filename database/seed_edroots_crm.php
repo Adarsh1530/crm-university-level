@@ -1,6 +1,6 @@
 <?php
 /**
- * EdrootsCRM Comprehensive Seed Data
+ * UniCRM Comprehensive Seed Data
  * Seeds organization, branches, users, permissions, leads, invoices, follow-ups, and documents
  */
 
@@ -16,14 +16,14 @@ try {
     // 1. Company
     $pdo->exec("
         INSERT INTO companies (name, email, phone, website, address)
-        VALUES ('Edroots Global Education Pvt. Ltd.', 'admissions@edroots.com', '+91 484 288 9000', 'https://edroots.com', 'Edroots Tower, MG Road, Kochi, Kerala 682016, India')
+        VALUES ('UniCRM Global Education Pvt. Ltd.', 'admissions@edroots.com', '+91 484 288 9000', 'https://edroots.com', 'UniCRM Tower, MG Road, Kochi, Kerala 682016, India')
     ");
     $companyId = $pdo->lastInsertId();
     echo "  [OK] Company seeded\n";
 
     // 2. Branches
     $branchesData = [
-        ['Kochi', 'KOC', 'Kochi', 'Kerala', 'India', '+91 484 288 9001', 'kochi@edroots.com', 'Edroots Tower, MG Road, Kochi'],
+        ['Kochi', 'KOC', 'Kochi', 'Kerala', 'India', '+91 484 288 9001', 'kochi@edroots.com', 'UniCRM Tower, MG Road, Kochi'],
         ['Calicut', 'CLT', 'Calicut', 'Kerala', 'India', '+91 495 277 8001', 'calicut@edroots.com', 'Skyline Plaza, Mavoor Road, Calicut'],
         ['Kannur', 'KNR', 'Kannur', 'Kerala', 'India', '+91 497 270 7001', 'kannur@edroots.com', 'Fort Road Commercial Centre, Kannur'],
         ['Kasaragod', 'KSD', 'Kasaragod', 'Kerala', 'India', '+91 499 423 6001', 'kasaragod@edroots.com', 'Bank Road Junction, Kasaragod'],
@@ -546,10 +546,10 @@ try {
 
     // 14. General Documents Repository
     $genDocs = [
-        ['Edroots CRM - Official User Guide & Training Manual', 'Training Documents', 'Global', 'assets/docs/edroots_crm_user_manual.pdf', 'edroots_crm_user_manual.pdf', 3450000, $userMap['Noufal Peediyakkal']],
+        ['UniCRM CRM - Official User Guide & Training Manual', 'Training Documents', 'Global', 'assets/docs/unicrm_operations_manual.pdf', 'unicrm_operations_manual.pdf', 3450000, $userMap['Noufal Peediyakkal']],
         ['UK University Admissions Master Handbook & CAS Guide', 'University Prospectuses', 'United Kingdom', 'assets/docs/uk_admissions_handbook_2026.pdf', 'uk_admissions_handbook_2026.pdf', 1820000, $userMap['Noufal Peediyakkal']],
         ['Canada SDS Visa Guidelines & Document Checklist', 'Country Guidelines', 'Canada', 'assets/docs/canada_sds_visa_guide.pdf', 'canada_sds_visa_guide.pdf', 2140000, $userMap['Noufal Peediyakkal']],
-        ['Edroots SOP & Statement of Purpose Master Template', 'Training Documents', 'Global', 'assets/docs/edroots_sop_master_template.pdf', 'edroots_sop_master_template.pdf', 940000, $userMap['Vidya Harish']]
+        ['UniCRM SOP & Statement of Purpose Master Template', 'Training Documents', 'Global', 'assets/docs/edroots_sop_master_template.pdf', 'edroots_sop_master_template.pdf', 940000, $userMap['Vidya Harish']]
     ];
     $insGenDoc = $pdo->prepare("INSERT INTO general_documents (title, category, country, file_path, file_name, file_size, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?)");
     foreach ($genDocs as $gd) {

@@ -1,7 +1,7 @@
 <?php
 /**
  * Branch Network Management (9 Strategic Consultancy Locations)
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -165,7 +165,7 @@ include __DIR__ . '/../includes/header.php';
         <div style="display:grid; grid-template-columns:2fr 1fr; gap:0.75rem; margin-bottom:1rem;">
           <div class="form-group">
             <label class="form-label">Branch Name <span style="color:red;">*</span></label>
-            <input type="text" name="name" id="branch_name" class="form-control" placeholder="e.g. Edroots Kochi Hub" required>
+            <input type="text" name="name" id="branch_name" class="form-control" placeholder="e.g. Kochi Admissions Hub" required>
           </div>
           <div class="form-group">
             <label class="form-label">Code <span style="color:red;">*</span></label>
@@ -206,7 +206,7 @@ include __DIR__ . '/../includes/header.php';
           </div>
           <div class="form-group">
             <label class="form-label">Email</label>
-            <input type="email" name="email" id="branch_email" class="form-control" placeholder="kochi@edroots.com">
+            <input type="email" name="email" id="branch_email" class="form-control" placeholder="kochi@unicrm.edu">
           </div>
         </div>
       </div>

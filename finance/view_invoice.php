@@ -1,7 +1,7 @@
 <?php
 /**
  * Detailed Invoice View & Payment Recording
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -79,7 +79,7 @@ include __DIR__ . '/../includes/header.php';
     <a href="<?= base_url('leads/view.php?id=' . $invoice['lead_id']) ?>" class="btn btn-secondary btn-sm" title="Contact Details (Student Profile - User Manual Section 9.3.5.2)">
       <i class="fa-solid fa-address-card"></i> Contact Details
     </a>
-    <a href="<?= base_url('finance/pdf_invoice.php?id=' . $invoice['id']) ?>" target="_blank" class="btn btn-outline-primary btn-sm" title="Print / Download PDF (User Manual Section 9.3.5.2)">
+    <a href="<?= base_url('finance/pdf_invoice.php?id=' . $invoice['id']) ?>" target="_blank" class="btn btn-outline-primary btn-sm" title="Print / Download PDF">
       <i class="fa-solid fa-file-pdf"></i> PDF
     </a>
     <?php if ($invoice['balance_due'] > 0 && can('invoices', 'edit')): ?>
@@ -219,7 +219,7 @@ include __DIR__ . '/../includes/header.php';
       This is a computer-generated tax invoice issued by UniCRM Admissions Cloud.
     </div>
     <div style="text-align:right;">
-      Authorized Signatory &bull; <strong>Edroots Consultancy Admissions</strong>
+      Authorized Signatory &bull; <strong>Nexus Global Admissions Directorate</strong>
     </div>
   </div>
 </div>

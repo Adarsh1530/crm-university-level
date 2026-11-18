@@ -672,7 +672,7 @@ function get_whatsapp_message($stage, $studentName, $senderName = 'UniCRM', $pre
             
         case 'ENQUIRY':
         default:
-            return "Hello {$studentName}, this is {$senderName} from Edroots Admissions. I am following up on your higher education enquiry for {$country}. Are you available for a brief 5-minute consultation today regarding course options and intakes?";
+            return "Hello {$studentName}, this is {$senderName} from UniCRM Admissions. I am following up on your higher education enquiry for {$country}. Are you available for a brief 5-minute consultation today regarding course options and intakes?";
     }
 }
 
@@ -690,7 +690,7 @@ function get_whatsapp_templates($studentName, $senderName = 'UniCRM', $country =
         'enquiry' => [
             'label' => 'Initial Enquiry Greeting',
             'icon' => 'fa-comments',
-            'text' => "Hello {$studentName}, this is {$senderName} from Edroots Admissions. I am following up on your higher education enquiry for {$country}. Are you available for a brief 5-minute consultation today regarding course options and intakes?"
+            'text' => "Hello {$studentName}, this is {$senderName} from UniCRM Admissions. I am following up on your higher education enquiry for {$country}. Are you available for a brief 5-minute consultation today regarding course options and intakes?"
         ],
         'followup' => [
             'label' => 'Follow-up Call Reminder',

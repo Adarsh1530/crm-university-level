@@ -1,6 +1,6 @@
 <?php
 /**
- * EdrootsCRM Database Migration & Seeder
+ * UniCRM Database Migration & Seeder
  * Complete System Replacement & Database Setup
  */
 

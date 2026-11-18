@@ -1,7 +1,7 @@
 <?php
 /**
  * Daily Follow-up Workload Checker Endpoint
- * EdrootsCRM User Manual Page 20 (Section 9.4.3)
+ * UniCRM User Manual Page 20
  */
 
 require_once __DIR__ . '/../config/database.php';

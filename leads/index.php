@@ -1,7 +1,7 @@
 <?php
 /**
  * Active Leads Directory
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -15,13 +15,13 @@ $currentUser = current_user();
 $pageTitle = 'Students Directory';
 $activePage = 'leads';
 
-// Type filter: All, Leads, Customers (PDF Section 9.2)
+// Type filter: All, Leads, Customers
 $type = strtolower(trim($_GET['type'] ?? 'all'));
 if (!in_array($type, ['all', 'leads', 'customers'])) {
     $type = 'all';
 }
 
-// Filter inputs (PDF Section 9.2.2)
+// Filter inputs
 $search = trim($_GET['search'] ?? '');
 $stageFilter = trim($_GET['stage'] ?? '');
 $priorityFilter = trim($_GET['priority'] ?? '');
@@ -74,7 +74,7 @@ $scopeClause = get_crm_scope_clause('l', 'assigned_counselor_id', 'branch_id');
 $where = ["l.is_archived = 0", $scopeClause];
 $params = [];
 
-// Apply type condition (PDF Section 9.2)
+// Apply type condition
 if ($type === 'leads') {
     $where[] = "l.is_customer = 0";
 } elseif ($type === 'customers') {
@@ -116,7 +116,7 @@ if ($branchFilter > 0 && is_super_admin()) {
     $params[] = $branchFilter;
 }
 
-// Filter by Date (PDF Section 9.2.2)
+// Filter by Date
 if (!empty($dateFrom)) {
     $where[] = "DATE(l.created_at) >= ?";
     $params[] = $dateFrom;
@@ -213,35 +213,35 @@ $leads = $stmt->fetchAll();
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- PDF Section 9.0: Student Module Top Tab Bar (All, Leads, Customers, Follow-ups, College Datas, Archived, My Tasks) -->
-<div class="pdf-student-nav-tabs" style="display:flex; gap:0.25rem; border-bottom:2px solid var(--border-color); margin-bottom:1.25rem; overflow-x:auto; padding-bottom:1px;">
-  <a href="<?= base_url('leads/index.php?type=all') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= ($type === 'all') ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= ($type === 'all') ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= ($type === 'all') ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
+<!-- Module Section 9.0: Student Module Top Tab Bar (All, Leads, Customers, Follow-ups, College Datas, Archived, My Tasks) -->
+<div class="student-nav-tabs" style="display:flex; gap:0.25rem; border-bottom:2px solid var(--border-color); margin-bottom:1.25rem; overflow-x:auto; padding-bottom:1px;">
+  <a href="<?= base_url('leads/index.php?type=all') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= ($type === 'all') ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= ($type === 'all') ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= ($type === 'all') ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
     <i class="fa-solid fa-users"></i> All <span class="badge badge-primary" style="margin-left:4px; font-size:0.75rem;"><?= $countAll ?></span>
   </a>
-  <a href="<?= base_url('leads/index.php?type=leads') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= ($type === 'leads') ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= ($type === 'leads') ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= ($type === 'leads') ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
+  <a href="<?= base_url('leads/index.php?type=leads') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= ($type === 'leads') ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= ($type === 'leads') ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= ($type === 'leads') ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
     <i class="fa-solid fa-user-graduate"></i> Leads <span class="badge badge-secondary" style="margin-left:4px; font-size:0.75rem;"><?= $countLeadsOnly ?></span>
   </a>
-  <a href="<?= base_url('leads/index.php?type=customers') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= ($type === 'customers') ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= ($type === 'customers') ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= ($type === 'customers') ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
+  <a href="<?= base_url('leads/index.php?type=customers') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= ($type === 'customers') ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= ($type === 'customers') ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= ($type === 'customers') ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
     <i class="fa-solid fa-certificate"></i> Customers <span class="badge badge-success" style="margin-left:4px; font-size:0.75rem;"><?= $countCustomersOnly ?></span>
   </a>
-  <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+  <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
     <i class="fa-solid fa-phone-volume"></i> Follow-ups <span class="badge badge-warning" style="margin-left:4px; font-size:0.75rem;"><?= $countScheduledFollowups ?></span>
   </a>
-  <a href="<?= base_url('data/college_data.php') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+  <a href="<?= base_url('data/college_data.php') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
     <i class="fa-solid fa-database"></i> College Datas <span class="badge badge-secondary" style="margin-left:4px; font-size:0.75rem;"><?= $countCollegeData ?></span>
   </a>
-  <a href="<?= base_url('archive/index.php') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+  <a href="<?= base_url('archive/index.php') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
     <i class="fa-solid fa-box-archive"></i> Archived <span class="badge badge-secondary" style="margin-left:4px; font-size:0.75rem;"><?= $countArchived ?></span>
   </a>
-  <a href="<?= base_url('tasks/index.php') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
+  <a href="<?= base_url('tasks/index.php') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
     <i class="fa-solid fa-list-check"></i> My Tasks
   </a>
 </div>
 
-<!-- PDF Section 9.1: Statistics (Total Leads & Total Conversions for Week, Month, Financial Year) -->
+<!-- Module Section 9.1: Statistics (Total Leads & Total Conversions for Week, Month, Financial Year) -->
 <div class="card" style="margin-bottom:1.25rem; padding:1rem 1.25rem; background:linear-gradient(135deg, #ffffff 0%, #fafafa 100%); border-radius:12px; border:1px solid #e2e8f0;">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1.25rem;">
-    <!-- Section 1: Total Leads -->
+    <!-- Total Leads -->
     <div style="flex:1; min-width:280px; display:flex; align-items:center; gap:1.25rem; border-right:1px solid var(--border-color); padding-right:1rem;">
       <div style="display:flex; align-items:center; gap:8px;">
         <div style="width:38px; height:38px; border-radius:8px; background:var(--primary-subtle); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
@@ -268,7 +268,7 @@ include __DIR__ . '/../includes/header.php';
       </div>
     </div>
 
-    <!-- Section 2: Total Conversions -->
+    <!-- Total Conversions -->
     <div style="flex:1; min-width:280px; display:flex; align-items:center; gap:1.25rem;">
       <div style="display:flex; align-items:center; gap:8px;">
         <div style="width:38px; height:38px; border-radius:8px; background:#dcfce7; color:#15803d; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
@@ -309,17 +309,17 @@ include __DIR__ . '/../includes/header.php';
   <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
     <?php if ($type === 'all'): ?>
       <?php if (can('college_data', 'add')): ?>
-        <a href="<?= base_url('data/import_college_data.php') ?>" class="btn btn-outline btn-sm" title="Upload Bulk Student Data from Excel (Section 9.2)">
+        <a href="<?= base_url('data/import_college_data.php') ?>" class="btn btn-outline btn-sm" title="Upload Bulk Student Data from Excel">
           <i class="fa-solid fa-file-import"></i> Excel Import
         </a>
       <?php endif; ?>
       <?php if (can('leads', 'export')): ?>
-        <a href="<?= base_url('leads/index.php?' . http_build_query(array_merge($_GET, ['export' => 'csv']))) ?>" class="btn btn-secondary btn-sm" title="Export Student Records to CSV (Section 9.2)">
+        <a href="<?= base_url('leads/index.php?' . http_build_query(array_merge($_GET, ['export' => 'csv']))) ?>" class="btn btn-secondary btn-sm" title="Export Student Records to CSV">
           <i class="fa-solid fa-file-csv"></i> Excel Export
         </a>
       <?php endif; ?>
       <?php if (can('leads', 'add')): ?>
-        <a href="<?= base_url('leads/add.php') ?>" class="btn btn-primary btn-sm" title="Create New Student Lead (Section 9.2.7)">
+        <a href="<?= base_url('leads/add.php') ?>" class="btn btn-primary btn-sm" title="Create New Student Lead">
           <i class="fa-solid fa-user-plus"></i> New Lead Add
         </a>
       <?php endif; ?>
@@ -359,7 +359,7 @@ include __DIR__ . '/../includes/header.php';
   <?php endforeach; ?>
 </div>
 
-<!-- Filter Bar (PDF Section 9.2.2 Filters: By Date, Created By, Search, Priority, Source) -->
+<!-- Filter Bar (Module Section 9.2.2 Filters: By Date, Created By, Search, Priority, Source) -->
 <div class="card" style="margin-bottom:1.5rem; padding:1.25rem;">
   <form method="GET" action="<?= base_url('leads/index.php') ?>" style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center;">
     <?php if ($type !== 'all'): ?>
@@ -374,7 +374,7 @@ include __DIR__ . '/../includes/header.php';
       <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-light);"></i>
     </div>
 
-    <!-- PDF Section 9.2.2: By Date Filter -->
+    <!-- Module Section 9.2.2: By Date Filter -->
     <div style="display:flex; align-items:center; gap:6px;">
       <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); white-space:nowrap;">From:</span>
       <input type="date" name="date_from" class="form-control" value="<?= htmlspecialchars($dateFrom) ?>" style="font-size:0.8rem; padding:4px 8px; max-width:140px;">
@@ -519,7 +519,7 @@ include __DIR__ . '/../includes/header.php';
               </td>
               <td>
                 <?php
-                  $waMsg = get_whatsapp_message($lead['stage'], $lead['full_name'], $currentUser['name'] ?? 'Edroots', $lead['preferred_country'] ?? 'UK', $lead['preferred_course'] ?? 'Higher Ed');
+                  $waMsg = get_whatsapp_message($lead['stage'], $lead['full_name'], $currentUser['name'] ?? 'UniCRM Admissions', $lead['preferred_country'] ?? 'UK', $lead['preferred_course'] ?? 'Higher Ed');
                   $waUrl = "https://wa.me/91" . normalize_phone($lead['phone']) . "?text=" . urlencode($waMsg);
                   $dialUrl = "tel:" . preg_replace('/[^0-9+]/', '', $lead['phone']);
                 ?>
@@ -547,7 +547,7 @@ include __DIR__ . '/../includes/header.php';
                 <div style="font-size:0.75rem; color:var(--text-muted);">
                   <?= htmlspecialchars($lead['preferred_course'] ?: 'General Program') ?>
                 </div>
-                <div onclick="openChangeIntakeModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['intake_term'] ?? 'September') ?>', '<?= htmlspecialchars($lead['intake_year'] ?? '2026') ?>')" style="cursor:pointer; margin-top:2px;" title="Click to change InTake (User Manual Section 9.2.4)">
+                <div onclick="openChangeIntakeModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['intake_term'] ?? 'September') ?>', '<?= htmlspecialchars($lead['intake_year'] ?? '2026') ?>')" style="cursor:pointer; margin-top:2px;" title="Click to change InTake">
                   <span class="badge badge-secondary" style="font-size:0.68rem; font-weight:600; padding:1px 5px;">
                     <i class="fa-regular fa-calendar"></i> <?= htmlspecialchars($lead['intake_term'] ?: 'Sept') ?> <?= htmlspecialchars($lead['intake_year'] ?: date('Y')) ?>
                     <i class="fa-solid fa-pen" style="font-size:0.6rem; color:var(--text-light); margin-left:2px;"></i>
@@ -565,7 +565,7 @@ include __DIR__ . '/../includes/header.php';
                 <?php endif; ?>
               </td>
               <td>
-                <div onclick="openChangeProspectivityModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['priority']) ?>')" style="cursor:pointer;" title="Click to change Prospectivity (User Manual Section 9.2.3)">
+                <div onclick="openChangeProspectivityModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['priority']) ?>')" style="cursor:pointer;" title="Click to change Prospectivity">
                   <?= priority_badge($lead['priority']) ?>
                   <i class="fa-solid fa-pen" style="font-size:0.65rem; color:var(--text-light); margin-left:2px;"></i>
                 </div>

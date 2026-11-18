@@ -1,7 +1,7 @@
 <?php
 /**
  * Staff & User Management Hub
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -277,7 +277,7 @@ include __DIR__ . '/../includes/header.php';
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
           <div class="form-group">
             <label class="form-label">Email Address <span style="color:red;">*</span></label>
-            <input type="email" name="email" id="staff_email" class="form-control" required placeholder="name@edroots.com">
+            <input type="email" name="email" id="staff_email" class="form-control" required placeholder="name@unicrm.edu">
           </div>
           <div class="form-group">
             <label class="form-label">Phone</label>

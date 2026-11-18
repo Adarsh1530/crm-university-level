@@ -1,7 +1,7 @@
 <?php
 /**
  * Archive Management & Permanent Deletion Audit Log
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -69,7 +69,7 @@ if ($tab === 'leads') {
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- PDF Section 9.0: Student Module Top Tab Bar -->
+<!-- Student Module Top Tab Bar -->
 <div class="pdf-student-nav-tabs" style="display:flex; gap:0.25rem; border-bottom:2px solid var(--border-color); margin-bottom:1.25rem; overflow-x:auto; padding-bottom:1px;">
   <a href="<?= base_url('leads/index.php?type=all') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
     <i class="fa-solid fa-users"></i> All
@@ -176,7 +176,7 @@ include __DIR__ . '/../includes/header.php';
                 <td><?= htmlspecialchars($cd['degree']) ?></td>
                 <td><?= htmlspecialchars($cd['branch_name'] ?? 'Unassigned') ?></td>
                 <td style="text-align:right;">
-                  <a href="<?= base_url('archive/action.php?type=college_data&id=' . $cd['id'] . '&action=restore') ?>" class="btn btn-outline-success btn-sm" title="Restore / Unzip (User Manual Section 9.6.1)">
+                  <a href="<?= base_url('archive/action.php?type=college_data&id=' . $cd['id'] . '&action=restore') ?>" class="btn btn-outline-success btn-sm" title="Restore / Unzip">
                     <i class="fa-solid fa-file-zipper"></i> Unzip
                   </a>
                   <?php if (is_super_admin()): ?>
@@ -222,7 +222,7 @@ include __DIR__ . '/../includes/header.php';
                 <td style="font-size:0.825rem;"><?= !empty($ld['archived_at']) ? date('d M Y', strtotime($ld['archived_at'])) : '—' ?></td>
                 <td style="text-align:right;">
                   <div style="display:flex; justify-content:flex-end; gap:0.35rem;">
-                    <a href="<?= base_url('archive/action.php?type=lead&id=' . $ld['id'] . '&action=restore') ?>" class="btn btn-outline-success btn-sm" title="Restore / Unzip (User Manual Section 9.6.1)">
+                    <a href="<?= base_url('archive/action.php?type=lead&id=' . $ld['id'] . '&action=restore') ?>" class="btn btn-outline-success btn-sm" title="Restore / Unzip">
                       <i class="fa-solid fa-file-zipper"></i> Unzip
                     </a>
                     <?php if (is_super_admin()): 

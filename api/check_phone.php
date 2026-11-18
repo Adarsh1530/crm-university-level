@@ -1,7 +1,7 @@
 <?php
 /**
  * Real-time Phone Duplicate Verification Endpoint
- * EdrootsCRM User Manual Page 13 (Section 9.2.7)
+ * UniCRM User Manual Page 13
  */
 
 require_once __DIR__ . '/../config/database.php';

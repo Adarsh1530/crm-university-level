@@ -46,29 +46,30 @@ if (isset($_GET['demo_as'])) {
 
 // Handle Form Submission
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-    $email = trim($_POST['email'] ?? '');
+    $loginInput = trim($_POST['email'] ?? ($_POST['username'] ?? ''));
     $password = $_POST['password'] ?? '';
 
-    if (empty($email) || empty($password)) {
-        $error = 'Please enter both your email address and password.';
+    if (empty($loginInput) || empty($password)) {
+        $error = 'Please enter both your institutional username/email and password.';
     } else {
-        // Support email aliases (e.g. noufal@edroots.in or admin@edroots.com)
+        // Support email, username, or alias login
         $stmt = $pdo->prepare("
             SELECT u.*, r.name AS role_name, r.label AS role_label 
             FROM users u 
             JOIN roles r ON u.role_id = r.id 
             WHERE u.email = ? 
-               OR (u.id = 1 AND ? IN ('noufal@edroots.in', 'admin@edroots.com', 'superadmin@university.edu'))
-               OR (u.id = 2 AND ? IN ('vidya@edroots.in', 'manager@edroots.com', 'manager@university.edu'))
-               OR (u.id = 3 AND ? IN ('athira@edroots.in', 'counselor@edroots.com', 'priya@university.edu'))
-               OR (u.id = 4 AND ? IN ('syamily@edroots.in', 'david@university.edu'))
+               OR u.username = ?
+               OR (u.id = 1 AND ? IN ('superadmin', 'admin', 'superadmin@unicrm.edu', 'admin@unicrm.edu'))
+               OR (u.id = 2 AND ? IN ('admissionmanager', 'manager', 'admissionmanager@unicrm.edu'))
+               OR (u.id = 3 AND ? IN ('academiccounselor', 'counselor', 'academiccounselor@unicrm.edu'))
+               OR (u.id = 4 AND ? IN ('admissionadvisor', 'advisor', 'admissionadvisor@unicrm.edu'))
             LIMIT 1
         ");
-        $stmt->execute([$email, $email, $email, $email, $email]);
+        $stmt->execute([$loginInput, $loginInput, $loginInput, $loginInput, $loginInput, $loginInput]);
         $user = $stmt->fetch();
 
-        // Allow demo passwords admin123, manager123, counselor123
-        $isDemoPassValid = in_array($password, ['admin123', 'manager123', 'counselor123']);
+        // Allow requested demo password '123' as well as standard 'admin123' or password_verify
+        $isDemoPassValid = in_array($password, ['123', 'admin123', 'manager123', 'counselor123']);
 
         if ($user && ($isDemoPassValid || password_verify($password, $user['password']))) {
             if ($user['status'] !== 'Active') {
@@ -84,7 +85,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 unset($_SESSION['sidebar_cache']);
                 unset($_SESSION['crm_role_perms']);
 
-                log_activity($user['id'], null, 'User Login', 'User signed into Edroots CRM portal');
+                log_activity($user['id'], null, 'User Login', 'User signed into UniCRM admissions portal');
                 set_flash('success', 'Welcome back, ' . htmlspecialchars($user['name']) . '!');
                 
                 $targetUrl = 'dashboard/index.php';
@@ -94,7 +95,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 redirect($targetUrl);
             }
         } else {
-            $error = 'Invalid email address or password. Please verify your credentials and try again.';
+            $error = 'Invalid username/email or password. Please verify your credentials and try again.';
         }
     }
 }
@@ -104,7 +105,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In | EdrootsCRM - Edroots International</title>
+  <title>Sign In | UniCRM - Admissions Cloud</title>
   
   <!-- Google Fonts: Instrument Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -318,20 +319,20 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         <i class="fa-solid fa-graduation-cap"></i>
       </div>
       <div>
-        <h2>EdrootsCRM</h2>
-        <span>Edroots International v1.0</span>
+        <h2>UniCRM</h2>
+        <span>Admissions Cloud v2.0</span>
       </div>
     </div>
 
     <div class="banner-content">
       <h3>Empowering Global University Admissions</h3>
-      <p>A centralized platform for Edroots education counselors to capture leads, track student admission stages, coordinate follow-ups, and elevate conversions.</p>
+      <p>A centralized platform for university education counselors to capture prospective student leads, track admission milestones, manage daily follow-up queues, and issue fee invoices.</p>
     </div>
 
     <div class="banner-stats">
       <div class="stat-item">
-        <strong>8 Branches</strong>
-        <span>Kochi &middot; London</span>
+        <strong>9 Branches</strong>
+        <span>Kochi &middot; London &middot; BLR</span>
       </div>
       <div class="stat-item">
         <strong>6 Stages</strong>
@@ -366,9 +367,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     <form method="POST" action="login.php<?= !empty($redirect) ? '?redirect=' . urlencode($redirect) : '' ?>">
       <?= csrf_field() ?>
       <div class="form-group">
-        <label class="form-label" for="email">Institutional Email</label>
+        <label class="form-label" for="email">Institutional Username or Email</label>
         <div style="position: relative;">
-          <input type="email" id="email" name="email" class="form-control" style="width: 100%; padding-left: 2.5rem;" placeholder="noufal@edroots.in" value="noufal@edroots.in" required>
+          <input type="text" id="email" name="email" class="form-control" style="width: 100%; padding-left: 2.5rem;" placeholder="e.g. superadmin or superadmin@unicrm.edu" value="superadmin" required>
           <i class="fa-regular fa-envelope" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-light);"></i>
         </div>
       </div>
@@ -376,10 +377,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
       <div class="form-group">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
           <label class="form-label" for="password" style="margin: 0;">Password</label>
-          <span style="font-size: 0.75rem; color: var(--text-muted);">Default: <code>admin123</code></span>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">Default: <code>123</code></span>
         </div>
         <div style="position: relative;">
-          <input type="password" id="password" name="password" class="form-control" style="width: 100%; padding-left: 2.5rem;" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" value="admin123" required>
+          <input type="password" id="password" name="password" class="form-control" style="width: 100%; padding-left: 2.5rem;" placeholder="&bull;&bull;&bull;" value="123" required>
           <i class="fa-solid fa-lock" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-light);"></i>
         </div>
       </div>
@@ -391,34 +392,34 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
     <!-- Quick Access Role Switcher -->
     <div class="demo-credentials-box">
-      <h4><i class="fa-solid fa-bolt" style="color: #f59e0b;"></i> Quick Access Profiles</h4>
+      <h4><i class="fa-solid fa-bolt" style="color: #f59e0b;"></i> Quick Access Profiles (Password: 123)</h4>
       <div class="demo-role-grid">
         <a href="login.php?demo_as=1<?= !empty($redirect) ? '&redirect=' . urlencode($redirect) : '' ?>" class="btn-demo-quick">
           <i class="fa-solid fa-crown" style="color: #ef4444;"></i>
           <div>
             <strong>Super Admin</strong>
-            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Noufal Peediyakkal</span>
+            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Dr. Arthur Vance (superadmin)</span>
           </div>
         </a>
         <a href="login.php?demo_as=2<?= !empty($redirect) ? '&redirect=' . urlencode($redirect) : '' ?>" class="btn-demo-quick">
           <i class="fa-solid fa-building-user" style="color: #f59e0b;"></i>
           <div>
             <strong>Admissions Manager</strong>
-            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Vidya Harish</span>
+            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Sarah Jenkins (admissionmanager)</span>
           </div>
         </a>
         <a href="login.php?demo_as=3<?= !empty($redirect) ? '&redirect=' . urlencode($redirect) : '' ?>" class="btn-demo-quick">
           <i class="fa-solid fa-headset" style="color: #10b981;"></i>
           <div>
             <strong>Academic Counselor</strong>
-            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Athira Ashok</span>
+            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Michael Chang (academiccounselor)</span>
           </div>
         </a>
         <a href="login.php?demo_as=4<?= !empty($redirect) ? '&redirect=' . urlencode($redirect) : '' ?>" class="btn-demo-quick">
           <i class="fa-solid fa-user-tie" style="color: #8b5cf6;"></i>
           <div>
             <strong>Admissions Advisor</strong>
-            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Syamily S</span>
+            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Emily Watson (admissionadvisor)</span>
           </div>
         </a>
       </div>

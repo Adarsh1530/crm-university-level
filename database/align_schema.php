@@ -142,7 +142,7 @@ $pdo->exec("
             WHEN paid_total > 0 THEN 'Partially Paid'
             ELSE 'Unpaid'
         END,
-        bank_details = COALESCE(bank_details, 'HDFC Bank - Edroots Education Consultancy Ltd.\nAccount: 50200088991122 | IFSC: HDFC0000240 | Kochi Branch')
+        bank_details = COALESCE(bank_details, 'HDFC Bank - UniCRM Education Consultancy Ltd.\nAccount: 50200088991122 | IFSC: HDFC0000240 | Kochi Branch')
 ");
 
 // 4. INVOICE ITEMS TABLE

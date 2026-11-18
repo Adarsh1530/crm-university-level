@@ -1,7 +1,7 @@
 <?php
 /**
  * System Activity Logs (Immutable Audit Trail)
- * University-Level Education Consultancy CRM (EdrootsCRM)
+ * Enterprise University Admissions & Enrollment Management System (UniCRM)
  */
 
 require_once __DIR__ . '/../config/database.php';
