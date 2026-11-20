@@ -174,7 +174,7 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
 
     <!-- 3. Leads Management (Core Focus) -->
     <?php if (can('leads', 'view')): ?>
-      <a href="<?= base_url('leads/index.php') ?>" id="sidebar-nav-leads" class="nav-item <?= in_array($activePage, ['leads', 'add_lead']) ? 'active' : '' ?>" title="Manage student leads across all 6 admission stages">
+      <a href="<?= base_url('leads/index.php') ?>" id="sidebar-nav-leads" class="nav-item <?= in_array($activePage, ['leads', 'add_lead']) ? 'active' : '' ?>" title="Manage student inquiries, active leads, and converted customers">
         <div class="nav-item-content">
           <i class="fa-solid fa-users-line nav-icon"></i>
           <span class="nav-label">Leads</span>
