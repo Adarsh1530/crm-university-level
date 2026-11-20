@@ -352,7 +352,7 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
         <i class="fa-solid fa-crown" style="color:#ef4444;"></i> Super Admin
       </button>
       <button type="button" class="btn btn-sm guide-tab-btn" id="tabBtn-stages" onclick="switchGuideTab('stages')" style="font-weight:700; border-radius:6px; padding:0.45rem 0.95rem; font-size:0.8rem; display:inline-flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-stairs" style="color:#7008E7;"></i> 6 Milestones Explained
+        <i class="fa-solid fa-users-gear" style="color:#7008E7;"></i> Lead Lifecycle & Conversion
       </button>
       <button type="button" class="btn btn-sm guide-tab-btn" id="tabBtn-faq" onclick="switchGuideTab('faq')" style="font-weight:700; border-radius:6px; padding:0.45rem 0.95rem; font-size:0.8rem; display:inline-flex; align-items:center; gap:6px;">
         <i class="fa-solid fa-circle-question" style="color:#0284c7;"></i> FAQ & Help
@@ -451,13 +451,13 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
         <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem; margin-bottom:1.25rem;">
           <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.5rem;">
             <span style="background:#10b981; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">STEP 4</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Advance Admission Milestones on Progress</strong>
+            <strong style="font-size:0.95rem; color:var(--text-heading);">Convert Lead to Customer (Section 9.3.2)</strong>
           </div>
           <p style="margin:0 0 0.5rem 0; color:var(--text-main); font-size:0.85rem;">
-            When the candidate submits required documents, files a university application, receives an offer letter, pays tuition fees, or gets a visa:
+            When the prospective student is ready to enroll and begin processing:
           </p>
           <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem 0.85rem; font-size:0.8rem; color:var(--text-main);">
-            Click the blue <strong>Advance Stage</strong> button (or select the new milestone directly in the Log Call dialog) and choose the appropriate target milestone (e.g. <em>CUSTOMER &rarr; APPLICATION &rarr; OFFER RECEIVED &rarr; TUITION FEES PAID &rarr; ENROLLED</em>).
+            Click the green <strong>Convert to Customer</strong> button on the Lead Details screen. Generating a service invoice automatically transitions the candidate into an invoiced Customer.
           </div>
         </div>
 
@@ -625,96 +625,56 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
         </div>
       </div>
 
-      <!-- TAB 4: THE 6 ADMISSION MILESTONES -->
+      <!-- TAB 4: LEAD LIFECYCLE & CONVERSION -->
       <div id="guideContent-stages" class="guide-content-panel" style="display:none;">
         <div style="background:#f5f3ff; border-left:4px solid #7008E7; padding:1rem 1.25rem; border-radius:8px; margin-bottom:1.5rem;">
-          <strong style="color:#5b21b6; font-size:0.95rem; display:block; margin-bottom:4px;"><i class="fa-solid fa-route"></i> The 6-Stage Education Consultancy Lifecycle</strong>
-          <span style="color:#6d28d9; font-size:0.825rem;">Every student candidate progresses through these 6 official milestones from their first inquiry to campus arrival.</span>
+          <strong style="color:#5b21b6; font-size:0.95rem; display:block; margin-bottom:4px;"><i class="fa-solid fa-users-gear"></i> Student Lead & Customer Operational Architecture</strong>
+          <span style="color:#6d28d9; font-size:0.825rem;">Standard operational pipeline based on User Manual Section 9: Inbound Leads &rarr; Follow-ups &rarr; Customer Conversion.</span>
         </div>
 
         <div style="display:flex; flex-direction:column; gap:0.9rem;">
-          <!-- Stage 1 -->
+          <!-- Stage 1: Lead Capture -->
           <div style="padding:1rem 1.25rem; border-radius:10px; background:#f8fafc; border:1px solid #e2e8f0; border-left:5px solid #64748b;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
-              <strong style="color:#1e293b; font-size:0.95rem;">1. ENQUIRY (Fresh Prospective Inquirer)</strong>
-              <span style="font-size:0.7rem; font-weight:700; background:#e2e8f0; color:#475569; padding:2px 8px; border-radius:12px;">Stage 1</span>
+              <strong style="color:#1e293b; font-size:0.95rem;">1. Lead Registration & Allocation (Section 9.2.7)</strong>
+              <span style="font-size:0.7rem; font-weight:700; background:#e2e8f0; color:#475569; padding:2px 8px; border-radius:12px;">Step 1</span>
             </div>
             <p style="margin:0 0 0.35rem 0; font-size:0.825rem; color:var(--text-main);">
-              <strong>Definition:</strong> Initial prospective student whose contact information was captured through digital advertising, website inquiry, phone call, or campus fair.
+              Candidates are registered via Website forms, College Data pool, walk-ins, or direct counselor registration. A strict 10-digit mobile duplicate guard ensures only one active lead exists per student.
             </p>
-            <div style="font-size:0.8rem; color:#475569;">
-              <strong>Counselor Action:</strong> Connect with candidate, evaluate eligibility, qualifications, preferred destination country, and program budget. Once candidate agrees to proceed with your consultancy, advance to <em>CUSTOMER</em>.
-            </div>
           </div>
 
-          <!-- Stage 2 -->
+          <!-- Stage 2: Prospectivity Tiers -->
           <div style="padding:1rem 1.25rem; border-radius:10px; background:#f0f9ff; border:1px solid #bae6fd; border-left:5px solid #0284c7;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
-              <strong style="color:#0369a1; font-size:0.95rem;">2. CUSTOMER (Retained Consultancy Client)</strong>
-              <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0284c7; padding:2px 8px; border-radius:12px;">Stage 2</span>
+              <strong style="color:#0369a1; font-size:0.95rem;">2. Prospectivity Tiers & InTake Planning (Section 9.2.3 & 9.2.4)</strong>
+              <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0284c7; padding:2px 8px; border-radius:12px;">Step 2</span>
             </div>
             <p style="margin:0 0 0.35rem 0; font-size:0.825rem; color:var(--text-main);">
-              <strong>Definition:</strong> Candidate has formally engaged your consultancy. Official registration or service invoice is issued.
+              Counselors categorize each candidate into <strong>Hot</strong> (high intent / immediate), <strong>Warm</strong> (moderate interest), or <strong>Cold</strong> (future planning). InTake cycles (September, January, May) can be updated anytime with a 1-click modal.
             </p>
-            <div style="font-size:0.8rem; color:#0369a1;">
-              <strong>Counselor Action:</strong> Issue processing fee invoice. Collect passport copy, academic transcripts, degree certificates, resume, SOP, and English proficiency test scores (IELTS/PTE/TOEFL).
-            </div>
           </div>
 
-          <!-- Stage 3 -->
-          <div style="padding:1rem 1.25rem; border-radius:10px; background:#f5f3ff; border:1px solid #ddd6fe; border-left:5px solid #7008E7;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
-              <strong style="color:#5b21b6; font-size:0.95rem;">3. APPLICATION (Submitted to Foreign Universities)</strong>
-              <span style="font-size:0.7rem; font-weight:700; background:#ede9fe; color:#7008E7; padding:2px 8px; border-radius:12px;">Stage 3</span>
-            </div>
-            <p style="margin:0 0 0.35rem 0; font-size:0.825rem; color:var(--text-main);">
-              <strong>Definition:</strong> Official applications have been filed with partner international universities.
-            </p>
-            <div style="font-size:0.8rem; color:#5b21b6;">
-              <strong>Counselor Action:</strong> Track application reference numbers, follow up with university admissions departments, and submit any requested supplementary documents.
-            </div>
-          </div>
-
-          <!-- Stage 4 -->
-          <div style="padding:1rem 1.25rem; border-radius:10px; background:#fffbeb; border:1px solid #fde68a; border-left:5px solid #f59e0b;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
-              <strong style="color:#92400e; font-size:0.95rem;">4. OFFER RECEIVED (Admission Acceptance Issued)</strong>
-              <span style="font-size:0.7rem; font-weight:700; background:#fef3c7; color:#d97706; padding:2px 8px; border-radius:12px;">Stage 4</span>
-            </div>
-            <p style="margin:0 0 0.35rem 0; font-size:0.825rem; color:var(--text-main);">
-              <strong>Definition:</strong> University has issued an official Conditional or Unconditional Offer Letter to the candidate.
-            </p>
-            <div style="font-size:0.8rem; color:#92400e;">
-              <strong>Counselor Action:</strong> Review offer conditions with candidate and family. Guide student on fulfilling conditions and preparing fee remittance.
-            </div>
-          </div>
-
-          <!-- Stage 5 -->
+          <!-- Stage 3: Follow-ups -->
           <div style="padding:1rem 1.25rem; border-radius:10px; background:#fdf4ff; border:1px solid #f5d0fe; border-left:5px solid #c026d3;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
-              <strong style="color:#86198f; font-size:0.95rem;">5. TUITION FEES PAID (Deposit Paid & CAS / I-20 Issued)</strong>
-              <span style="font-size:0.7rem; font-weight:700; background:#fae8ff; color:#c026d3; padding:2px 8px; border-radius:12px;">Stage 5</span>
+              <strong style="color:#86198f; font-size:0.95rem;">3. Structured Consultations & Tasks (Section 9.4 & 9.7)</strong>
+              <span style="font-size:0.7rem; font-weight:700; background:#fae8ff; color:#c026d3; padding:2px 8px; border-radius:12px;">Step 3</span>
             </div>
             <p style="margin:0 0 0.35rem 0; font-size:0.825rem; color:var(--text-main);">
-              <strong>Definition:</strong> Candidate has remitted the first-semester tuition deposit; university has released CAS (UK), I-20 (USA), or COE (Australia).
+              All counselor interactions (Phone Call, WhatsApp, Office Visit) are logged with consultation notes and a mandatory next follow-up date governed by policy time limits.
             </p>
-            <div style="font-size:0.8rem; color:#86198f;">
-              <strong>Counselor Action:</strong> Prepare visa application file, verify bank statements and financial proofs, book embassy biometrics, and conduct mock visa interviews.
-            </div>
           </div>
 
-          <!-- Stage 6 -->
+          <!-- Stage 4: Customer Conversion -->
           <div style="padding:1rem 1.25rem; border-radius:10px; background:#ecfdf5; border:1px solid #a7f3d0; border-left:5px solid #10b981;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
-              <strong style="color:#065f46; font-size:0.95rem;">6. ENROLLED (Visa Granted & Student Admitted)</strong>
-              <span style="font-size:0.7rem; font-weight:700; background:#d1fae5; color:#059669; padding:2px 8px; border-radius:12px;">Stage 6 • Goal Complete</span>
+              <strong style="color:#065f46; font-size:0.95rem;">4. Convert to Customer via Service Invoice (Section 9.3.2)</strong>
+              <span style="font-size:0.7rem; font-weight:700; background:#d1fae5; color:#059669; padding:2px 8px; border-radius:12px;">Step 4 • Customer Converted</span>
             </div>
             <p style="margin:0 0 0.35rem 0; font-size:0.825rem; color:var(--text-main);">
-              <strong>Definition:</strong> Student visa is approved! Flight tickets are booked and candidate has matriculated at their destination university.
+              Clicking <strong>Convert to Customer</strong> opens the invoice creator. Once an official service invoice is generated, the candidate becomes an invoiced Customer with dedicated billing ledger and payment remittance tracking.
             </p>
-            <div style="font-size:0.8rem; color:#065f46;">
-              <strong>Counselor Action:</strong> Provide pre-departure briefing, share accommodation contacts, airport pickup details, and congratulate the student on their success.
-            </div>
           </div>
         </div>
       </div>
