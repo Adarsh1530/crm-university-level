@@ -228,7 +228,8 @@ include __DIR__ . '/../includes/header.php';
           <th>Invoiced Amount</th>
           <th>Paid Amount</th>
           <th>Balance Due</th>
-          <th>Admission Stage</th>
+          <th>Prospectivity</th>
+          <th>InTake</th>
           <th>Branch & Counselor</th>
           <th style="text-align:right;">Actions</th>
         </tr>
@@ -236,7 +237,7 @@ include __DIR__ . '/../includes/header.php';
       <tbody>
         <?php if (empty($customers)): ?>
           <tr>
-            <td colspan="8" style="text-align:center; padding:3rem; color:var(--text-muted);">
+            <td colspan="9" style="text-align:center; padding:3rem; color:var(--text-muted);">
               <i class="fa-solid fa-certificate" style="font-size:2rem; margin-bottom:0.75rem; display:block; color:var(--text-light);"></i>
               No active invoiced customers match this filter.
             </td>
@@ -290,13 +291,20 @@ include __DIR__ . '/../includes/header.php';
                 <?php endif; ?>
               </td>
               <td>
-                <button type="button" 
-                  onclick="openAdvanceStageModal(<?= $cust['id'] ?>, '<?= addslashes(htmlspecialchars($cust['full_name'])) ?>', '<?= addslashes(htmlspecialchars($cust['stage'])) ?>')"
-                  class="badge badge-primary" 
-                  style="border:none; cursor:pointer; font-size:0.72rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;"
-                  title="Click to Advance Admission Stage">
-                  <?= htmlspecialchars($cust['stage']) ?> <i class="fa-solid fa-angle-right" style="font-size:0.65rem;"></i>
-                </button>
+                <div onclick="openChangeProspectivityModal(<?= $cust['id'] ?>, '<?= htmlspecialchars(addslashes($cust['full_name'])) ?>', '<?= htmlspecialchars($cust['prospectivity'] ?? $cust['priority']) ?>')" style="cursor:pointer;" title="Click to change Prospectivity">
+                  <span class="badge <?= ($cust['prospectivity'] ?? $cust['priority']) === 'Hot' || ($cust['prospectivity'] ?? $cust['priority']) === 'High' ? 'badge-danger' : (($cust['prospectivity'] ?? $cust['priority']) === 'Cold' || ($cust['prospectivity'] ?? $cust['priority']) === 'Low' ? 'badge-secondary' : 'badge-warning') ?>" style="font-size:0.72rem;">
+                    <?= htmlspecialchars($cust['prospectivity'] ?: $cust['priority'] ?: 'Warm') ?>
+                  </span>
+                  <i class="fa-solid fa-pen" style="font-size:0.6rem; color:var(--text-light); margin-left:2px;"></i>
+                </div>
+              </td>
+              <td>
+                <div onclick="openChangeIntakeModal(<?= $cust['id'] ?>, '<?= htmlspecialchars(addslashes($cust['full_name'])) ?>', '<?= htmlspecialchars($cust['intake_term'] ?? 'September') ?>', '<?= htmlspecialchars($cust['intake_year'] ?? '2026') ?>')" style="cursor:pointer;" title="Click to change InTake">
+                  <span class="badge badge-secondary" style="font-size:0.7rem; font-weight:600; padding:2px 6px;">
+                    <?= htmlspecialchars($cust['intake_term'] ?: 'Sept') ?> <?= htmlspecialchars($cust['intake_year'] ?: date('Y')) ?>
+                    <i class="fa-solid fa-pen" style="font-size:0.6rem; color:var(--text-light); margin-left:2px;"></i>
+                  </span>
+                </div>
               </td>
               <td>
                 <div style="font-size:0.82rem; font-weight:600; color:var(--text-heading);">
@@ -318,7 +326,7 @@ include __DIR__ . '/../includes/header.php';
                   <a href="<?= base_url('customers/view.php?id=' . $cust['id']) ?>" class="btn btn-secondary btn-sm" title="View Customer Ledger & Invoices" style="padding:4px 8px; font-size:0.78rem;">
                     <i class="fa-solid fa-file-invoice-dollar"></i> Ledger
                   </a>
-                  <a href="<?= base_url('leads/view.php?id=' . $cust['id']) ?>" class="btn btn-outline btn-sm" title="View Full Student Dossier" style="padding:4px 8px; font-size:0.78rem;">
+                  <a href="<?= base_url('leads/view.php?id=' . $cust['id']) ?>" class="btn btn-outline btn-sm" title="View Lead Details" style="padding:4px 8px; font-size:0.78rem;">
                     <i class="fa-solid fa-id-card"></i>
                   </a>
                 </div>

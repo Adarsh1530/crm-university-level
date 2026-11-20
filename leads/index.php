@@ -343,22 +343,6 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- 6 Stages Filter Tabs / Pills -->
-<div style="display:flex; gap:0.5rem; overflow-x:auto; padding-bottom:0.75rem; margin-bottom:1.25rem;">
-  <a href="<?= base_url('leads/index.php?' . http_build_query(array_filter(['type' => ($type !== 'all' ? $type : null)]))) ?>" class="btn btn-sm <?= empty($stageFilter) ? 'btn-primary' : 'btn-secondary' ?>" style="white-space:nowrap; border-radius:20px; padding:0.4rem 1rem;">
-    All Stages (<?= $totalScopedLeads ?>)
-  </a>
-  <?php 
-  $stagesList = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVED', 'TUITION FEES PAID', 'ENROLLED'];
-  foreach ($stagesList as $stg): 
-    $cnt = $stageCounts[$stg] ?? 0;
-  ?>
-    <a href="<?= base_url('leads/index.php?' . http_build_query(array_filter(['type' => ($type !== 'all' ? $type : null), 'stage' => $stg]))) ?>" class="btn btn-sm <?= ($stageFilter === $stg) ? 'btn-primary' : 'btn-secondary' ?>" style="white-space:nowrap; border-radius:20px; padding:0.4rem 0.9rem;">
-      <?= htmlspecialchars($stg) ?> (<?= $cnt ?>)
-    </a>
-  <?php endforeach; ?>
-</div>
-
 <!-- Filter Bar (Module Section 9.2.2 Filters: By Date, Created By, Search, Priority, Source) -->
 <div class="card" style="margin-bottom:1.5rem; padding:1.25rem;">
   <form method="GET" action="<?= base_url('leads/index.php') ?>" style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center;">
@@ -448,12 +432,12 @@ include __DIR__ . '/../includes/header.php';
           <?php if (can('leads', 'reassign')): ?>
             <th style="width:36px;"><input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)"></th>
           <?php endif; ?>
-          <th>Lead Code & Student</th>
+          <th>Reg.# & Student</th>
           <th>Contact & Phone</th>
           <th>Destination & Course</th>
-          <th>Admission Stage</th>
-          <th>Priority</th>
-          <th>Branch & Counselor</th>
+          <th>Prospectivity</th>
+          <th>InTake</th>
+          <th>Assigned To & Branch</th>
           <th>Follow-ups</th>
           <th style="text-align:right;">Actions</th>
         </tr>
@@ -545,29 +529,23 @@ include __DIR__ . '/../includes/header.php';
                   <?= htmlspecialchars($lead['preferred_country'] ?: 'Global') ?>
                 </div>
                 <div style="font-size:0.75rem; color:var(--text-muted);">
-                  <?= htmlspecialchars($lead['preferred_course'] ?: 'General Program') ?>
+                  <?= htmlspecialchars($lead['preferred_course'] ?: 'General') ?>
                 </div>
-                <div onclick="openChangeIntakeModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['intake_term'] ?? 'September') ?>', '<?= htmlspecialchars($lead['intake_year'] ?? '2026') ?>')" style="cursor:pointer; margin-top:2px;" title="Click to change InTake">
-                  <span class="badge badge-secondary" style="font-size:0.68rem; font-weight:600; padding:1px 5px;">
-                    <i class="fa-regular fa-calendar"></i> <?= htmlspecialchars($lead['intake_term'] ?: 'Sept') ?> <?= htmlspecialchars($lead['intake_year'] ?: date('Y')) ?>
+              </td>
+              <td>
+                <div onclick="openChangeProspectivityModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['prospectivity'] ?? $lead['priority']) ?>')" style="cursor:pointer;" title="Click to change Prospectivity">
+                  <span class="badge <?= ($lead['prospectivity'] ?? $lead['priority']) === 'Hot' || ($lead['prospectivity'] ?? $lead['priority']) === 'High' ? 'badge-danger' : (($lead['prospectivity'] ?? $lead['priority']) === 'Cold' || ($lead['prospectivity'] ?? $lead['priority']) === 'Low' ? 'badge-secondary' : 'badge-warning') ?>" style="font-size:0.72rem;">
+                    <?= htmlspecialchars($lead['prospectivity'] ?: $lead['priority'] ?: 'Warm') ?>
+                  </span>
+                  <i class="fa-solid fa-pen" style="font-size:0.6rem; color:var(--text-light); margin-left:2px;"></i>
+                </div>
+              </td>
+              <td>
+                <div onclick="openChangeIntakeModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['intake_term'] ?? 'September') ?>', '<?= htmlspecialchars($lead['intake_year'] ?? '2026') ?>')" style="cursor:pointer;" title="Click to change InTake">
+                  <span class="badge badge-secondary" style="font-size:0.7rem; font-weight:600; padding:2px 6px;">
+                    <?= htmlspecialchars($lead['intake_term'] ?: 'Sept') ?> <?= htmlspecialchars($lead['intake_year'] ?: date('Y')) ?>
                     <i class="fa-solid fa-pen" style="font-size:0.6rem; color:var(--text-light); margin-left:2px;"></i>
                   </span>
-                </div>
-              </td>
-              <td>
-                <span class="badge <?= $stageBadgeClass ?>" style="font-weight:700; font-size:0.72rem;">
-                  <?= htmlspecialchars($lead['stage']) ?>
-                </span>
-                <?php if ($lead['secondary_status'] !== 'Active'): ?>
-                  <div style="font-size:0.7rem; color:var(--danger); font-weight:600; margin-top:2px;">
-                    <?= htmlspecialchars($lead['secondary_status']) ?>
-                  </div>
-                <?php endif; ?>
-              </td>
-              <td>
-                <div onclick="openChangeProspectivityModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['priority']) ?>')" style="cursor:pointer;" title="Click to change Prospectivity">
-                  <?= priority_badge($lead['priority']) ?>
-                  <i class="fa-solid fa-pen" style="font-size:0.65rem; color:var(--text-light); margin-left:2px;"></i>
                 </div>
               </td>
               <td>
@@ -593,14 +571,11 @@ include __DIR__ . '/../includes/header.php';
                   <button type="button" class="btn btn-primary btn-sm" style="font-size:0.75rem; padding:3px 8px; font-weight:600;" onclick="openLogCallModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['stage']) ?>')" title="Log Call Outcome & Next Follow-up">
                     <i class="fa-solid fa-phone-volume"></i> <span class="d-none d-lg-inline">Log Call</span>
                   </button>
-                  <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:3px 8px;" onclick="openAdvanceStageModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['stage']) ?>')" title="Advance Admission Stage">
-                    <i class="fa-solid fa-stairs"></i>
-                  </button>
-                  <a href="<?= base_url('leads/view.php?id=' . $lead['id']) ?>" class="btn btn-outline btn-sm" style="padding:3px 8px;" title="View Student Dossier">
+                  <a href="<?= base_url('leads/view.php?id=' . $lead['id']) ?>" class="btn btn-outline btn-sm" style="padding:3px 8px;" title="View Lead Details">
                     <i class="fa-solid fa-eye"></i>
                   </a>
                   <?php if (can('leads', 'edit')): ?>
-                    <a href="<?= base_url('leads/edit.php?id=' . $lead['id']) ?>" class="btn btn-ghost btn-sm" style="padding:3px 8px;" title="Edit Profile">
+                    <a href="<?= base_url('leads/edit.php?id=' . $lead['id']) ?>" class="btn btn-ghost btn-sm" style="padding:3px 8px;" title="Edit Lead">
                       <i class="fa-solid fa-pen-to-square"></i>
                     </a>
                   <?php endif; ?>

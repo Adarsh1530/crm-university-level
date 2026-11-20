@@ -68,21 +68,20 @@ $countPendingLeads = (int)$pdo->query("
 
 $totalTasks = $countScheduled + $countOverdue + $countTodayLeads + $countPendingLeads;
 
-// 3. 6 Standard Pipeline Stages Breakdown
-$stageStats = $pdo->query("
-    SELECT l.stage, COUNT(*) as count 
+// 3. Lead Prospectivity Breakdown (Section 9.2.3)
+$prospectivityStats = $pdo->query("
+    SELECT COALESCE(l.prospectivity, 'Warm') as prospect, COUNT(*) as count 
     FROM leads l 
     WHERE l.is_archived = 0 AND {$scopeLeads}
-    GROUP BY l.stage
+    GROUP BY prospect
 ")->fetchAll(PDO::FETCH_KEY_PAIR);
 
-$standardStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVED', 'TUITION FEES PAID', 'ENROLLED'];
-$stageChartLabels = [];
-$stageChartData = [];
-foreach ($standardStages as $stg) {
-    $stageChartLabels[] = $stg;
-    $stageChartData[] = (int)($stageStats[$stg] ?? 0);
-}
+$prospectLabels = ['Hot', 'Warm', 'Cold'];
+$prospectData = [
+    (int)($prospectivityStats['Hot'] ?? 0),
+    (int)($prospectivityStats['Warm'] ?? 0),
+    (int)($prospectivityStats['Cold'] ?? 0)
+];
 
 // 4. Branch Yields (for Super Admin)
 $branchStats = [];
@@ -566,19 +565,19 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- 8. PIPELINE VISUAL FUNNEL & QUICK GUIDANCE (Keep #widget-pipeline-chart and #widget-branch-chart) -->
+<!-- 8. PROSPECTIVITY DISTRIBUTION & QUICK GUIDANCE (Keep #widget-pipeline-chart and #widget-branch-chart) -->
 <div style="display:grid; grid-template-columns:<?= $isCounselor ? '1fr 1fr' : '1fr 1fr' ?>; gap:1.5rem; margin-bottom:1.5rem; align-items:start;">
-  <!-- 6-Stage Pipeline Chart -->
+  <!-- Lead Prospectivity Chart (Section 9.2.3) -->
   <div class="card" id="widget-pipeline-chart" style="padding:1.5rem; border-radius:12px;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
       <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-heading); margin:0;">
-        <i class="fa-solid fa-diagram-project" style="color:var(--primary); margin-right:4px;"></i> 
-        <?= $isCounselor ? 'My 6-Stage Student Funnel' : '6-Stage Admission Pipeline' ?>
+        <i class="fa-solid fa-fire" style="color:#ef4444; margin-right:4px;"></i> 
+        <?= $isCounselor ? 'My Lead Prospectivity Tiers' : 'Lead Prospectivity Distribution' ?>
       </h3>
       <a href="<?= base_url('leads/index.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">View Leads &rarr;</a>
     </div>
     <div style="height:250px;">
-      <canvas id="pipelineChart"></canvas>
+      <canvas id="prospectChart"></canvas>
     </div>
   </div>
 
@@ -589,26 +588,26 @@ include __DIR__ . '/../includes/header.php';
         <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-heading); margin:0;">
           <i class="fa-solid fa-lightbulb" style="color:#f59e0b; margin-right:4px;"></i> Counselor Daily Tips
         </h3>
-        <span class="badge badge-primary" style="font-size:0.72rem;">Pro Guidance</span>
+        <span class="badge badge-primary" style="font-size:0.72rem;">Operational Guide</span>
       </div>
       <div style="display:flex; flex-direction:column; gap:0.75rem; font-size:0.825rem;">
         <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.75rem 1rem;">
           <strong style="color:var(--text-heading); display:flex; align-items:center; gap:6px;">
-            <i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> 1-Click WhatsApp Greetings
+            <i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> 1-Click WhatsApp Outreach
           </strong>
-          <p style="margin:4px 0 0 0; color:var(--text-muted); font-size:0.78rem;">Click WhatsApp directly from the list to send prefilled admission greetings without having to save numbers on your phone.</p>
+          <p style="margin:4px 0 0 0; color:var(--text-muted); font-size:0.78rem;">Click WhatsApp directly from your task lists to initiate consultation greetings without saving numbers on your phone.</p>
         </div>
         <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.75rem 1rem;">
           <strong style="color:var(--text-heading); display:flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-phone-volume" style="color:#10b981;"></i> Always Log Call Outcomes
+            <i class="fa-solid fa-phone-volume" style="color:#10b981;"></i> Always Schedule Next Follow-up
           </strong>
-          <p style="margin:4px 0 0 0; color:var(--text-muted); font-size:0.78rem;">After each conversation, click "Log Outcome" to record discussion notes and auto-schedule your next follow-up date.</p>
+          <p style="margin:4px 0 0 0; color:var(--text-muted); font-size:0.78rem;">After each call, record the outcome notes and next appointment date to maintain scheduled task momentum.</p>
         </div>
         <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.75rem 1rem;">
           <strong style="color:var(--text-heading); display:flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-file-arrow-up" style="color:var(--primary);"></i> Student Dossiers
+            <i class="fa-solid fa-file-invoice-dollar" style="color:var(--primary);"></i> Convert to Customer
           </strong>
-          <p style="margin:4px 0 0 0; color:var(--text-muted); font-size:0.78rem;">Keep passport copies and marksheets updated in the Document Hub so applications are ready for university submission.</p>
+          <p style="margin:4px 0 0 0; color:var(--text-muted); font-size:0.78rem;">When a student confirms enrollment, click "Convert to Customer" on their profile to generate their service invoice.</p>
         </div>
       </div>
     </div>
@@ -617,7 +616,7 @@ include __DIR__ . '/../includes/header.php';
     <div class="card" id="widget-branch-chart" style="padding:1.5rem; border-radius:12px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
         <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-heading); margin:0;">
-          <i class="fa-solid fa-chart-pie" style="color:var(--primary); margin-right:4px;"></i> Regional Branch Intake Distribution
+          <i class="fa-solid fa-chart-pie" style="color:var(--primary); margin-right:4px;"></i> Regional Branch Lead Distribution
         </h3>
         <a href="<?= base_url('leads/index.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">View Leads &rarr;</a>
       </div>
@@ -741,17 +740,17 @@ include __DIR__ . '/../includes/header.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Pipeline Chart
-  var pipeEl = document.getElementById('pipelineChart');
-  if (pipeEl) {
-    new Chart(pipeEl, {
+  // Prospectivity Distribution Chart (Section 9.2.3)
+  var prospectEl = document.getElementById('prospectChart');
+  if (prospectEl) {
+    new Chart(prospectEl, {
       type: 'bar',
       data: {
-        labels: <?= json_encode($stageChartLabels) ?>,
+        labels: <?= json_encode($prospectLabels) ?>,
         datasets: [{
-          label: 'Students in Stage',
-          data: <?= json_encode($stageChartData) ?>,
-          backgroundColor: ['#64748b', '#0284c7', '#5955D1', '#f59e0b', '#8b5cf6', '#10b981'],
+          label: 'Candidate Leads',
+          data: <?= json_encode($prospectData) ?>,
+          backgroundColor: ['#ef4444', '#f59e0b', '#64748b'],
           borderRadius: 6
         }]
       },

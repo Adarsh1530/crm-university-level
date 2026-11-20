@@ -488,15 +488,15 @@
     },
     {
       "url": "/leads/view.php",
-      "target": "button[onclick*=\"openAdvanceStageModal\"], button:has(.fa-stairs)",
+      "target": "a[href*=\"create_invoice.php\"], .btn-primary:has(.fa-user-check), button:contains(\"Convert\")",
       "fallback": ".card:first-of-type",
-      "module": "Student Dossier & Profile",
-      "section": "Milestone Advancement",
-      "title": "Advance Milestone Action Button",
-      "badge": "Stage Transition",
-      "icon": "fa-forward-step",
-      "description": "Click \"Advance Stage\" to progress this student through the 6 standardized consultancy milestones (Enquiry -> Customer -> Application -> Offer Received -> Tuition Fees Paid -> Enrolled). Prompts for consultation remarks and automatically logs a timestamped milestone audit record.",
-      "tip": "Advancing to \"Customer\" triggers client billing readiness in the Finance module.",
+      "module": "Lead Details & Customer Conversion",
+      "section": "Customer Conversion",
+      "title": "Convert to Customer Button",
+      "badge": "Client Conversion",
+      "icon": "fa-user-check",
+      "description": "Click \"Convert to Customer\" to generate an official service invoice for this candidate. When an invoice is issued, the candidate is automatically converted to an invoiced Customer (Section 9.3.2).",
+      "tip": "Directly opens the invoice generator prefilled with candidate registration details.",
       "position": "bottom"
     },
     {
@@ -1387,15 +1387,15 @@
     },
     {
       "url": "/leads/view.php",
-      "target": "button[onclick*=\"openAdvanceStageModal\"], button:has(.fa-stairs)",
+      "target": "a[href*=\"create_invoice.php\"], .btn-primary:has(.fa-user-check), button:contains(\"Convert\")",
       "fallback": ".card:first-of-type",
-      "module": "Student Dossier & Profile",
-      "section": "Milestone Advancement",
-      "title": "Advance Milestone Action Button",
-      "badge": "Stage Transition",
-      "icon": "fa-forward-step",
-      "description": "Click \"Advance Stage\" to progress this student through the 6 standardized consultancy milestones (Enquiry -> Customer -> Application -> Offer Received -> Tuition Fees Paid -> Enrolled). Prompts for consultation remarks and automatically logs a timestamped milestone audit record.",
-      "tip": "Advancing to \"Customer\" triggers client billing readiness in the Finance module.",
+      "module": "Lead Details & Customer Conversion",
+      "section": "Customer Conversion",
+      "title": "Convert to Customer Button",
+      "badge": "Client Conversion",
+      "icon": "fa-user-check",
+      "description": "Click \"Convert to Customer\" to generate an official service invoice for this candidate. When an invoice is issued, the candidate is automatically converted to an invoiced Customer (Section 9.3.2).",
+      "tip": "Directly opens the invoice generator prefilled with candidate registration details.",
       "position": "bottom"
     },
     {
@@ -2286,15 +2286,15 @@
     },
     {
       "url": "/leads/view.php",
-      "target": "button[onclick*=\"openAdvanceStageModal\"], button:has(.fa-stairs)",
+      "target": "a[href*=\"create_invoice.php\"], .btn-primary:has(.fa-user-check), button:contains(\"Convert\")",
       "fallback": ".card:first-of-type",
-      "module": "Student Dossier & Profile",
-      "section": "Milestone Advancement",
-      "title": "Advance Milestone Action Button",
+      "module": "Lead Details & Customer Conversion",
+      "section": "Customer Conversion",
+      "title": "Convert to Customer Button",
       "badge": "Admissions Counselor • Student Advisory",
-      "icon": "fa-forward-step",
-      "description": "Click \"Advance Stage\" to progress this student through the 6 standardized consultancy milestones (Enquiry -> Customer -> Application -> Offer Received -> Tuition Fees Paid -> Enrolled). Prompts for consultation remarks and automatically logs a timestamped milestone audit record.",
-      "tip": "Advancing to \"Customer\" triggers client billing readiness in the Finance module.",
+      "icon": "fa-user-check",
+      "description": "Click \"Convert to Customer\" to generate an official service invoice for this candidate. When an invoice is issued, the candidate is automatically converted to an invoiced Customer (Section 9.3.2).",
+      "tip": "Directly opens the invoice generator prefilled with candidate registration details.",
       "position": "bottom"
     },
     {
@@ -2701,7 +2701,7 @@
 
     // Close any other open modals
     if (typeof closeModal === 'function') {
-      ['quickLeadModal', 'globalLogCallModal', 'advanceStageModal', 'userManualModal', 'staffModal'].forEach(id => closeModal(id));
+      ['quickLeadModal', 'globalLogCallModal', 'userManualModal', 'staffModal'].forEach(id => closeModal(id));
     }
 
     // Hide resume pill if visible

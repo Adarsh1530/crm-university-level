@@ -2,6 +2,7 @@
 /**
  * Edit Student Lead Record
  * Enterprise University Admissions & Enrollment Management System (UniCRM)
+ * Aligned 1:1 with User Manual Section 9.2.8 & Figure p14
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -49,34 +50,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $fullName = trim($_POST['full_name'] ?? '');
     $rawPhone = trim($_POST['phone'] ?? '');
+    $alternatePhone = trim($_POST['alternate_phone'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $city = trim($_POST['city'] ?? '');
-    $state = trim($_POST['state'] ?? '');
-    $country = trim($_POST['country'] ?? 'India');
     $dob = !empty($_POST['dob']) ? $_POST['dob'] : null;
     $gender = trim($_POST['gender'] ?? 'Other');
-    $passportNumber = trim($_POST['passport_number'] ?? '');
-    $passportExpiry = !empty($_POST['passport_expiry']) ? $_POST['passport_expiry'] : null;
 
     $highestQual = trim($_POST['highest_qualification'] ?? '');
     $collegeName = trim($_POST['college_name'] ?? '');
-    $yearOfPassing = !empty($_POST['year_of_passing']) ? (int)$_POST['year_of_passing'] : null;
-    $percentage = !empty($_POST['percentage']) ? (float)$_POST['percentage'] : null;
-    $backlogs = !empty($_POST['backlogs_count']) ? (int)$_POST['backlogs_count'] : 0;
-    $workExp = !empty($_POST['work_experience_years']) ? (float)$_POST['work_experience_years'] : 0;
 
-    $englishTest = trim($_POST['english_test'] ?? 'None');
-    $englishScore = trim($_POST['english_score'] ?? '');
-    $scoreL = !empty($_POST['score_listening']) ? (float)$_POST['score_listening'] : null;
-    $scoreR = !empty($_POST['score_reading']) ? (float)$_POST['score_reading'] : null;
-    $scoreW = !empty($_POST['score_writing']) ? (float)$_POST['score_writing'] : null;
-    $scoreS = !empty($_POST['score_speaking']) ? (float)$_POST['score_speaking'] : null;
+    $hasIelts = isset($_POST['has_ielts']) ? 1 : 0;
+    $ieltsScore = trim($_POST['ielts_score'] ?? '');
+    $hasPan = isset($_POST['has_pancard']) ? 1 : 0;
+    $panNumber = trim($_POST['pan_number'] ?? '');
 
     $preferredCountry = trim($_POST['preferred_country'] ?? 'United Kingdom');
     $preferredCourse = trim($_POST['preferred_course'] ?? '');
     $intakeYear = !empty($_POST['intake_year']) ? (int)$_POST['intake_year'] : 2026;
     $intakeTerm = trim($_POST['intake_term'] ?? 'September');
-    $priority = trim($_POST['priority'] ?? 'Moderate');
+    $prospectivity = trim($_POST['prospectivity'] ?? 'Warm');
+    $priority = $prospectivity;
     $source = trim($_POST['source'] ?? 'Walk-in');
     $notes = trim($_POST['notes'] ?? '');
 
@@ -92,22 +85,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $updSql = "
                     UPDATE leads 
-                    SET full_name = ?, phone = ?, email = ?, city = ?, state = ?, country = ?,
-                        dob = ?, gender = ?, passport_number = ?, passport_expiry = ?,
-                        highest_qualification = ?, college_name = ?, year_of_passing = ?, percentage = ?, backlogs_count = ?,
-                        english_test = ?, english_score = ?, score_listening = ?, score_reading = ?, score_writing = ?, score_speaking = ?,
-                        work_experience_years = ?, preferred_country = ?, preferred_course = ?, intake_year = ?, intake_term = ?,
-                        priority = ?, source = ?, notes = ?
+                    SET full_name = ?, phone = ?, alternate_phone = ?, email = ?, city = ?,
+                        dob = ?, gender = ?, pan_number = ?,
+                        has_ielts = ?, english_test = ?, english_score = ?, ielts_overall = ?,
+                        highest_qualification = ?, college_name = ?,
+                        preferred_country = ?, preferred_course = ?, intake_year = ?, intake_term = ?,
+                        prospectivity = ?, priority = ?, source = ?, notes = ?
                     WHERE id = ?
                 ";
                 $updStmt = $pdo->prepare($updSql);
                 $updStmt->execute([
-                    $fullName, $cleanPhone, $email, $city, $state, $country,
-                    $dob, $gender, $passportNumber, $passportExpiry,
-                    $highestQual, $collegeName, $yearOfPassing, $percentage, $backlogs,
-                    $englishTest, $englishScore, $scoreL, $scoreR, $scoreW, $scoreS,
-                    $workExp, $preferredCountry, $preferredCourse, $intakeYear, $intakeTerm,
-                    $priority, $source, $notes,
+                    $fullName, $cleanPhone, $alternatePhone, $email, $city,
+                    $dob, $gender, $panNumber,
+                    $hasIelts, ($hasIelts ? 'IELTS' : 'None'), $ieltsScore, $ieltsScore,
+                    $highestQual, $collegeName,
+                    $preferredCountry, $preferredCourse, $intakeYear, $intakeTerm,
+                    $prospectivity, $priority, $source, $notes,
                     $leadId
                 ]);
 
@@ -136,7 +129,7 @@ include __DIR__ . '/../includes/header.php';
   </div>
   <div>
     <a href="<?= base_url('leads/view.php?id=' . $lead['id']) ?>" class="btn btn-secondary btn-sm">
-      <i class="fa-solid fa-arrow-left"></i> Back to Dossier
+      <i class="fa-solid fa-arrow-left"></i> Back to Lead Details
     </a>
   </div>
 </div>
@@ -144,45 +137,89 @@ include __DIR__ . '/../includes/header.php';
 <form method="POST" action="<?= base_url('leads/edit.php?id=' . $lead['id']) ?>">
   <?= csrf_field() ?>
 
-  <!-- Personal Information -->
+  <!-- Personal & Contact Information -->
   <div class="card" style="margin-bottom:1.5rem; padding:1.5rem;">
     <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-heading); margin:0 0 1.25rem 0;">
-      <i class="fa-solid fa-user" style="color:var(--primary); margin-right:6px;"></i> Personal Information
+      <i class="fa-solid fa-user" style="color:var(--primary); margin-right:6px;"></i> Personal & Contact Information
     </h3>
     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1.25rem;">
       <div class="form-group">
-        <label class="form-label">Full Name <span style="color:red;">*</span></label>
+        <label class="form-label" style="font-weight:700;">Full Name <span style="color:red;">*</span></label>
         <input type="text" name="full_name" class="form-control" value="<?= htmlspecialchars($lead['full_name']) ?>" required>
       </div>
       <div class="form-group">
-        <label class="form-label">Phone Number <span style="color:red;">*</span></label>
+        <label class="form-label" style="font-weight:700;">Mobile Phone <span style="color:red;">*</span></label>
         <input type="text" name="phone" class="form-control" value="<?= htmlspecialchars($lead['phone']) ?>" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Secondary / Alternate Phone</label>
+        <input type="text" name="alternate_phone" class="form-control" value="<?= htmlspecialchars($lead['alternate_phone'] ?? '') ?>" placeholder="e.g. 0495-2345678">
       </div>
       <div class="form-group">
         <label class="form-label">Email Address</label>
         <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($lead['email'] ?? '') ?>">
       </div>
       <div class="form-group">
-        <label class="form-label">City</label>
+        <label class="form-label">Date of Birth</label>
+        <input type="date" name="dob" class="form-control" value="<?= htmlspecialchars($lead['dob'] ?? '') ?>">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gender</label>
+        <select name="gender" class="form-control">
+          <option value="Male" <?= ($lead['gender'] ?? '') === 'Male' ? 'selected' : '' ?>>Male</option>
+          <option value="Female" <?= ($lead['gender'] ?? '') === 'Female' ? 'selected' : '' ?>>Female</option>
+          <option value="Other" <?= ($lead['gender'] ?? '') === 'Other' ? 'selected' : '' ?>>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">City / Address</label>
         <input type="text" name="city" class="form-control" value="<?= htmlspecialchars($lead['city'] ?? '') ?>">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Passport Number</label>
-        <input type="text" name="passport_number" class="form-control" value="<?= htmlspecialchars($lead['passport_number'] ?? '') ?>">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Passport Expiry Date</label>
-        <input type="date" name="passport_expiry" class="form-control" value="<?= htmlspecialchars($lead['passport_expiry'] ?? '') ?>">
       </div>
     </div>
   </div>
 
-  <!-- Academic Background -->
+  <!-- Study Preferences & InTake -->
   <div class="card" style="margin-bottom:1.5rem; padding:1.5rem;">
     <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-heading); margin:0 0 1.25rem 0;">
-      <i class="fa-solid fa-graduation-cap" style="color:var(--primary); margin-right:6px;"></i> Academic Background & English Scores
+      <i class="fa-solid fa-earth-americas" style="color:var(--primary); margin-right:6px;"></i> Study Preferences & InTake
     </h3>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1.25rem; margin-bottom:1.25rem;">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1.25rem;">
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700;">Target Destination <span style="color:red;">*</span></label>
+        <select name="preferred_country" class="form-control" required>
+          <?php foreach (['United Kingdom', 'Canada', 'Australia', 'United States', 'Ireland', 'Germany', 'New Zealand', 'Europe General'] as $c): ?>
+            <option value="<?= $c ?>" <?= $lead['preferred_country'] === $c ? 'selected' : '' ?>><?= $c ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Desired Course</label>
+        <input type="text" name="preferred_course" class="form-control" value="<?= htmlspecialchars($lead['preferred_course'] ?? '') ?>">
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700;">Prospectivity <span style="color:red;">*</span></label>
+        <?php $curP = $lead['prospectivity'] ?? $lead['priority'] ?? 'Warm'; ?>
+        <select name="prospectivity" class="form-control" required>
+          <option value="Hot" <?= ($curP === 'Hot' || $curP === 'High') ? 'selected' : '' ?>>🔥 Hot</option>
+          <option value="Warm" <?= ($curP === 'Warm' || $curP === 'Moderate') ? 'selected' : '' ?>>⚡ Warm</option>
+          <option value="Cold" <?= ($curP === 'Cold' || $curP === 'Low') ? 'selected' : '' ?>>🌱 Cold</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700;">InTake Year & Term <span style="color:red;">*</span></label>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+          <select name="intake_term" class="form-control">
+            <option value="September" <?= ($lead['intake_term'] ?? '') === 'September' ? 'selected' : '' ?>>September</option>
+            <option value="January" <?= ($lead['intake_term'] ?? '') === 'January' ? 'selected' : '' ?>>January</option>
+            <option value="May" <?= ($lead['intake_term'] ?? '') === 'May' ? 'selected' : '' ?>>May</option>
+          </select>
+          <select name="intake_year" class="form-control">
+            <option value="2026" <?= ($lead['intake_year'] ?? 2026) == 2026 ? 'selected' : '' ?>>2026</option>
+            <option value="2027" <?= ($lead['intake_year'] ?? 2026) == 2027 ? 'selected' : '' ?>>2027</option>
+            <option value="2028" <?= ($lead['intake_year'] ?? 2026) == 2028 ? 'selected' : '' ?>>2028</option>
+          </select>
+        </div>
+      </div>
       <div class="form-group">
         <label class="form-label">Highest Qualification</label>
         <input type="text" name="highest_qualification" class="form-control" value="<?= htmlspecialchars($lead['highest_qualification'] ?? '') ?>">
@@ -192,86 +229,9 @@ include __DIR__ . '/../includes/header.php';
         <input type="text" name="college_name" class="form-control" value="<?= htmlspecialchars($lead['college_name'] ?? '') ?>">
       </div>
       <div class="form-group">
-        <label class="form-label">Percentage / CGPA</label>
-        <input type="number" step="0.01" name="percentage" class="form-control" value="<?= htmlspecialchars($lead['percentage'] ?? '') ?>">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Active Backlogs</label>
-        <input type="number" name="backlogs_count" class="form-control" value="<?= (int)($lead['backlogs_count'] ?? 0) ?>">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Work Experience (Years)</label>
-        <input type="number" step="0.5" name="work_experience_years" class="form-control" value="<?= htmlspecialchars($lead['work_experience_years'] ?? '0') ?>">
-      </div>
-    </div>
-
-    <div style="background:var(--bg-subtle); border-radius:8px; padding:1rem;">
-      <h4 style="font-size:0.9rem; font-weight:700; margin:0 0 0.75rem 0;">English Language Assessment</h4>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:0.75rem;">
-        <div class="form-group">
-          <label class="form-label">Test Type</label>
-          <select name="english_test" class="form-control">
-            <option value="IELTS" <?= $lead['english_test'] === 'IELTS' ? 'selected' : '' ?>>IELTS</option>
-            <option value="PTE" <?= $lead['english_test'] === 'PTE' ? 'selected' : '' ?>>PTE</option>
-            <option value="TOEFL" <?= $lead['english_test'] === 'TOEFL' ? 'selected' : '' ?>>TOEFL</option>
-            <option value="Duolingo" <?= $lead['english_test'] === 'Duolingo' ? 'selected' : '' ?>>Duolingo</option>
-            <option value="None" <?= $lead['english_test'] === 'None' ? 'selected' : '' ?>>None</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Overall Score</label>
-          <input type="text" name="english_score" class="form-control" value="<?= htmlspecialchars($lead['english_score'] ?? '') ?>">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Listening</label>
-          <input type="number" step="0.5" name="score_listening" class="form-control" value="<?= htmlspecialchars($lead['score_listening'] ?? '') ?>">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Reading</label>
-          <input type="number" step="0.5" name="score_reading" class="form-control" value="<?= htmlspecialchars($lead['score_reading'] ?? '') ?>">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Writing</label>
-          <input type="number" step="0.5" name="score_writing" class="form-control" value="<?= htmlspecialchars($lead['score_writing'] ?? '') ?>">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Speaking</label>
-          <input type="number" step="0.5" name="score_speaking" class="form-control" value="<?= htmlspecialchars($lead['score_speaking'] ?? '') ?>">
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Preferences -->
-  <div class="card" style="margin-bottom:1.5rem; padding:1.5rem;">
-    <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-heading); margin:0 0 1.25rem 0;">
-      <i class="fa-solid fa-earth-americas" style="color:var(--primary); margin-right:6px;"></i> Consultancy Preferences
-    </h3>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1.25rem;">
-      <div class="form-group">
-        <label class="form-label">Target Destination</label>
-        <select name="preferred_country" class="form-control">
-          <?php foreach (['United Kingdom', 'Canada', 'Australia', 'United States', 'Ireland', 'Germany', 'New Zealand', 'Dubai'] as $c): ?>
-            <option value="<?= $c ?>" <?= $lead['preferred_country'] === $c ? 'selected' : '' ?>><?= $c ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Target Course</label>
-        <input type="text" name="preferred_course" class="form-control" value="<?= htmlspecialchars($lead['preferred_course'] ?? '') ?>">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Priority</label>
-        <select name="priority" class="form-control">
-          <option value="High" <?= $lead['priority'] === 'High' ? 'selected' : '' ?>>High</option>
-          <option value="Moderate" <?= $lead['priority'] === 'Moderate' ? 'selected' : '' ?>>Moderate</option>
-          <option value="Low" <?= $lead['priority'] === 'Low' ? 'selected' : '' ?>>Low</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Marketing Source</label>
+        <label class="form-label">Source of Lead</label>
         <select name="source" class="form-control">
-          <?php foreach (['College Data', 'Website', 'Meta Ads', 'Instagram', 'Google Ads', 'Referral', 'Walk-in'] as $s): ?>
+          <?php foreach (['Walk-in', 'Website', 'College Data', 'Student Referral', 'Meta Ads', 'Google Ads', 'Direct Reference'] as $s): ?>
             <option value="<?= $s ?>" <?= $lead['source'] === $s ? 'selected' : '' ?>><?= $s ?></option>
           <?php endforeach; ?>
         </select>
@@ -279,11 +239,55 @@ include __DIR__ . '/../includes/header.php';
     </div>
   </div>
 
-  <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
-    <a href="<?= base_url('leads/view.php?id=' . $lead['id']) ?>" class="btn btn-secondary">Cancel</a>
-    <button type="submit" class="btn btn-primary">
-      <i class="fa-solid fa-save"></i> Save Changes
-    </button>
+  <!-- Verification Checks: IELTS & PAN Card (Figure p13 & Section 9.3) -->
+  <div class="card" style="margin-bottom:1.5rem; padding:1.5rem;">
+    <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-heading); margin:0 0 1.25rem 0;">
+      <i class="fa-solid fa-id-card-clip" style="color:var(--primary); margin-right:6px;"></i> Verification Status (IELTS & PAN Card)
+    </h3>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+      <!-- IELTS -->
+      <?php $hasIeltsVal = !empty($lead['has_ielts']) || (!empty($lead['english_test']) && $lead['english_test'] === 'IELTS'); ?>
+      <div style="background:var(--bg-subtle); border-radius:10px; padding:1rem; border:1px solid var(--border-color);">
+        <label style="display:flex; align-items:center; gap:0.5rem; font-weight:700; cursor:pointer; color:var(--text-heading);">
+          <input type="checkbox" name="has_ielts" id="chk_has_ielts" value="1" <?= $hasIeltsVal ? 'checked' : '' ?> onchange="document.getElementById('ielts_score_wrap').style.display = this.checked ? 'block' : 'none';">
+          <span>Taken IELTS Exam?</span>
+        </label>
+        <div id="ielts_score_wrap" style="display:<?= $hasIeltsVal ? 'block' : 'none' ?>; margin-top:0.75rem;">
+          <label class="form-label" style="font-size:0.78rem;">IELTS Overall Band Score</label>
+          <input type="text" name="ielts_score" class="form-control" value="<?= htmlspecialchars($lead['english_score'] ?? $lead['ielts_overall'] ?? '') ?>" placeholder="e.g. 7.0 or 6.5">
+        </div>
+      </div>
+
+      <!-- PAN Card -->
+      <?php $hasPanVal = !empty($lead['pan_number']); ?>
+      <div style="background:var(--bg-subtle); border-radius:10px; padding:1rem; border:1px solid var(--border-color);">
+        <label style="display:flex; align-items:center; gap:0.5rem; font-weight:700; cursor:pointer; color:var(--text-heading);">
+          <input type="checkbox" name="has_pancard" id="chk_has_pancard" value="1" <?= $hasPanVal ? 'checked' : '' ?> onchange="document.getElementById('pan_number_wrap').style.display = this.checked ? 'block' : 'none';">
+          <span>Have PAN Card?</span>
+        </label>
+        <div id="pan_number_wrap" style="display:<?= $hasPanVal ? 'block' : 'none' ?>; margin-top:0.75rem;">
+          <label class="form-label" style="font-size:0.78rem;">PAN Card Number</label>
+          <input type="text" name="pan_number" class="form-control" value="<?= htmlspecialchars($lead['pan_number'] ?? '') ?>" placeholder="e.g. ABCDE1234F" style="text-transform:uppercase;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current Status / Remarks -->
+  <div class="card" style="margin-bottom:2rem; padding:1.5rem;">
+    <div class="form-group" style="margin-bottom:1.25rem;">
+      <label class="form-label" style="font-weight:700;">Current Status / Consultation Notes</label>
+      <textarea name="notes" class="form-control" rows="3"><?= htmlspecialchars($lead['notes'] ?? '') ?></textarea>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; border-top:1px solid var(--border-color); padding-top:1.25rem;">
+      <a href="<?= base_url('leads/view.php?id=' . $lead['id']) ?>" class="btn btn-secondary">
+        <i class="fa-solid fa-times"></i> Cancel
+      </a>
+      <button type="submit" class="btn btn-primary btn-lg" style="padding:0.65rem 2rem; font-weight:700;">
+        <i class="fa-solid fa-check"></i> Save Details
+      </button>
+    </div>
   </div>
 </form>
 

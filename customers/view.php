@@ -92,7 +92,7 @@ include __DIR__ . '/../includes/header.php';
   </div>
   <div style="display:flex; gap:0.5rem; align-items:center;">
     <a href="<?= base_url('leads/view.php?id=' . $customer['id']) ?>" class="btn btn-outline btn-sm">
-      <i class="fa-solid fa-graduation-cap"></i> View Academic Profile
+      <i class="fa-solid fa-user-graduate"></i> View Lead Details
     </a>
     <?php if (can('invoices', 'add')): ?>
       <a href="<?= base_url('finance/create_invoice.php?lead_id=' . $customer['id']) ?>" class="btn btn-primary btn-sm">
@@ -256,10 +256,15 @@ include __DIR__ . '/../includes/header.php';
           <strong><?= htmlspecialchars($customer['counselor_name'] ?? 'Staff') ?></strong>
         </div>
         <div>
-          <span style="color:var(--text-muted); display:block; font-size:0.72rem;">ADMISSION PIPELINE STAGE</span>
-          <span class="badge badge-primary" style="font-weight:700; margin-top:2px; display:inline-block;">
-            <?= htmlspecialchars($customer['stage']) ?>
-          </span>
+          <span style="color:var(--text-muted); display:block; font-size:0.72rem;">PROSPECTIVITY & INTAKE</span>
+          <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
+            <span class="badge <?= ($customer['prospectivity'] ?? $customer['priority']) === 'Hot' || ($customer['prospectivity'] ?? $customer['priority']) === 'High' ? 'badge-danger' : (($customer['prospectivity'] ?? $customer['priority']) === 'Cold' || ($customer['prospectivity'] ?? $customer['priority']) === 'Low' ? 'badge-secondary' : 'badge-warning') ?>" style="font-size:0.75rem;">
+              <?= htmlspecialchars($customer['prospectivity'] ?: $customer['priority'] ?: 'Warm') ?>
+            </span>
+            <span class="badge badge-secondary" style="font-size:0.75rem;">
+              <?= htmlspecialchars($customer['intake_term'] ?: 'Sept') ?> <?= htmlspecialchars($customer['intake_year'] ?: date('Y')) ?>
+            </span>
+          </div>
         </div>
       </div>
     </div>

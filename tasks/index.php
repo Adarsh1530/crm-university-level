@@ -233,7 +233,7 @@ include __DIR__ . '/../includes/header.php';
           <th>Student Lead</th>
           <th>Contact & Dial</th>
           <th>Target Study</th>
-          <th>Stage & Priority</th>
+          <th>Prospectivity</th>
           <?php if ($queue === 'scheduled'): ?>
             <th>Scheduled Time</th>
             <th>Milestone</th>
@@ -318,12 +318,10 @@ include __DIR__ . '/../includes/header.php';
                 </div>
               </td>
               <td>
-                <span class="badge badge-primary" style="font-size:0.72rem; font-weight:700;">
-                  <?= htmlspecialchars($row['stage']) ?>
+                <?php $pTier = $row['prospectivity'] ?? $row['priority'] ?? 'Warm'; ?>
+                <span class="badge <?= ($pTier === 'Hot' || $pTier === 'High') ? 'badge-danger' : (($pTier === 'Cold' || $pTier === 'Low') ? 'badge-secondary' : 'badge-warning') ?>" style="font-size:0.75rem; font-weight:700;">
+                  <?= htmlspecialchars($pTier) ?>
                 </span>
-                <div style="margin-top:3px;">
-                  <?= priority_badge($row['priority']) ?>
-                </div>
               </td>
 
               <?php if ($queue === 'scheduled'): ?>

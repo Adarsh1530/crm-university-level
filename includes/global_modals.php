@@ -178,17 +178,6 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
           <textarea name="notes" class="form-control" rows="3" placeholder="What was discussed with the student? (e.g. course choice, document submission date, visa requirements)" required></textarea>
         </div>
 
-        <!-- Optional Move Stage -->
-        <div class="form-group" style="margin-bottom:1rem;">
-          <label class="form-label" style="font-weight:600; font-size:0.825rem;">Update Admission Pipeline Stage (Optional)</label>
-          <select name="new_stage" id="logCallNewStage" class="form-control">
-            <option value="">Keep Current Stage</option>
-            <?php foreach ($standardAdmissionStages as $stg): ?>
-              <option value="<?= $stg ?>">Move to: <?= $stg ?></option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-
         <input type="hidden" name="schedule_next" id="logCallScheduleNext" value="1">
 
         <!-- Next Call Date -->
@@ -214,63 +203,6 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
         </button>
         <button type="submit" onclick="document.getElementById('logCallScheduleNext').value='1'; document.getElementById('logCallNextDate').required=true;" class="btn btn-primary btn-sm" style="background:#059669; border-color:#059669; font-weight:700;">
           <i class="fa-solid fa-calendar-check"></i> Save & Schedule Next
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- 3. GLOBAL ADVANCE ADMISSION STAGE MODAL -->
-<div class="modal fade" id="advanceStageModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
-  <div class="modal-dialog" style="background:#fff; border-radius:16px; max-width:480px; width:92%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden;">
-    <form method="POST" action="<?= base_url('admissions/update_stage.php') ?>">
-      <?= csrf_field() ?>
-      <input type="hidden" name="lead_id" id="advanceStageLeadId" value="0">
-      <input type="hidden" name="return_url" id="advanceStageReturnUrl" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '') ?>">
-
-      <div class="modal-header" style="padding:1.2rem 1.5rem; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <h3 style="font-size:1.15rem; font-weight:700; margin:0; color:#fff; display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-stairs"></i> Advance Admission Stage
-          </h3>
-          <span style="font-size:0.75rem; color:rgba(255,255,255,0.9);" id="advanceStageStudentLabel">Student Candidate</span>
-        </div>
-        <button type="button" onclick="closeAdvanceStageModal()" style="border:none; background:rgba(255,255,255,0.2); color:#fff; width:30px; height:30px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
-      </div>
-
-      <div class="modal-body" style="padding:1.5rem;">
-        <div class="form-group" style="margin-bottom:1rem;">
-          <label class="form-label" style="font-weight:700; font-size:0.825rem;">Select Target Admission Milestone <span style="color:red;">*</span></label>
-          <select name="new_stage" id="advanceStageSelect" class="form-control" required style="font-weight:700; font-size:0.9rem;">
-            <option value="ENQUIRY">Stage 1: ENQUIRY (Initial Prospect)</option>
-            <option value="CUSTOMER">Stage 2: CUSTOMER (Retained / Committed)</option>
-            <option value="APPLICATION">Stage 3: APPLICATION (University Filing)</option>
-            <option value="OFFER RECEIVED">Stage 4: OFFER RECEIVED (Conditional/Unconditional)</option>
-            <option value="TUITION FEES PAID">Stage 5: TUITION FEES PAID (Fee Remittance)</option>
-            <option value="ENROLLED">Stage 6: ENROLLED (Visa Granted & Admitted)</option>
-          </select>
-        </div>
-
-        <div class="form-group" style="margin-bottom:1rem;">
-          <label class="form-label" style="font-weight:600; font-size:0.825rem;">Secondary Operational Status</label>
-          <select name="secondary_status" class="form-control">
-            <option value="Active">Active (In Progress)</option>
-            <option value="On Hold">On Hold (Pending Student Action)</option>
-            <option value="Rejected">Rejected</option>
-            <option value="Lost">Lost / Dropped</option>
-          </select>
-        </div>
-
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label" style="font-weight:600; font-size:0.825rem;">Stage Transition Note</label>
-          <textarea name="notes" class="form-control" rows="2" placeholder="e.g. Received official offer letter from University of Manchester; proceeding with CAS and visa filing."></textarea>
-        </div>
-      </div>
-
-      <div class="modal-footer" style="padding:1rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
-        <button type="button" class="btn btn-secondary" onclick="closeAdvanceStageModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary" style="background:#0284c7; border-color:#0284c7; font-weight:700;">
-          <i class="fa-solid fa-check-double"></i> Update Milestone
         </button>
       </div>
     </form>
@@ -875,14 +807,11 @@ function closeQuickLeadModal() {
   if (m) m.style.display = 'none';
 }
 
-function openLogCallModal(leadId, studentName, currentStage) {
+function openLogCallModal(leadId, studentName) {
   const m = document.getElementById('globalLogCallModal');
   if (!m) return;
   document.getElementById('logCallLeadId').value = leadId;
   document.getElementById('logCallStudentLabel').textContent = 'Candidate: ' + (studentName || 'Student #' + leadId);
-  if (currentStage && document.getElementById('logCallNewStage')) {
-    document.getElementById('logCallNewStage').value = '';
-  }
   m.style.display = 'flex';
 }
 function closeLogCallModal() {
@@ -1024,21 +953,6 @@ function closeChangeCounselorModal() {
   if (m) m.style.display = 'none';
 }
 
-function openAdvanceStageModal(leadId, studentName, currentStage) {
-  const m = document.getElementById('advanceStageModal');
-  if (!m) return;
-  document.getElementById('advanceStageLeadId').value = leadId;
-  document.getElementById('advanceStageStudentLabel').textContent = 'Student: ' + (studentName || '#' + leadId);
-  if (currentStage && document.getElementById('advanceStageSelect')) {
-    document.getElementById('advanceStageSelect').value = currentStage;
-  }
-  m.style.display = 'flex';
-}
-function closeAdvanceStageModal() {
-  const m = document.getElementById('advanceStageModal');
-  if (m) m.style.display = 'none';
-}
-
 function openUserManualModal(tab) {
   const m = document.getElementById('userManualModal');
   if (m) {
@@ -1070,7 +984,7 @@ function switchGuideTab(tabId) {
 
 // Close modals when clicking outside
 window.addEventListener('click', function(e) {
-  ['quickLeadModal', 'globalLogCallModal', 'advanceStageModal', 'userManualModal', 'changeProspectivityModal', 'changeIntakeModal', 'changeCounselorModal'].forEach(id => {
+  ['quickLeadModal', 'globalLogCallModal', 'userManualModal', 'changeProspectivityModal', 'changeIntakeModal', 'changeCounselorModal'].forEach(id => {
     const el = document.getElementById(id);
     if (el && e.target === el) {
       el.style.display = 'none';

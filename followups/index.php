@@ -291,7 +291,7 @@ include __DIR__ . '/../includes/header.php';
                   <?= htmlspecialchars($f['lead_name']) ?>
                 </a>
                 <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
-                  <?= htmlspecialchars($f['preferred_country']) ?> • <?= htmlspecialchars($f['lead_stage']) ?>
+                  <?= htmlspecialchars($f['preferred_country']) ?> • <?= htmlspecialchars($f['preferred_course'] ?? 'Higher Ed') ?>
                 </div>
               </td>
               <td>
@@ -361,11 +361,11 @@ include __DIR__ . '/../includes/header.php';
                     onclick="openLogCallModal(<?= $f['lead_pk'] ?>, '<?= addslashes(htmlspecialchars($f['lead_name'])) ?>', '<?= addslashes(htmlspecialchars($f['lead_stage'])) ?>')"
                     class="btn btn-sm" 
                     style="background:#f1e6fd; color:#7008E7; border:none; padding:4px 8px; font-size:0.78rem; font-weight:600;" 
-                    title="Log Call Outcome & Advance Stage">
+                    title="Log Call Outcome & Schedule Next">
                     <i class="fa-solid fa-phone-volume"></i> Log Call
                   </button>
-                  <a href="<?= base_url('leads/view.php?id=' . $f['lead_pk']) ?>" class="btn btn-secondary btn-sm" title="View Full Candidate Dossier" style="padding:4px 8px; font-size:0.78rem;">
-                    <i class="fa-solid fa-id-card"></i> Dossier
+                  <a href="<?= base_url('leads/view.php?id=' . $f['lead_pk']) ?>" class="btn btn-secondary btn-sm" title="View Lead Details" style="padding:4px 8px; font-size:0.78rem;">
+                    <i class="fa-solid fa-eye"></i> Details
                   </a>
                 </div>
               </td>

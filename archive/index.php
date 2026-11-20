@@ -195,7 +195,7 @@ include __DIR__ . '/../includes/header.php';
           <tr>
             <th>Student / Code</th>
             <th>Phone & Contact</th>
-            <th>Admission Stage</th>
+            <th>InTake</th>
             <th>Branch & Counselor</th>
             <th>Archived Reason</th>
             <th>Archived Date</th>
@@ -213,7 +213,7 @@ include __DIR__ . '/../includes/header.php';
                   <div style="font-family:monospace; font-size:0.72rem; color:var(--primary);"><?= htmlspecialchars($ld['lead_code']) ?></div>
                 </td>
                 <td style="font-family:monospace;"><?= htmlspecialchars($ld['phone']) ?></td>
-                <td><span class="badge badge-secondary"><?= htmlspecialchars($ld['stage']) ?></span></td>
+                <td><span class="badge badge-secondary" style="font-size:0.75rem;"><?= htmlspecialchars($ld['intake_term'] ?: 'Sept') ?> <?= htmlspecialchars($ld['intake_year'] ?: '') ?></span></td>
                 <td>
                   <div><?= htmlspecialchars($ld['counselor_name'] ?? 'Counselor') ?></div>
                   <div style="font-size:0.72rem; color:var(--text-muted);"><?= htmlspecialchars($ld['branch_name'] ?? 'Branch') ?></div>

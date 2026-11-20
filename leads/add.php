@@ -2,6 +2,7 @@
 /**
  * Add New Lead / Student Registration
  * Enterprise University Admissions & Enrollment Management System (UniCRM)
+ * Aligned 1:1 with User Manual Section 9.2.7 & Figure p13
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -37,34 +38,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $fullName = trim($_POST['full_name'] ?? '');
     $rawPhone = trim($_POST['phone'] ?? '');
+    $alternatePhone = trim($_POST['alternate_phone'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $city = trim($_POST['city'] ?? '');
     $state = trim($_POST['state'] ?? '');
     $country = trim($_POST['country'] ?? 'India');
     $dob = !empty($_POST['dob']) ? $_POST['dob'] : null;
     $gender = trim($_POST['gender'] ?? 'Other');
-    $passportNumber = trim($_POST['passport_number'] ?? '');
-    $passportExpiry = !empty($_POST['passport_expiry']) ? $_POST['passport_expiry'] : null;
 
     $highestQual = trim($_POST['highest_qualification'] ?? '');
     $collegeName = trim($_POST['college_name'] ?? '');
-    $yearOfPassing = !empty($_POST['year_of_passing']) ? (int)$_POST['year_of_passing'] : null;
-    $percentage = !empty($_POST['percentage']) ? (float)$_POST['percentage'] : null;
-    $backlogs = !empty($_POST['backlogs_count']) ? (int)$_POST['backlogs_count'] : 0;
-    $workExp = !empty($_POST['work_experience_years']) ? (float)$_POST['work_experience_years'] : 0;
 
-    $englishTest = trim($_POST['english_test'] ?? 'None');
-    $englishScore = trim($_POST['english_score'] ?? '');
-    $scoreL = !empty($_POST['score_listening']) ? (float)$_POST['score_listening'] : null;
-    $scoreR = !empty($_POST['score_reading']) ? (float)$_POST['score_reading'] : null;
-    $scoreW = !empty($_POST['score_writing']) ? (float)$_POST['score_writing'] : null;
-    $scoreS = !empty($_POST['score_speaking']) ? (float)$_POST['score_speaking'] : null;
+    $hasIelts = isset($_POST['has_ielts']) ? 1 : 0;
+    $ieltsScore = trim($_POST['ielts_score'] ?? '');
+    $hasPan = isset($_POST['has_pancard']) ? 1 : 0;
+    $panNumber = trim($_POST['pan_number'] ?? '');
 
     $preferredCountry = trim($_POST['preferred_country'] ?? 'United Kingdom');
     $preferredCourse = trim($_POST['preferred_course'] ?? '');
     $intakeYear = !empty($_POST['intake_year']) ? (int)$_POST['intake_year'] : 2026;
     $intakeTerm = trim($_POST['intake_term'] ?? 'September');
-    $priority = trim($_POST['priority'] ?? 'Moderate');
+    $prospectivity = trim($_POST['prospectivity'] ?? 'Warm');
+    $priority = $prospectivity; // Keep mapped
     $source = trim($_POST['source'] ?? 'Walk-in');
     $notes = trim($_POST['notes'] ?? '');
 
@@ -87,56 +82,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (strlen($cleanPhone) < 10) {
             set_flash('danger', 'Please provide a valid 10-digit phone number.');
         } else {
-            // Check canonical duplicate
+            // Check canonical duplicate: Only one lead can be created using a mobile number
             $duplicateLead = check_phone_duplicate($cleanPhone);
             if ($duplicateLead) {
                 set_flash('danger', "Duplicate Blocked: An active lead or client already exists with phone <strong>{$cleanPhone}</strong> (" . htmlspecialchars($duplicateLead['full_name']) . " - " . htmlspecialchars($duplicateLead['lead_code']) . ").");
             } else {
-                // Generate Lead Code
+                // Generate Lead Code (e.g. LED-2026-0010)
                 $currentYear = date('Y');
                 $stmtCount = $pdo->query("SELECT COUNT(*) FROM leads");
                 $seq = (int)$stmtCount->fetchColumn() + 1;
-                $leadCode = sprintf("UNI-%s-%04d", $currentYear, $seq);
+                $leadCode = sprintf("LED-%s-%04d", $currentYear, $seq);
 
                 try {
                     $pdo->beginTransaction();
 
                     $stmt = $pdo->prepare("
                         INSERT INTO leads (
-                            lead_code, full_name, email, phone, city, state, country,
-                            dob, gender, passport_number, passport_expiry,
-                            branch_id, assigned_counselor_id, stage, secondary_status, priority, source,
+                            lead_code, full_name, email, phone, alternate_phone, city, state, country,
+                            dob, gender, pan_number,
+                            has_ielts, english_test, english_score, ielts_overall,
+                            branch_id, assigned_counselor_id, stage, secondary_status, prospectivity, priority, source,
                             preferred_country, preferred_course, intake_year, intake_term,
-                            highest_qualification, college_name, year_of_passing, percentage, backlogs_count,
-                            english_test, english_score, score_listening, score_reading, score_writing, score_speaking,
-                            work_experience_years, notes, assigned_at, created_by
+                            highest_qualification, college_name,
+                            notes, assigned_at, created_by
                         ) VALUES (
-                            ?, ?, ?, ?, ?, ?, ?,
+                            ?, ?, ?, ?, ?, ?, ?, ?,
+                            ?, ?, ?,
                             ?, ?, ?, ?,
-                            ?, ?, 'ENQUIRY', 'Active', ?, ?,
+                            ?, ?, 'ENQUIRY', 'Active', ?, ?, ?,
                             ?, ?, ?, ?,
-                            ?, ?, ?, ?, ?,
-                            ?, ?, ?, ?, ?, ?,
-                            ?, ?, NOW(), ?
+                            ?, ?,
+                            ?, NOW(), ?
                         )
                     ");
                     $stmt->execute([
-                        $leadCode, $fullName, $email, $cleanPhone, $city, $state, $country,
-                        $dob, $gender, $passportNumber, $passportExpiry,
-                        $branchId, $counselorId, $priority, $source,
+                        $leadCode, $fullName, $email, $cleanPhone, $alternatePhone, $city, $state, $country,
+                        $dob, $gender, $panNumber,
+                        $hasIelts, ($hasIelts ? 'IELTS' : 'None'), $ieltsScore, $ieltsScore,
+                        $branchId, $counselorId, $prospectivity, $priority, $source,
                         $preferredCountry, $preferredCourse, $intakeYear, $intakeTerm,
-                        $highestQual, $collegeName, $yearOfPassing, $percentage, $backlogs,
-                        $englishTest, $englishScore, $scoreL, $scoreR, $scoreW, $scoreS,
-                        $workExp, $notes, $currentUser['id']
+                        $highestQual, $collegeName,
+                        $notes, $currentUser['id']
                     ]);
                     $newLeadId = $pdo->lastInsertId();
-
-                    // Initial stage history
-                    $stmtStage = $pdo->prepare("
-                        INSERT INTO lead_stage_history (lead_id, from_stage, to_stage, changed_by, notes)
-                        VALUES (?, NULL, 'ENQUIRY', ?, 'Lead registered in CRM')
-                    ");
-                    $stmtStage->execute([$newLeadId, $currentUser['id']]);
 
                     // Notification
                     if ($counselorId !== (int)$currentUser['id']) {
@@ -179,9 +167,9 @@ include __DIR__ . '/../includes/header.php';
 <!-- Breadcrumb & Page Header -->
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
   <div>
-    <h1 style="font-size:1.5rem; font-weight:700; color:var(--text-heading); margin:0 0 0.35rem 0;">Register New Student Lead</h1>
+    <h1 style="font-size:1.5rem; font-weight:700; color:var(--text-heading); margin:0 0 0.35rem 0;">Create New Lead</h1>
     <p style="font-size:0.875rem; color:var(--text-muted); margin:0;">
-      Fast and flexible candidate registration. Essential study details are required; transcripts and test scores can be completed now or anytime in the student dossier.
+      Register candidate details, regional branch allocation, target study destination, and prospectivity tier.
     </p>
   </div>
   <div style="display:flex; gap:0.5rem; align-items:center;">
@@ -189,60 +177,147 @@ include __DIR__ . '/../includes/header.php';
       <i class="fa-solid fa-bolt"></i> 1-Click Fast Add
     </button>
     <a href="<?= base_url('leads/index.php') ?>" class="btn btn-secondary btn-sm">
-      <i class="fa-solid fa-arrow-left"></i> Back to Caseload
+      <i class="fa-solid fa-arrow-left"></i> Back to Student Directory
     </a>
-  </div>
-</div>
-
-<!-- Friendly Guidance Tip -->
-<div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:0.85rem 1.25rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.75rem;">
-  <div style="width:36px; height:36px; border-radius:50%; background:#dcfce7; color:#15803d; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-    <i class="fa-solid fa-wand-magic-sparkles"></i>
-  </div>
-  <div style="font-size:0.85rem; color:#166534; line-height:1.4;">
-    <strong>Streamlined Registration:</strong> Fill the <strong>Essential Details</strong> below to create the lead immediately. Academic history, English scores, and passport details are optional and can be expanded if already available.
   </div>
 </div>
 
 <form method="POST" action="<?= base_url('leads/add.php') ?>">
   <?= csrf_field() ?>
 
-  <!-- 1. ESSENTIAL ADMISSION DETAILS (Primary Card) -->
+  <!-- Core Student & Study Registration Card (Figure p13) -->
   <div class="card" style="margin-bottom:1.5rem; padding:1.75rem; border:1px solid rgba(89,85,209,0.2); box-shadow:0 4px 14px rgba(89,85,209,0.06);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; border-bottom:1px solid var(--border-color); padding-bottom:0.75rem;">
       <h3 style="font-size:1.15rem; font-weight:700; color:var(--text-heading); margin:0; display:flex; align-items:center; gap:0.5rem;">
-        <i class="fa-solid fa-user-graduate" style="color:var(--primary);"></i> 1. Essential Student & Study Details
+        <i class="fa-solid fa-user-graduate" style="color:var(--primary);"></i> Student Lead Information
       </h3>
-      <span class="badge badge-primary" style="font-size:0.72rem; padding:3px 8px;">Required Core Fields</span>
+      <span class="badge badge-primary" style="font-size:0.72rem; padding:3px 8px;">Section 9.2.7</span>
     </div>
 
     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1.25rem;">
-      <!-- Full Name -->
+      <!-- Mobile Number (Required, with Real-Time Duplicate Validation - User Manual Page 13) -->
       <div class="form-group">
-        <label class="form-label" style="font-weight:700;">Full Name <span style="color:red;">*</span></label>
-        <input type="text" name="full_name" class="form-control" placeholder="e.g. Arun Kumar" required value="<?= htmlspecialchars($_POST['full_name'] ?? '') ?>" autofocus>
-      </div>
-
-      <!-- Phone Number (With Real-Time Duplicate Validation - User Manual Page 13) -->
-      <div class="form-group">
-        <label class="form-label" style="font-weight:700;">Phone / WhatsApp (10-Digits) <span style="color:red;">*</span></label>
+        <label class="form-label" style="font-weight:700;">Mobile Number <span style="color:red;">*</span></label>
         <div style="position:relative;">
           <input type="tel" id="leadAddPhone" name="phone" class="form-control" placeholder="e.g. 9847112233" required value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>" oninput="checkLeadPhoneDuplicate(this.value, 'leadAddPhoneFeedback', 'btn-save-lead-details')">
           <i class="fa-solid fa-phone" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--text-light);"></i>
         </div>
         <div id="leadAddPhoneFeedback" style="display:none; margin-top:6px; font-size:0.8rem;"></div>
-        <small style="font-size:0.72rem; color:var(--text-muted);">Country code will be automatically normalized.</small>
+        <small style="font-size:0.72rem; color:var(--text-muted);">Only one lead can be created per mobile number.</small>
+      </div>
+
+      <!-- Location / Branch Allocation -->
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700;">Location / Branch <span style="color:red;">*</span></label>
+        <?php if (is_super_admin()): ?>
+          <select name="branch_id" id="lead_branch_id" class="form-control" required onchange="filterCounselors(this.value)">
+            <option value="">Select Branch...</option>
+            <?php foreach ($branches as $b): ?>
+              <option value="<?= $b['id'] ?>"><?= htmlspecialchars($b['name']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        <?php else: ?>
+          <input type="hidden" name="branch_id" value="<?= $currentUser['branch_id'] ?? 1 ?>">
+          <input type="text" class="form-control" value="<?= htmlspecialchars($currentUser['branch_name'] ?? 'Main Branch') ?>" disabled style="background:#f1f5f9;">
+        <?php endif; ?>
+      </div>
+
+      <!-- Prospectivity Level (Section 9.2.3) -->
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700;">Prospectivity <span style="color:red;">*</span></label>
+        <select name="prospectivity" class="form-control" required>
+          <option value="Hot">🔥 Hot (High Intent)</option>
+          <option value="Warm" selected>⚡ Warm (Moderate)</option>
+          <option value="Cold">🌱 Cold (Low / Awaiting)</option>
+        </select>
+      </div>
+
+      <!-- InTake Year & Term (Section 9.2.4) -->
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700;">InTake <span style="color:red;">*</span></label>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+          <select name="intake_term" class="form-control">
+            <option value="September" selected>September</option>
+            <option value="January">January</option>
+            <option value="May">May</option>
+          </select>
+          <select name="intake_year" class="form-control">
+            <option value="2026" selected>2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Full Name -->
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700;">Student Full Name <span style="color:red;">*</span></label>
+        <input type="text" name="full_name" class="form-control" placeholder="e.g. Arun Kumar" required value="<?= htmlspecialchars($_POST['full_name'] ?? '') ?>">
+      </div>
+
+      <!-- Date of Birth -->
+      <div class="form-group">
+        <label class="form-label" style="font-weight:600;">Date of Birth</label>
+        <input type="date" name="dob" class="form-control" value="<?= htmlspecialchars($_POST['dob'] ?? '') ?>">
+      </div>
+
+      <!-- Gender -->
+      <div class="form-group">
+        <label class="form-label" style="font-weight:600;">Gender</label>
+        <select name="gender" class="form-control">
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <!-- Secondary Phone -->
+      <div class="form-group">
+        <label class="form-label" style="font-weight:600;">Secondary / Landline Phone</label>
+        <input type="text" name="alternate_phone" class="form-control" placeholder="e.g. 0495-2345678" value="<?= htmlspecialchars($_POST['alternate_phone'] ?? '') ?>">
       </div>
 
       <!-- Email Address -->
       <div class="form-group">
         <label class="form-label" style="font-weight:600;">Email Address</label>
-        <input type="email" name="email" class="form-control" placeholder="arun.kumar@gmail.com" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
+        <input type="email" name="email" class="form-control" placeholder="student@example.com" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
       </div>
 
-      <!-- Target Country -->
+      <!-- Qualification -->
       <div class="form-group">
-        <label class="form-label" style="font-weight:700;">Target Study Country <span style="color:red;">*</span></label>
+        <label class="form-label" style="font-weight:600;">Highest Qualification</label>
+        <input type="text" name="highest_qualification" class="form-control" placeholder="e.g. B.Tech Mechanical / B.Com" value="<?= htmlspecialchars($_POST['highest_qualification'] ?? '') ?>">
+      </div>
+
+      <!-- College / Institution -->
+      <div class="form-group">
+        <label class="form-label" style="font-weight:600;">College / Institution</label>
+        <input type="text" name="college_name" class="form-control" placeholder="e.g. Govt Engineering College" value="<?= htmlspecialchars($_POST['college_name'] ?? '') ?>">
+      </div>
+
+      <!-- Lead Source -->
+      <div class="form-group">
+        <label class="form-label" style="font-weight:600;">Source of Lead</label>
+        <select name="source" class="form-control">
+          <option value="Walk-in">Walk-in Inquiry</option>
+          <option value="Website">Website Form</option>
+          <option value="College Data">College Data Pool</option>
+          <option value="Student Referral">Student Referral</option>
+          <option value="Meta Ads">Meta / Social Ads</option>
+          <option value="Google Ads">Google Ads</option>
+          <option value="Direct Reference">Direct Reference</option>
+        </select>
+      </div>
+
+      <!-- Address / City -->
+      <div class="form-group">
+        <label class="form-label" style="font-weight:600;">City / Address</label>
+        <input type="text" name="city" class="form-control" placeholder="e.g. Calicut, Kerala" value="<?= htmlspecialchars($_POST['city'] ?? '') ?>">
+      </div>
+
+      <!-- Preferred Country -->
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700;">Preferred Country <span style="color:red;">*</span></label>
         <select name="preferred_country" class="form-control" required>
           <option value="United Kingdom" selected>United Kingdom (UK)</option>
           <option value="Canada">Canada</option>
@@ -255,70 +330,15 @@ include __DIR__ . '/../includes/header.php';
         </select>
       </div>
 
-      <!-- Desired Course -->
+      <!-- Preferred Course -->
       <div class="form-group">
-        <label class="form-label" style="font-weight:600;">Desired Degree / Course</label>
-        <input type="text" name="preferred_course" class="form-control" placeholder="e.g. M.Sc Data Science / MBA" value="<?= htmlspecialchars($_POST['preferred_course'] ?? '') ?>">
+        <label class="form-label" style="font-weight:600;">Preferred Course</label>
+        <input type="text" name="preferred_course" class="form-control" placeholder="e.g. M.Sc Automotive Engineering" value="<?= htmlspecialchars($_POST['preferred_course'] ?? '') ?>">
       </div>
 
-      <!-- Intake Year & Term -->
+      <!-- Assigned Counselor -->
       <div class="form-group">
-        <label class="form-label" style="font-weight:600;">Target Intake</label>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
-          <select name="intake_year" class="form-control">
-            <option value="2026" selected>2026</option>
-            <option value="2027">2027</option>
-          </select>
-          <select name="intake_term" class="form-control">
-            <option value="September" selected>September</option>
-            <option value="January">January</option>
-            <option value="May">May</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Priority Level -->
-      <div class="form-group">
-        <label class="form-label" style="font-weight:600;">Priority Level</label>
-        <select name="priority" class="form-control">
-          <option value="High">🔥 High Priority (Urgent)</option>
-          <option value="Moderate" selected>⚡ Moderate Priority</option>
-          <option value="Low">🌱 Low Priority</option>
-        </select>
-      </div>
-
-      <!-- Lead Source -->
-      <div class="form-group">
-        <label class="form-label" style="font-weight:600;">Lead Source</label>
-        <select name="source" class="form-control">
-          <option value="Walk-in">Walk-in Inquiry</option>
-          <option value="Website">Website Form</option>
-          <option value="College Data">College Data Pool</option>
-          <option value="Referral">Student Referral</option>
-          <option value="Meta Ads">Meta / Social Ads</option>
-          <option value="Google Ads">Google Ads</option>
-        </select>
-      </div>
-
-      <!-- Branch Assignment -->
-      <div class="form-group">
-        <label class="form-label" style="font-weight:700;">Division / Branch <span style="color:red;">*</span></label>
-        <?php if (is_super_admin()): ?>
-          <select name="branch_id" id="lead_branch_id" class="form-control" required onchange="filterCounselors(this.value)">
-            <option value="">Select Division...</option>
-            <?php foreach ($branches as $b): ?>
-              <option value="<?= $b['id'] ?>"><?= htmlspecialchars($b['name']) ?></option>
-            <?php endforeach; ?>
-          </select>
-        <?php else: ?>
-          <input type="hidden" name="branch_id" value="<?= $currentUser['branch_id'] ?? 1 ?>">
-          <input type="text" class="form-control" value="<?= htmlspecialchars($currentUser['branch_name'] ?? 'Main Admissions Division') ?>" disabled style="background:#f1f5f9;">
-        <?php endif; ?>
-      </div>
-
-      <!-- Counselor Assignment -->
-      <div class="form-group">
-        <label class="form-label" style="font-weight:700;">Assigned Counselor <span style="color:red;">*</span></label>
+        <label class="form-label" style="font-weight:700;">Assigned To <span style="color:red;">*</span></label>
         <?php if (is_counselor()): ?>
           <input type="hidden" name="counselor_id" value="<?= $currentUser['id'] ?>">
           <input type="text" class="form-control" value="<?= htmlspecialchars($currentUser['name']) ?> (You)" disabled style="background:#f1f5f9;">
@@ -327,167 +347,54 @@ include __DIR__ . '/../includes/header.php';
             <option value="">Select Counselor...</option>
             <?php foreach ($counselors as $c): ?>
               <option value="<?= $c['id'] ?>" data-branch="<?= $c['branch_id'] ?>">
-                <?= htmlspecialchars($c['name']) ?> (<?= htmlspecialchars($c['branch_name'] ?? 'Division') ?>)
+                <?= htmlspecialchars($c['name']) ?> (<?= htmlspecialchars($c['branch_name'] ?? 'Branch') ?>)
               </option>
             <?php endforeach; ?>
           </select>
         <?php endif; ?>
       </div>
     </div>
-  </div>
 
-  <!-- 2. OPTIONAL: ACADEMIC BACKGROUND & ENGLISH PROFICIENCY (Accordion) -->
-  <div class="card" style="margin-bottom:1.5rem; overflow:hidden;">
-    <details style="cursor:pointer;" <?= (!empty($_POST['highest_qualification']) || !empty($_POST['english_score'])) ? 'open' : '' ?>>
-      <summary style="padding:1.25rem 1.75rem; background:var(--bg-subtle); display:flex; justify-content:space-between; align-items:center; user-select:none; font-weight:700; color:var(--text-heading); outline:none;">
-        <div style="display:flex; align-items:center; gap:0.6rem; font-size:1.05rem;">
-          <i class="fa-solid fa-graduation-cap" style="color:var(--primary);"></i>
-          2. Academic Background & English Proficiency (Optional)
-        </div>
-        <span style="font-size:0.8rem; color:var(--primary); font-weight:600; display:flex; align-items:center; gap:4px;">
-          Click to Expand / Collapse <i class="fa-solid fa-chevron-down"></i>
-        </span>
-      </summary>
-
-      <div style="padding:1.5rem; border-top:1px solid var(--border-color); cursor:default;">
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1.25rem; margin-bottom:1.25rem;">
-          <div class="form-group">
-            <label class="form-label">Highest Qualification</label>
-            <input type="text" name="highest_qualification" class="form-control" placeholder="e.g. B.Tech Computer Science, BBA" value="<?= htmlspecialchars($_POST['highest_qualification'] ?? '') ?>">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">College / University Name</label>
-            <input type="text" name="college_name" class="form-control" placeholder="e.g. State University, City College" value="<?= htmlspecialchars($_POST['college_name'] ?? '') ?>">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Year of Passing</label>
-            <input type="number" name="year_of_passing" class="form-control" placeholder="2025" min="2010" max="2035" value="<?= htmlspecialchars($_POST['year_of_passing'] ?? '2025') ?>">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Percentage / CGPA</label>
-            <input type="number" step="0.01" name="percentage" class="form-control" placeholder="e.g. 74.5" value="<?= htmlspecialchars($_POST['percentage'] ?? '') ?>">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Active / Total Backlogs</label>
-            <input type="number" name="backlogs_count" class="form-control" placeholder="0" min="0" value="<?= htmlspecialchars($_POST['backlogs_count'] ?? '0') ?>">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Work Experience (Years)</label>
-            <input type="number" step="0.5" name="work_experience_years" class="form-control" placeholder="0" min="0" value="<?= htmlspecialchars($_POST['work_experience_years'] ?? '0') ?>">
-          </div>
-        </div>
-
-        <!-- English Proficiency Sub-section -->
-        <div style="background:var(--bg-subtle); border-radius:12px; padding:1.25rem; border:1px solid var(--border-color);">
-          <h4 style="font-size:0.95rem; font-weight:700; color:var(--text-heading); margin:0 0 1rem 0;">
-            <i class="fa-solid fa-language" style="color:var(--primary); margin-right:6px;"></i> English Language Assessment
-          </h4>
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:1rem;">
-            <div class="form-group">
-              <label class="form-label">Test Type</label>
-              <select name="english_test" class="form-control">
-                <option value="IELTS">IELTS</option>
-                <option value="PTE">PTE Academic</option>
-                <option value="TOEFL">TOEFL</option>
-                <option value="Duolingo">Duolingo</option>
-                <option value="None" selected>None / Awaiting</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Overall Score</label>
-              <input type="text" name="english_score" class="form-control" placeholder="e.g. 7.0 / 68" value="<?= htmlspecialchars($_POST['english_score'] ?? '') ?>">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Listening</label>
-              <input type="number" step="0.5" name="score_listening" class="form-control" placeholder="7.0">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Reading</label>
-              <input type="number" step="0.5" name="score_reading" class="form-control" placeholder="6.5">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Writing</label>
-              <input type="number" step="0.5" name="score_writing" class="form-control" placeholder="6.5">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Speaking</label>
-              <input type="number" step="0.5" name="score_speaking" class="form-control" placeholder="7.0">
-            </div>
-          </div>
+    <!-- Quick Verification Section: IELTS & PAN Card (Figure p13 & Section 9.3) -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid var(--border-color);">
+      <!-- IELTS -->
+      <div style="background:var(--bg-subtle); border-radius:10px; padding:1rem; border:1px solid var(--border-color);">
+        <label style="display:flex; align-items:center; gap:0.5rem; font-weight:700; cursor:pointer; color:var(--text-heading);">
+          <input type="checkbox" name="has_ielts" id="chk_has_ielts" value="1" onchange="document.getElementById('ielts_score_wrap').style.display = this.checked ? 'block' : 'none';">
+          <span>Taken IELTS Exam?</span>
+        </label>
+        <div id="ielts_score_wrap" style="display:none; margin-top:0.75rem;">
+          <label class="form-label" style="font-size:0.78rem;">IELTS Overall Band Score</label>
+          <input type="text" name="ielts_score" class="form-control" placeholder="e.g. 7.0 or 6.5">
         </div>
       </div>
-    </details>
-  </div>
 
-  <!-- 3. OPTIONAL: PERSONAL & PASSPORT DETAILS (Accordion) -->
-  <div class="card" style="margin-bottom:1.5rem; overflow:hidden;">
-    <details style="cursor:pointer;" <?= (!empty($_POST['passport_number']) || !empty($_POST['city'])) ? 'open' : '' ?>>
-      <summary style="padding:1.25rem 1.75rem; background:var(--bg-subtle); display:flex; justify-content:space-between; align-items:center; user-select:none; font-weight:700; color:var(--text-heading); outline:none;">
-        <div style="display:flex; align-items:center; gap:0.6rem; font-size:1.05rem;">
-          <i class="fa-solid fa-passport" style="color:var(--primary);"></i>
-          3. Additional Personal & Passport Information (Optional)
-        </div>
-        <span style="font-size:0.8rem; color:var(--primary); font-weight:600; display:flex; align-items:center; gap:4px;">
-          Click to Expand / Collapse <i class="fa-solid fa-chevron-down"></i>
-        </span>
-      </summary>
-
-      <div style="padding:1.5rem; border-top:1px solid var(--border-color); cursor:default;">
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1.25rem;">
-          <div class="form-group">
-            <label class="form-label">Date of Birth</label>
-            <input type="date" name="dob" class="form-control" value="<?= htmlspecialchars($_POST['dob'] ?? '') ?>">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Gender</label>
-            <select name="gender" class="form-control">
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">City / Residence</label>
-            <input type="text" name="city" class="form-control" placeholder="e.g. City Name" value="<?= htmlspecialchars($_POST['city'] ?? '') ?>">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Passport Number</label>
-            <input type="text" name="passport_number" class="form-control" placeholder="e.g. Z1234567" value="<?= htmlspecialchars($_POST['passport_number'] ?? '') ?>">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Passport Expiry Date</label>
-            <input type="date" name="passport_expiry" class="form-control" value="<?= htmlspecialchars($_POST['passport_expiry'] ?? '') ?>">
-          </div>
+      <!-- PAN Card -->
+      <div style="background:var(--bg-subtle); border-radius:10px; padding:1rem; border:1px solid var(--border-color);">
+        <label style="display:flex; align-items:center; gap:0.5rem; font-weight:700; cursor:pointer; color:var(--text-heading);">
+          <input type="checkbox" name="has_pancard" id="chk_has_pancard" value="1" onchange="document.getElementById('pan_number_wrap').style.display = this.checked ? 'block' : 'none';">
+          <span>Have PAN Card?</span>
+        </label>
+        <div id="pan_number_wrap" style="display:none; margin-top:0.75rem;">
+          <label class="form-label" style="font-size:0.78rem;">PAN Card Number</label>
+          <input type="text" name="pan_number" class="form-control" placeholder="e.g. ABCDE1234F" style="text-transform:uppercase;">
         </div>
       </div>
-    </details>
-  </div>
-
-  <!-- 4. COUNSELING REMARKS & SUBMISSION -->
-  <div class="card" style="margin-bottom:2rem; padding:1.5rem;">
-    <div class="form-group" style="margin-bottom:1.25rem;">
-      <label class="form-label" style="font-weight:700;">Initial Counseling Remarks / Notes</label>
-      <textarea name="notes" class="form-control" rows="3" placeholder="Consultation notes, student aspirations, budget constraints, documents pending..."></textarea>
     </div>
 
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; border-top:1px solid var(--border-color); padding-top:1.25rem;">
+    <!-- Current Status / Consultation Note -->
+    <div class="form-group" style="margin-top:1.25rem;">
+      <label class="form-label" style="font-weight:700;">Current Status / Consultation Note</label>
+      <textarea name="notes" class="form-control" rows="3" placeholder="Initial student consultation remarks, course interests, or next follow-up notes..."></textarea>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; border-top:1px solid var(--border-color); padding-top:1.25rem; margin-top:1.25rem;">
       <a href="<?= base_url('leads/index.php') ?>" class="btn btn-secondary">
         <i class="fa-solid fa-times"></i> Cancel
       </a>
-      <div style="display:flex; gap:0.75rem;">
-        <button type="submit" id="btn-save-lead-details" class="btn btn-primary btn-lg" style="padding:0.75rem 2rem; font-weight:700; box-shadow:0 4px 14px rgba(89,85,209,0.3);">
-          <i class="fa-solid fa-check"></i> Save Details
-        </button>
-      </div>
+      <button type="submit" id="btn-save-lead-details" class="btn btn-primary btn-lg" style="padding:0.65rem 2rem; font-weight:700;">
+        <i class="fa-solid fa-check"></i> Save Details
+      </button>
     </div>
   </div>
 </form>
