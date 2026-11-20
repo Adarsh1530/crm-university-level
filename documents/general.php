@@ -106,9 +106,19 @@ include __DIR__ . '/../includes/header.php';
 <!-- Documents Grid / List -->
 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1.25rem;">
   <?php if (empty($docs)): ?>
-    <div class="card" style="grid-column:1 / -1; padding:3rem; text-align:center; color:var(--text-muted);">
-      <i class="fa-regular fa-folder-open" style="font-size:2.2rem; margin-bottom:0.75rem; display:block; color:var(--text-light);"></i>
-      No guidelines or documents match your query.
+    <div class="card" style="grid-column:1 / -1; padding:3.5rem 2rem; text-align:center; color:var(--text-muted); background:var(--bg-card); border-radius:12px; border:1px dashed var(--border-color);">
+      <div style="width:64px; height:64px; border-radius:50%; background:var(--bg-subtle); display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem auto;">
+        <i class="fa-solid fa-folder-open" style="font-size:1.8rem; color:var(--text-light);"></i>
+      </div>
+      <h3 style="font-size:1.15rem; font-weight:700; color:var(--text-heading); margin:0 0 0.5rem 0;">No Documents in Repository</h3>
+      <p style="font-size:0.875rem; color:var(--text-muted); max-width:480px; margin:0 auto 1.5rem auto; line-height:1.5;">
+        The institutional guideline library is currently empty. Authorized staff can upload SOPs, country visa checklists, partner agreements, or operational guides.
+      </p>
+      <?php if (can('documents', 'add')): ?>
+        <button type="button" class="btn btn-primary" onclick="openUploadModal()" style="display:inline-flex; align-items:center; gap:0.5rem; font-weight:600; padding:0.55rem 1.25rem;">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Upload Institutional Document
+        </button>
+      <?php endif; ?>
     </div>
   <?php else: ?>
     <?php foreach ($docs as $d): ?>
