@@ -88,8 +88,8 @@ $currentUri = $_SERVER['REQUEST_URI'] ?? '';
               <a href="<?= base_url('switch_role.php?user_id=1&return=' . urlencode($currentUri)) ?>" class="notif-item <?= ($currentUser['id'] ?? 0) == 1 ? 'unread' : '' ?>">
                 <div class="notif-icon-wrap" style="background:#fee2e2; color:#b91c1c;"><i class="fa-solid fa-crown"></i></div>
                 <div class="notif-content">
-                  <div class="notif-title">Noufal Peediyakkal</div>
-                  <div class="notif-time">Super Admin (Case Manager & Administration)</div>
+                  <div class="notif-title">Dr. Arthur Vance</div>
+                  <div class="notif-time">Super Admin (Global Admissions Director)</div>
                 </div>
                 <?php if (($currentUser['id'] ?? 0) == 1): ?>
                   <i class="fa-solid fa-circle-check" style="color:var(--primary); font-size:1rem;"></i>
@@ -98,8 +98,8 @@ $currentUri = $_SERVER['REQUEST_URI'] ?? '';
               <a href="<?= base_url('switch_role.php?user_id=2&return=' . urlencode($currentUri)) ?>" class="notif-item <?= ($currentUser['id'] ?? 0) == 2 ? 'unread' : '' ?>">
                 <div class="notif-icon-wrap" style="background:#fef3c7; color:#b45309;"><i class="fa-solid fa-building-user"></i></div>
                 <div class="notif-content">
-                  <div class="notif-title">Vidya Harish</div>
-                  <div class="notif-time">Branch Manager (Perinthalmanna Division)</div>
+                  <div class="notif-title">Sarah Jenkins</div>
+                  <div class="notif-time">Admissions Manager (Kochi Hub)</div>
                 </div>
                 <?php if (($currentUser['id'] ?? 0) == 2): ?>
                   <i class="fa-solid fa-circle-check" style="color:var(--primary); font-size:1rem;"></i>
@@ -108,8 +108,8 @@ $currentUri = $_SERVER['REQUEST_URI'] ?? '';
               <a href="<?= base_url('switch_role.php?user_id=3&return=' . urlencode($currentUri)) ?>" class="notif-item <?= ($currentUser['id'] ?? 0) == 3 ? 'unread' : '' ?>">
                 <div class="notif-icon-wrap" style="background:#dcfce7; color:#15803d;"><i class="fa-solid fa-headset"></i></div>
                 <div class="notif-content">
-                  <div class="notif-title">Athira Ashok</div>
-                  <div class="notif-time">Academic Counselor (Kanhangad Branch)</div>
+                  <div class="notif-title">Michael Chang</div>
+                  <div class="notif-time">Senior Academic Counselor</div>
                 </div>
                 <?php if (($currentUser['id'] ?? 0) == 3): ?>
                   <i class="fa-solid fa-circle-check" style="color:var(--primary); font-size:1rem;"></i>
@@ -118,8 +118,8 @@ $currentUri = $_SERVER['REQUEST_URI'] ?? '';
               <a href="<?= base_url('switch_role.php?user_id=4&return=' . urlencode($currentUri)) ?>" class="notif-item <?= ($currentUser['id'] ?? 0) == 4 ? 'unread' : '' ?>">
                 <div class="notif-icon-wrap" style="background:#f3e8ff; color:#7e22ce;"><i class="fa-solid fa-user-tie"></i></div>
                 <div class="notif-content">
-                  <div class="notif-title">Syamily S</div>
-                  <div class="notif-time">Admissions Advisor & Counselor (Kochi Hub)</div>
+                  <div class="notif-title">Emily Watson</div>
+                  <div class="notif-time">Admissions Advisor & Intake Specialist</div>
                 </div>
                 <?php if (($currentUser['id'] ?? 0) == 4): ?>
                   <i class="fa-solid fa-circle-check" style="color:var(--primary); font-size:1rem;"></i>

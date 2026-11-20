@@ -575,7 +575,7 @@ include __DIR__ . '/../includes/header.php';
         <i class="fa-solid fa-diagram-project" style="color:var(--primary); margin-right:4px;"></i> 
         <?= $isCounselor ? 'My 6-Stage Student Funnel' : '6-Stage Admission Pipeline' ?>
       </h3>
-      <a href="<?= base_url('leads/index.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">View Students &rarr;</a>
+      <a href="<?= base_url('leads/index.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">View Leads &rarr;</a>
     </div>
     <div style="height:250px;">
       <canvas id="pipelineChart"></canvas>
@@ -619,7 +619,7 @@ include __DIR__ . '/../includes/header.php';
         <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-heading); margin:0;">
           <i class="fa-solid fa-chart-pie" style="color:var(--primary); margin-right:4px;"></i> Regional Branch Intake Distribution
         </h3>
-        <a href="<?= base_url('leads/index.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">View Students &rarr;</a>
+        <a href="<?= base_url('leads/index.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">View Leads &rarr;</a>
       </div>
       <div style="height:250px;">
         <canvas id="branchChart"></canvas>

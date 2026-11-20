@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $currentYear = date('Y');
                 $stmtCount = $pdo->query("SELECT COUNT(*) FROM leads");
                 $seq = (int)$stmtCount->fetchColumn() + 1;
-                $leadCode = sprintf("EDR-%s-%04d", $currentYear, $seq);
+                $leadCode = sprintf("UNI-%s-%04d", $currentYear, $seq);
 
                 try {
                     $pdo->beginTransaction();

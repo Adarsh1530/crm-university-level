@@ -172,15 +172,15 @@ if (stripos($headerRoleBadge, 'Admissions ') === 0) {
       <?php endif; ?>
     </a>
 
-    <!-- 3. Students  -->
+    <!-- 3. Leads Management (Core Focus) -->
     <?php if (can('leads', 'view')): ?>
-      <a href="<?= base_url('leads/index.php') ?>" id="sidebar-nav-leads" class="nav-item <?= in_array($activePage, ['leads', 'add_lead']) ? 'active' : '' ?>">
+      <a href="<?= base_url('leads/index.php') ?>" id="sidebar-nav-leads" class="nav-item <?= in_array($activePage, ['leads', 'add_lead']) ? 'active' : '' ?>" title="Manage student leads across all 6 admission stages">
         <div class="nav-item-content">
-          <i class="fa-solid fa-user-graduate nav-icon"></i>
-          <span class="nav-label">Students</span>
+          <i class="fa-solid fa-users-line nav-icon"></i>
+          <span class="nav-label">Leads</span>
         </div>
         <?php if ($sidebarActiveLeadsCount > 0): ?>
-          <span class="nav-badge badge-primary"><?= $sidebarActiveLeadsCount ?></span>
+          <span class="nav-badge badge-primary" title="<?= $sidebarActiveLeadsCount ?> Active Leads"><?= $sidebarActiveLeadsCount ?></span>
         <?php endif; ?>
       </a>
     <?php endif; ?>

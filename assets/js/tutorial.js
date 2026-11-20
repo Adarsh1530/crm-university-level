@@ -118,7 +118,7 @@
       "title": "15-Second Quick Lead Capture Modal",
       "badge": "Instant Ingestion",
       "icon": "fa-bolt",
-      "description": "Rapidly intake walk-in students or phone inquiries without navigating away from your dashboard. Automatically generates a unique tracking code (EDR-YYYY-XXXX), normalizes phone numbers to prevent duplicates, and routes the student directly to an assigned counselor.",
+      "description": "Rapidly intake walk-in students or phone inquiries without navigating away from your dashboard. Automatically generates a unique tracking code (UNI-YYYY-XXXX), normalizes phone numbers to prevent duplicates, and routes the student directly to an assigned counselor.",
       "tip": "Enter candidate name, phone number, study country, and next follow-up in under 15 seconds.",
       "position": "bottom"
     },
@@ -287,7 +287,7 @@
       "title": "Universal Candidate Search Bar",
       "badge": "Fast Lookup",
       "icon": "fa-magnifying-glass",
-      "description": "Search prospective students in real time by student name, tracking ID (e.g. EDR-2026-0001), phone number, email address, or previous college/university name.",
+      "description": "Search prospective students in real time by student name, tracking ID (e.g. UNI-2026-0001), phone number, email address, or previous college/university name.",
       "tip": "Type any partial keyword and press Enter or click Apply to execute.",
       "position": "bottom"
     },
@@ -1017,7 +1017,7 @@
       "title": "15-Second Quick Lead Capture Modal",
       "badge": "Instant Ingestion",
       "icon": "fa-bolt",
-      "description": "Rapidly intake walk-in students or phone inquiries without navigating away from your dashboard. Automatically generates a unique tracking code (EDR-YYYY-XXXX), normalizes phone numbers to prevent duplicates, and routes the student directly to an assigned counselor.",
+      "description": "Rapidly intake walk-in students or phone inquiries without navigating away from your dashboard. Automatically generates a unique tracking code (UNI-YYYY-XXXX), normalizes phone numbers to prevent duplicates, and routes the student directly to an assigned counselor.",
       "tip": "Enter candidate name, phone number, study country, and next follow-up in under 15 seconds.",
       "position": "bottom"
     },
@@ -1186,7 +1186,7 @@
       "title": "Universal Candidate Search Bar",
       "badge": "Fast Lookup",
       "icon": "fa-magnifying-glass",
-      "description": "Search prospective students in real time by student name, tracking ID (e.g. EDR-2026-0001), phone number, email address, or previous college/university name.",
+      "description": "Search prospective students in real time by student name, tracking ID (e.g. UNI-2026-0001), phone number, email address, or previous college/university name.",
       "tip": "Type any partial keyword and press Enter or click Apply to execute.",
       "position": "bottom"
     },
@@ -1916,7 +1916,7 @@
       "title": "15-Second Quick Lead Capture Modal",
       "badge": "Admissions Counselor • Student Advisory",
       "icon": "fa-bolt",
-      "description": "Rapidly intake walk-in students or phone inquiries without navigating away from your dashboard. Automatically generates a unique tracking code (EDR-YYYY-XXXX), normalizes phone numbers to prevent duplicates, and routes the student directly to an assigned counselor.",
+      "description": "Rapidly intake walk-in students or phone inquiries without navigating away from your dashboard. Automatically generates a unique tracking code (UNI-YYYY-XXXX), normalizes phone numbers to prevent duplicates, and routes the student directly to an assigned counselor.",
       "tip": "Enter candidate name, phone number, study country, and next follow-up in under 15 seconds.",
       "position": "bottom"
     },
@@ -2085,7 +2085,7 @@
       "title": "Universal Candidate Search Bar",
       "badge": "Admissions Counselor • Student Advisory",
       "icon": "fa-magnifying-glass",
-      "description": "Search prospective students in real time by student name, tracking ID (e.g. EDR-2026-0001), phone number, email address, or previous college/university name.",
+      "description": "Search prospective students in real time by student name, tracking ID (e.g. UNI-2026-0001), phone number, email address, or previous college/university name.",
       "tip": "Type any partial keyword and press Enter or click Apply to execute.",
       "position": "bottom"
     },

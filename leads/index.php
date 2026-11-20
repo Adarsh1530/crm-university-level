@@ -12,7 +12,7 @@ require_login();
 require_permission('leads', 'view');
 
 $currentUser = current_user();
-$pageTitle = 'Students Directory';
+$pageTitle = 'Leads Management Cockpit';
 $activePage = 'leads';
 
 // Type filter: All, Leads, Customers
@@ -213,25 +213,25 @@ $leads = $stmt->fetchAll();
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- Module Section 9.0: Student Module Top Tab Bar (All, Leads, Customers, Follow-ups, College Datas, Archived, My Tasks) -->
+<!-- Module Section 9.0: Leads Top Tab Navigation Bar (All Leads, In-Progress, Enrolled, Follow-ups, College Data, Archived, My Tasks) -->
 <div class="student-nav-tabs" style="display:flex; gap:0.25rem; border-bottom:2px solid var(--border-color); margin-bottom:1.25rem; overflow-x:auto; padding-bottom:1px;">
   <a href="<?= base_url('leads/index.php?type=all') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= ($type === 'all') ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= ($type === 'all') ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= ($type === 'all') ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
-    <i class="fa-solid fa-users"></i> All <span class="badge badge-primary" style="margin-left:4px; font-size:0.75rem;"><?= $countAll ?></span>
+    <i class="fa-solid fa-users"></i> All Leads <span class="badge badge-primary" style="margin-left:4px; font-size:0.75rem;"><?= $countAll ?></span>
   </a>
   <a href="<?= base_url('leads/index.php?type=leads') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= ($type === 'leads') ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= ($type === 'leads') ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= ($type === 'leads') ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
-    <i class="fa-solid fa-user-graduate"></i> Leads <span class="badge badge-secondary" style="margin-left:4px; font-size:0.75rem;"><?= $countLeadsOnly ?></span>
+    <i class="fa-solid fa-user-graduate"></i> In-Progress Inquiries <span class="badge badge-secondary" style="margin-left:4px; font-size:0.75rem;"><?= $countLeadsOnly ?></span>
   </a>
   <a href="<?= base_url('leads/index.php?type=customers') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= ($type === 'customers') ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= ($type === 'customers') ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= ($type === 'customers') ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
-    <i class="fa-solid fa-certificate"></i> Customers <span class="badge badge-success" style="margin-left:4px; font-size:0.75rem;"><?= $countCustomersOnly ?></span>
+    <i class="fa-solid fa-certificate"></i> Enrolled Clients <span class="badge badge-success" style="margin-left:4px; font-size:0.75rem;"><?= $countCustomersOnly ?></span>
   </a>
   <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
-    <i class="fa-solid fa-phone-volume"></i> Follow-ups <span class="badge badge-warning" style="margin-left:4px; font-size:0.75rem;"><?= $countScheduledFollowups ?></span>
+    <i class="fa-solid fa-phone-volume"></i> Scheduled Follow-ups <span class="badge badge-warning" style="margin-left:4px; font-size:0.75rem;"><?= $countScheduledFollowups ?></span>
   </a>
   <a href="<?= base_url('data/college_data.php') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
-    <i class="fa-solid fa-database"></i> College Datas <span class="badge badge-secondary" style="margin-left:4px; font-size:0.75rem;"><?= $countCollegeData ?></span>
+    <i class="fa-solid fa-database"></i> College Data <span class="badge badge-secondary" style="margin-left:4px; font-size:0.75rem;"><?= $countCollegeData ?></span>
   </a>
   <a href="<?= base_url('archive/index.php') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
-    <i class="fa-solid fa-box-archive"></i> Archived <span class="badge badge-secondary" style="margin-left:4px; font-size:0.75rem;"><?= $countArchived ?></span>
+    <i class="fa-solid fa-box-archive"></i> Archived Leads <span class="badge badge-secondary" style="margin-left:4px; font-size:0.75rem;"><?= $countArchived ?></span>
   </a>
   <a href="<?= base_url('tasks/index.php') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
     <i class="fa-solid fa-list-check"></i> My Tasks
@@ -300,10 +300,10 @@ include __DIR__ . '/../includes/header.php';
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.25rem; flex-wrap:wrap; gap:1rem;">
   <div>
     <h1 style="font-size:1.4rem; font-weight:700; color:var(--text-heading); margin:0 0 0.25rem 0;">
-      <?= ($type === 'leads') ? 'Student Leads' : (($type === 'customers') ? 'Enrolled Customers' : 'All Students (Leads & Customers)') ?>
+      <?= ($type === 'leads') ? 'Active Inquiries' : (($type === 'customers') ? 'Enrolled Student Clients' : 'Lead Management Cockpit') ?>
     </h1>
     <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">
-      <?= ($type === 'leads') ? 'Showing candidate leads actively exploring higher education programs.' : (($type === 'customers') ? 'Showing enrolled student clients with generated invoicing and dossiers.' : 'Centralized repository across all student candidate stages and customer profiles.') ?>
+      <?= ($type === 'leads') ? 'Showing candidate leads actively exploring higher education programs.' : (($type === 'customers') ? 'Showing enrolled student clients with generated invoicing and dossiers.' : 'Centralized lead management across all 6 admission stages and student profiles.') ?>
     </p>
   </div>
   <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
