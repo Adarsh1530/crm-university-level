@@ -1,7 +1,7 @@
 <?php
 /**
  * Professional Login Page
- * University-Level Student CRM Demo
+ * Customer Relationship Management (CRM)
  */
 
 require_once __DIR__ . '/config/database.php';
@@ -58,10 +58,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             FROM users u 
             JOIN roles r ON u.role_id = r.id 
             WHERE u.email = ? 
-               OR (u.id = 1 AND ? IN ('superadmin', 'admin', 'superadmin@unicrm.edu', 'admin@unicrm.edu'))
-               OR (u.id = 2 AND ? IN ('admissionmanager', 'manager', 'admissionmanager@unicrm.edu'))
-               OR (u.id = 3 AND ? IN ('academiccounselor', 'counselor', 'academiccounselor@unicrm.edu'))
-               OR (u.id = 4 AND ? IN ('admissionadvisor', 'advisor', 'admissionadvisor@unicrm.edu'))
+               OR (u.id = 1 AND ? IN ('superadmin', 'admin', 'dr.arthur@unicrm.cloud', 'superadmin@unicrm.edu', 'admin@unicrm.edu'))
+               OR (u.id = 2 AND ? IN ('teamleader', 'team_leader', 'manager', 'sarah', 'sarah@unicrm.cloud', 'admissionmanager@unicrm.edu'))
+               OR (u.id = 3 AND ? IN ('counselor', 'academiccounselor', 'advisor', 'michael', 'michael@unicrm.cloud', 'academiccounselor@unicrm.edu'))
+               OR (u.id = 4 AND ? IN ('operations', 'accessor', 'admissionadvisor', 'emily', 'emily@unicrm.cloud', 'admissionadvisor@unicrm.edu'))
             LIMIT 1
         ");
         $stmt->execute([$loginInput, $loginInput, $loginInput, $loginInput, $loginInput]);
@@ -84,7 +84,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 unset($_SESSION['sidebar_cache']);
                 unset($_SESSION['crm_role_perms']);
 
-                log_activity($user['id'], null, 'User Login', 'User signed into UniCRM admissions portal');
+                log_activity($user['id'], null, 'User Login', 'User signed into CRM Operations Portal');
                 set_flash('success', 'Welcome back, ' . htmlspecialchars($user['name']) . '!');
                 
                 $targetUrl = 'dashboard/index.php';
@@ -104,7 +104,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In | UniCRM - Admissions Cloud</title>
+  <title>Sign In | CRM - Customer Relationship Management</title>
   
   <!-- Google Fonts: Instrument Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -311,35 +311,35 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
 <div class="login-container">
   
-  <!-- Left Side: Enterprise University Branding -->
+  <!-- Left Side: CRM Operations Branding -->
   <div class="login-banner">
     <div class="banner-brand">
       <div class="banner-icon">
-        <i class="fa-solid fa-graduation-cap"></i>
+        <i class="fa-solid fa-users-gear"></i>
       </div>
       <div>
-        <h2>UniCRM</h2>
-        <span>Admissions Cloud v2.0</span>
+        <h2>CRM</h2>
+        <span>Operations Cloud</span>
       </div>
     </div>
 
     <div class="banner-content">
-      <h3>Empowering Global University Admissions</h3>
-      <p>A centralized platform for university education counselors to capture prospective student leads, track admission milestones, manage daily follow-up queues, and issue fee invoices.</p>
+      <h3>Lead Acceleration & Relationship CRM</h3>
+      <p>A centralized platform for operations, team leaders, and counselors to triage social media leads, verify phone numbers, assign regional zones, and manage 4-stage follow-up queues.</p>
     </div>
 
     <div class="banner-stats">
       <div class="stat-item">
-        <strong>9 Branches</strong>
-        <span>Kochi &middot; London &middot; BLR</span>
+        <strong>4 Zones</strong>
+        <span>Central &middot; North &middot; South</span>
       </div>
       <div class="stat-item">
-        <strong>6 Stages</strong>
-        <span>Admissions Pipeline</span>
+        <strong>4 Stages</strong>
+        <span>Follow-Up Pipeline</span>
       </div>
       <div class="stat-item">
         <strong>100%</strong>
-        <span>Data Security</span>
+        <span>Phone Verified</span>
       </div>
     </div>
   </div>
@@ -348,7 +348,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
   <div class="login-form-pane">
     <div class="login-header">
       <h2>Welcome Back</h2>
-      <p>Enter your institutional credentials to access your dashboard.</p>
+      <p>Enter your CRM account credentials to access your dashboard.</p>
     </div>
 
     <?php if (!empty($error)): ?>
@@ -366,9 +366,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     <form method="POST" action="login.php<?= !empty($redirect) ? '?redirect=' . urlencode($redirect) : '' ?>">
       <?= csrf_field() ?>
       <div class="form-group">
-        <label class="form-label" for="email">Institutional Username or Email</label>
+        <label class="form-label" for="email">Username or Email</label>
         <div style="position: relative;">
-          <input type="text" id="email" name="email" class="form-control" style="width: 100%; padding-left: 2.5rem;" placeholder="e.g. superadmin or superadmin@unicrm.edu" value="superadmin" required>
+          <input type="text" id="email" name="email" class="form-control" style="width: 100%; padding-left: 2.5rem;" placeholder="e.g. superadmin or dr.arthur@unicrm.cloud" value="superadmin" required>
           <i class="fa-regular fa-envelope" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-light);"></i>
         </div>
       </div>
@@ -401,24 +401,24 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
           </div>
         </a>
         <a href="login.php?demo_as=2<?= !empty($redirect) ? '&redirect=' . urlencode($redirect) : '' ?>" class="btn-demo-quick">
-          <i class="fa-solid fa-building-user" style="color: #f59e0b;"></i>
+          <i class="fa-solid fa-user-shield" style="color: #f59e0b;"></i>
           <div>
-            <strong>Admissions Manager</strong>
-            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Sarah Jenkins (admissionmanager)</span>
+            <strong>Team Leader</strong>
+            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Sarah Jenkins (teamleader)</span>
           </div>
         </a>
         <a href="login.php?demo_as=3<?= !empty($redirect) ? '&redirect=' . urlencode($redirect) : '' ?>" class="btn-demo-quick">
           <i class="fa-solid fa-headset" style="color: #10b981;"></i>
           <div>
-            <strong>Academic Counselor</strong>
-            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Michael Chang (academiccounselor)</span>
+            <strong>Counselor / Advisor</strong>
+            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Michael Chang (counselor)</span>
           </div>
         </a>
         <a href="login.php?demo_as=4<?= !empty($redirect) ? '&redirect=' . urlencode($redirect) : '' ?>" class="btn-demo-quick">
-          <i class="fa-solid fa-user-tie" style="color: #8b5cf6;"></i>
+          <i class="fa-solid fa-phone-volume" style="color: #8b5cf6;"></i>
           <div>
-            <strong>Admissions Advisor</strong>
-            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Emily Watson (admissionadvisor)</span>
+            <strong>Operations / Accessor</strong>
+            <span style="display:block; font-size:0.68rem; color:var(--text-muted);">Emily Watson (operations)</span>
           </div>
         </a>
       </div>
