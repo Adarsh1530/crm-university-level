@@ -1,7 +1,12 @@
 <?php
 /**
- * Active Leads Directory
- * Enterprise University Admissions & Enrollment Management System (UniCRM)
+ * Active Leads Directory - Core CRM
+ * Fully Aligned with Client Requirements & Malayalam Training Audio:
+ * - Search by Region Number (e.g. REG-01), Customer ID, Phone, Name, or Business
+ * - Filters for Regional Geographic Segmentation (Central Zone density, Center vs Outer)
+ * - Prospectivity Tiers (Hot, Warm, Cold)
+ * - Phone Verification Cross-Checking Badges
+ * - Fast Action Bar & 1-Click Top Update & Call Logging
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -12,10 +17,10 @@ require_login();
 require_permission('leads', 'view');
 
 $currentUser = current_user();
-$pageTitle = 'Leads Management Cockpit';
+$pageTitle = 'Leads Directory';
 $activePage = 'leads';
 
-// Type filter: All, Leads, Customers
+// Type filter: all, leads, customers
 $type = strtolower(trim($_GET['type'] ?? 'all'));
 if (!in_array($type, ['all', 'leads', 'customers'])) {
     $type = 'all';
@@ -23,100 +28,65 @@ if (!in_array($type, ['all', 'leads', 'customers'])) {
 
 // Filter inputs
 $search = trim($_GET['search'] ?? '');
-$stageFilter = trim($_GET['stage'] ?? '');
-$priorityFilter = trim($_GET['priority'] ?? '');
-$sourceFilter = trim($_GET['source'] ?? '');
+$regionFilter = trim($_GET['region'] ?? '');
+$zoneFilter = trim($_GET['zone_type'] ?? '');
+$prospectFilter = trim($_GET['prospectivity'] ?? '');
+$statusFilter = trim($_GET['active_status'] ?? '');
+$verifiedFilter = trim($_GET['verified'] ?? '');
 $counselorFilter = isset($_GET['counselor_id']) ? (int)$_GET['counselor_id'] : 0;
-$branchFilter = isset($_GET['branch_id']) ? (int)$_GET['branch_id'] : 0;
 $dateFrom = trim($_GET['date_from'] ?? '');
 $dateTo = trim($_GET['date_to'] ?? '');
 
-// Export CSV handler (Strictly restricted from Counselors)
-if (isset($_GET['export']) && $_GET['export'] == 'csv') {
-    if (!can('leads', 'export')) {
-        set_flash('danger', 'Access Denied: Counselors are strictly restricted from exporting student databases.');
-        redirect('leads/index.php');
-    }
-
-    $scopeClause = get_crm_scope_clause('l', 'assigned_counselor_id', 'branch_id');
-    $exportWhere = ["l.is_archived = 0", $scopeClause];
-    if ($type === 'leads') {
-        $exportWhere[] = "l.is_customer = 0";
-    } elseif ($type === 'customers') {
-        $exportWhere[] = "l.is_customer = 1";
-    }
-    $exportWhereSql = implode(' AND ', $exportWhere);
-
-    $stmtExp = $pdo->query("
-        SELECT l.lead_code, l.full_name, l.phone, l.email, b.name as branch, u.name as counselor,
-               l.stage, l.priority, l.source, l.preferred_country, l.preferred_course, l.created_at
-        FROM leads l
-        LEFT JOIN branches b ON l.branch_id = b.id
-        LEFT JOIN users u ON l.assigned_counselor_id = u.id
-        WHERE {$exportWhereSql}
-        ORDER BY l.id DESC
-    ");
-    $expRows = $stmtExp->fetchAll(PDO::FETCH_ASSOC);
-
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="Students_' . ucfirst($type) . '_Export_' . date('Ymd_His') . '.csv"');
-    $out = fopen('php://output', 'w');
-    fputcsv($out, ['Lead ID', 'Student Name', 'Canonical Phone', 'Email', 'Branch', 'Assigned Counselor', 'Stage', 'Priority', 'Source', 'Target Country', 'Target Course', 'Created At']);
-    foreach ($expRows as $er) {
-        fputcsv($out, $er);
-    }
-    fclose($out);
-    exit;
-}
-
-// Scoping
+// Scoping clause for current user
 $scopeClause = get_crm_scope_clause('l', 'assigned_counselor_id', 'branch_id');
 $where = ["l.is_archived = 0", $scopeClause];
 $params = [];
 
-// Apply type condition
 if ($type === 'leads') {
-    $where[] = "l.is_customer = 0";
+    $where[] = "l.is_customer = 0 AND l.active_status != 'Converted'";
 } elseif ($type === 'customers') {
-    $where[] = "l.is_customer = 1";
+    $where[] = "(l.is_customer = 1 OR l.active_status = 'Converted')";
 }
 
+// Search across Region Numbers, Customer ID, Name, Phone, and Business Name
 if (!empty($search)) {
-    $where[] = "(l.full_name LIKE ? OR l.lead_code LIKE ? OR l.phone LIKE ? OR l.email LIKE ? OR l.college_name LIKE ?)";
+    $where[] = "(l.full_name LIKE ? OR l.lead_code LIKE ? OR l.phone LIKE ? OR l.email LIKE ? OR l.business_name LIKE ? OR l.region_number LIKE ? OR l.main_region LIKE ? OR l.sub_area LIKE ?)";
     $term = "%{$search}%";
-    $params[] = $term;
-    $params[] = $term;
-    $params[] = $term;
-    $params[] = $term;
-    $params[] = $term;
+    for ($i = 0; $i < 8; $i++) {
+        $params[] = $term;
+    }
 }
 
-if (!empty($stageFilter)) {
-    $where[] = "l.stage = ?";
-    $params[] = $stageFilter;
+if (!empty($regionFilter)) {
+    $where[] = "l.main_region = ?";
+    $params[] = $regionFilter;
 }
 
-if (!empty($priorityFilter)) {
-    $where[] = "l.priority = ?";
-    $params[] = $priorityFilter;
+if (!empty($zoneFilter)) {
+    $where[] = "l.zone_type = ?";
+    $params[] = $zoneFilter;
 }
 
-if (!empty($sourceFilter)) {
-    $where[] = "l.source = ?";
-    $params[] = $sourceFilter;
+if (!empty($prospectFilter)) {
+    $where[] = "l.prospectivity = ?";
+    $params[] = $prospectFilter;
 }
 
-if ($counselorFilter > 0 && (is_super_admin() || is_branch_manager())) {
+if (!empty($statusFilter)) {
+    $where[] = "l.active_status = ?";
+    $params[] = $statusFilter;
+}
+
+if ($verifiedFilter !== '') {
+    $where[] = "l.is_phone_verified = ?";
+    $params[] = (int)$verifiedFilter;
+}
+
+if ($counselorFilter > 0) {
     $where[] = "l.assigned_counselor_id = ?";
     $params[] = $counselorFilter;
 }
 
-if ($branchFilter > 0 && is_super_admin()) {
-    $where[] = "l.branch_id = ?";
-    $params[] = $branchFilter;
-}
-
-// Filter by Date
 if (!empty($dateFrom)) {
     $where[] = "DATE(l.created_at) >= ?";
     $params[] = $dateFrom;
@@ -128,293 +98,160 @@ if (!empty($dateTo)) {
 
 $whereSql = implode(' AND ', $where);
 
-// Section 9.0 Top Tab Navigation Counts
-$countAll = (int)$pdo->query("SELECT COUNT(*) FROM leads l WHERE l.is_archived = 0 AND {$scopeClause}")->fetchColumn();
-$countLeadsOnly = (int)$pdo->query("SELECT COUNT(*) FROM leads l WHERE l.is_archived = 0 AND l.is_customer = 0 AND {$scopeClause}")->fetchColumn();
-$countCustomersOnly = (int)$pdo->query("SELECT COUNT(*) FROM leads l WHERE l.is_archived = 0 AND l.is_customer = 1 AND {$scopeClause}")->fetchColumn();
-$countScheduledFollowups = (int)$pdo->query("
-    SELECT COUNT(*) FROM followups f
-    JOIN leads l ON f.lead_id = l.id
-    WHERE f.scheduled_date = CURDATE() AND f.status = 'Pending' AND l.is_archived = 0 AND {$scopeClause}
-")->fetchColumn();
-$countCollegeData = (int)$pdo->query("SELECT COUNT(*) FROM college_data WHERE is_archived = 0")->fetchColumn();
-$countArchived = (int)$pdo->query("SELECT COUNT(*) FROM leads l WHERE l.is_archived = 1 AND {$scopeClause}")->fetchColumn();
+// Total count for pagination
+$countStmt = $pdo->prepare("SELECT COUNT(*) FROM leads l WHERE {$whereSql}");
+$countStmt->execute($params);
+$totalRecords = (int)$countStmt->fetchColumn();
 
-// Section 9.1: Leads & Conversions Statistics (This Week, This Month, This FY)
-$statsWeekStart = date('Y-m-d', strtotime('monday this week'));
-$statsMonthStart = date('Y-m-01');
-$curMonth = (int)date('n');
-$curYear = (int)date('Y');
-$statsFyStart = ($curMonth >= 4) ? "{$curYear}-04-01" : ($curYear - 1) . "-04-01";
+// Pagination
+$page = max(1, (int)($_GET['page'] ?? 1));
+$perPage = 25;
+$totalPages = max(1, ceil($totalRecords / $perPage));
+$offset = ($page - 1) * $perPage;
 
-$stmtStats = $pdo->query("
-    SELECT 
-        COUNT(CASE WHEN l.created_at >= '{$statsWeekStart}' THEN 1 END) as leads_week,
-        COUNT(CASE WHEN l.created_at >= '{$statsMonthStart}' THEN 1 END) as leads_month,
-        COUNT(CASE WHEN l.created_at >= '{$statsFyStart}' THEN 1 END) as leads_fy,
-        COUNT(CASE WHEN l.is_customer = 1 AND (COALESCE(l.converted_to_customer_at, l.updated_at, l.created_at) >= '{$statsWeekStart}') THEN 1 END) as conv_week,
-        COUNT(CASE WHEN l.is_customer = 1 AND (COALESCE(l.converted_to_customer_at, l.updated_at, l.created_at) >= '{$statsMonthStart}') THEN 1 END) as conv_month,
-        COUNT(CASE WHEN l.is_customer = 1 AND (COALESCE(l.converted_to_customer_at, l.updated_at, l.created_at) >= '{$statsFyStart}') THEN 1 END) as conv_fy
-    FROM leads l
-    WHERE l.is_archived = 0 AND {$scopeClause}
-");
-$perfStats = $stmtStats->fetch() ?: [
-    'leads_week' => 0, 'leads_month' => 0, 'leads_fy' => 0,
-    'conv_week' => 0, 'conv_month' => 0, 'conv_fy' => 0
-];
-
-// Stage breakdown counts for tab pills
-$typeStageWhere = $scopeClause;
-if ($type === 'leads') {
-    $typeStageWhere .= " AND l.is_customer = 0";
-} elseif ($type === 'customers') {
-    $typeStageWhere .= " AND l.is_customer = 1";
-}
-$stageCountsStmt = $pdo->query("
-    SELECT l.stage, COUNT(*) as count 
-    FROM leads l 
-    WHERE l.is_archived = 0 AND {$typeStageWhere} 
-    GROUP BY l.stage
-");
-$stageCounts = $stageCountsStmt->fetchAll(PDO::FETCH_KEY_PAIR);
-$totalScopedLeads = array_sum($stageCounts);
-
-// Branches and Counselors for filter dropdowns & reassign modals
-$branches = $pdo->query("SELECT id, name, city FROM branches WHERE status = 'Active' ORDER BY name ASC")->fetchAll();
-
-$cslSql = "
-    SELECT u.id, u.name, u.branch_id, b.name AS branch_name,
-           (SELECT COUNT(*) FROM leads WHERE assigned_counselor_id = u.id AND is_archived = 0) AS active_caseload
-    FROM users u 
-    JOIN roles r ON u.role_id = r.id 
-    LEFT JOIN branches b ON u.branch_id = b.id 
-    WHERE r.name = 'counselor' AND u.status = 'Active'
-";
-if (is_branch_manager()) {
-    $cslSql .= " AND u.branch_id = " . (int)$currentUser['branch_id'];
-}
-$cslSql .= " ORDER BY u.name ASC";
-$counselors = $pdo->query($cslSql)->fetchAll();
-
-// Main Lead Query
+// Fetch Leads
 $sql = "
-    SELECT l.*, b.name AS branch_name, b.code AS branch_code, u.name AS counselor_name
+    SELECT l.*, b.name as branch_name, u.name as counselor_name
     FROM leads l
     LEFT JOIN branches b ON l.branch_id = b.id
     LEFT JOIN users u ON l.assigned_counselor_id = u.id
     WHERE {$whereSql}
     ORDER BY l.id DESC
-    LIMIT 150
+    LIMIT {$perPage} OFFSET {$offset}
 ";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $leads = $stmt->fetchAll();
 
+// Fetch Counselors for Filter
+$counselors = $pdo->query("SELECT u.id, u.name, r.label as role_label FROM users u JOIN roles r ON u.role_id = r.id WHERE u.status = 'Active' ORDER BY u.name ASC")->fetchAll();
+
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- Module Section 9.0: Leads Top Tab Navigation Bar (All Leads, In-Progress, Enrolled, Follow-ups, College Data, Archived, My Tasks) -->
-<div class="student-nav-tabs" style="display:flex; gap:0.25rem; border-bottom:2px solid var(--border-color); margin-bottom:1.25rem; overflow-x:auto; padding-bottom:1px;">
-  <a href="<?= base_url('leads/index.php?type=all') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= ($type === 'all') ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= ($type === 'all') ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= ($type === 'all') ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
-    <i class="fa-solid fa-users"></i> All Leads <span class="badge badge-primary" style="margin-left:4px; font-size:0.75rem;"><?= $countAll ?></span>
-  </a>
-  <a href="<?= base_url('leads/index.php?type=leads') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= ($type === 'leads') ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= ($type === 'leads') ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= ($type === 'leads') ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
-    <i class="fa-solid fa-user-graduate"></i> In-Progress Inquiries <span class="badge badge-secondary" style="margin-left:4px; font-size:0.75rem;"><?= $countLeadsOnly ?></span>
-  </a>
-  <a href="<?= base_url('leads/index.php?type=customers') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= ($type === 'customers') ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= ($type === 'customers') ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= ($type === 'customers') ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
-    <i class="fa-solid fa-certificate"></i> Enrolled Clients <span class="badge badge-success" style="margin-left:4px; font-size:0.75rem;"><?= $countCustomersOnly ?></span>
-  </a>
-  <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
-    <i class="fa-solid fa-phone-volume"></i> Scheduled Follow-ups <span class="badge badge-warning" style="margin-left:4px; font-size:0.75rem;"><?= $countScheduledFollowups ?></span>
-  </a>
-  <a href="<?= base_url('data/college_data.php') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
-    <i class="fa-solid fa-database"></i> College Data <span class="badge badge-secondary" style="margin-left:4px; font-size:0.75rem;"><?= $countCollegeData ?></span>
-  </a>
-  <a href="<?= base_url('archive/index.php') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
-    <i class="fa-solid fa-box-archive"></i> Archived Leads <span class="badge badge-secondary" style="margin-left:4px; font-size:0.75rem;"><?= $countArchived ?></span>
-  </a>
-  <a href="<?= base_url('tasks/index.php') ?>" class="student-nav-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
-    <i class="fa-solid fa-list-check"></i> My Tasks
-  </a>
-</div>
-
-<!-- Module Section 9.1: Statistics (Total Leads & Total Conversions for Week, Month, Financial Year) -->
-<div class="card" style="margin-bottom:1.25rem; padding:1rem 1.25rem; background:linear-gradient(135deg, #ffffff 0%, #fafafa 100%); border-radius:12px; border:1px solid #e2e8f0;">
-  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1.25rem;">
-    <!-- Total Leads -->
-    <div style="flex:1; min-width:280px; display:flex; align-items:center; gap:1.25rem; border-right:1px solid var(--border-color); padding-right:1rem;">
-      <div style="display:flex; align-items:center; gap:8px;">
-        <div style="width:38px; height:38px; border-radius:8px; background:var(--primary-subtle); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
-          <i class="fa-solid fa-user-plus"></i>
-        </div>
-        <div>
-          <div style="font-size:0.72rem; font-weight:800; text-transform:uppercase; color:var(--text-muted); letter-spacing:0.5px;">Total Leads</div>
-          <div style="font-size:0.92rem; font-weight:700; color:var(--text-heading);"><?= htmlspecialchars($currentUser['name']) ?> & Team</div>
-        </div>
-      </div>
-      <div style="display:flex; gap:1.25rem; margin-left:auto;">
-        <div style="text-align:center;">
-          <div style="font-size:1.2rem; font-weight:800; color:var(--primary);"><?= $perfStats['leads_week'] ?></div>
-          <div style="font-size:0.7rem; color:var(--text-muted); font-weight:600;">This Week</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:1.2rem; font-weight:800; color:var(--primary);"><?= $perfStats['leads_month'] ?></div>
-          <div style="font-size:0.7rem; color:var(--text-muted); font-weight:600;">This Month</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:1.2rem; font-weight:800; color:var(--primary);"><?= $perfStats['leads_fy'] ?></div>
-          <div style="font-size:0.7rem; color:var(--text-muted); font-weight:600;">This FY</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Total Conversions -->
-    <div style="flex:1; min-width:280px; display:flex; align-items:center; gap:1.25rem;">
-      <div style="display:flex; align-items:center; gap:8px;">
-        <div style="width:38px; height:38px; border-radius:8px; background:#dcfce7; color:#15803d; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
-          <i class="fa-solid fa-trophy"></i>
-        </div>
-        <div>
-          <div style="font-size:0.72rem; font-weight:800; text-transform:uppercase; color:#15803d; letter-spacing:0.5px;">Total Conversions</div>
-          <div style="font-size:0.92rem; font-weight:700; color:var(--text-heading);">Enrolled Clients</div>
-        </div>
-      </div>
-      <div style="display:flex; gap:1.25rem; margin-left:auto;">
-        <div style="text-align:center;">
-          <div style="font-size:1.2rem; font-weight:800; color:#15803d;"><?= $perfStats['conv_week'] ?></div>
-          <div style="font-size:0.7rem; color:var(--text-muted); font-weight:600;">This Week</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:1.2rem; font-weight:800; color:#15803d;"><?= $perfStats['conv_month'] ?></div>
-          <div style="font-size:0.7rem; color:var(--text-muted); font-weight:600;">This Month</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:1.2rem; font-weight:800; color:#15803d;"><?= $perfStats['conv_fy'] ?></div>
-          <div style="font-size:0.7rem; color:var(--text-muted); font-weight:600;">This FY</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
+<!-- Header Title & Quick Actions -->
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.25rem; flex-wrap:wrap; gap:1rem;">
   <div>
-    <h1 style="font-size:1.4rem; font-weight:700; color:var(--text-heading); margin:0 0 0.25rem 0;">
-      <?= ($type === 'leads') ? 'Active Inquiries' : (($type === 'customers') ? 'Enrolled Student Clients' : 'Lead Management Cockpit') ?>
+    <h1 style="font-size:1.4rem; font-weight:800; color:var(--text-heading); margin:0 0 0.25rem 0;">
+      <?= ($type === 'customers') ? 'Converted Customers Directory' : 'Leads Directory' ?>
     </h1>
     <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">
-      <?= ($type === 'leads') ? 'Showing candidate leads actively exploring higher education programs.' : (($type === 'customers') ? 'Showing enrolled student clients with generated invoicing and dossiers.' : 'Centralized lead management across all 6 admission stages and student profiles.') ?>
+      Regional distribution, phone cross-checking, prospectivity grading, and counselor routing.
     </p>
   </div>
   <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-    <?php if ($type === 'all'): ?>
-      <?php if (can('college_data', 'add')): ?>
-        <a href="<?= base_url('data/import_college_data.php') ?>" class="btn btn-outline btn-sm" title="Upload Bulk Student Data from Excel">
-          <i class="fa-solid fa-file-import"></i> Excel Import
-        </a>
-      <?php endif; ?>
-      <?php if (can('leads', 'export')): ?>
-        <a href="<?= base_url('leads/index.php?' . http_build_query(array_merge($_GET, ['export' => 'csv']))) ?>" class="btn btn-secondary btn-sm" title="Export Student Records to CSV">
-          <i class="fa-solid fa-file-csv"></i> Excel Export
-        </a>
-      <?php endif; ?>
-      <?php if (can('leads', 'add')): ?>
-        <a href="<?= base_url('leads/add.php') ?>" class="btn btn-primary btn-sm" title="Create New Student Lead">
-          <i class="fa-solid fa-user-plus"></i> New Lead Add
-        </a>
-      <?php endif; ?>
-    <?php else: ?>
-      <?php if (can('leads', 'export')): ?>
-        <a href="<?= base_url('leads/index.php?' . http_build_query(array_merge($_GET, ['export' => 'csv']))) ?>" class="btn btn-secondary btn-sm">
-          <i class="fa-solid fa-file-csv"></i> Excel Export
-        </a>
-      <?php endif; ?>
-      <?php if (can('leads', 'add')): ?>
-        <a href="<?= base_url('leads/add.php') ?>" class="btn btn-primary btn-sm">
-          <i class="fa-solid fa-user-plus"></i> New Lead Add
-        </a>
-      <?php endif; ?>
+    <button type="button" class="btn btn-success btn-sm" onclick="openTopUpdateModal()" style="font-weight:700;">
+      <i class="fa-solid fa-arrows-rotate"></i> 1-Click Update
+    </button>
+    <?php if (can('leads', 'add')): ?>
+      <button type="button" class="btn btn-primary btn-sm" onclick="openQuickLeadModal()" style="font-weight:700;">
+        <i class="fa-solid fa-plus"></i> + New Lead
+      </button>
     <?php endif; ?>
     <?php if (can('leads', 'reassign')): ?>
-      <button type="button" class="btn btn-outline btn-sm" onclick="openBulkReassignModal()">
+      <button type="button" class="btn btn-outline btn-sm" onclick="openBulkReassignModal()" style="font-weight:700;">
         <i class="fa-solid fa-users-gear"></i> Bulk Reassign
       </button>
     <?php endif; ?>
   </div>
 </div>
 
-<!-- Filter Bar (Module Section 9.2.2 Filters: By Date, Created By, Search, Priority, Source) -->
-<div class="card" style="margin-bottom:1.5rem; padding:1.25rem;">
+<!-- Type Switcher Tabs (All, Leads, Converted) -->
+<div style="display:flex; gap:0.5rem; margin-bottom:1.25rem; border-bottom:2px solid var(--border-color); padding-bottom:0.5rem;">
+  <a href="<?= base_url('leads/index.php?type=all') ?>" class="btn btn-sm <?= ($type === 'all') ? 'btn-primary' : 'btn-ghost' ?>" style="font-weight:700; border-radius:8px;">
+    All Records (<?= $totalRecords ?>)
+  </a>
+  <a href="<?= base_url('leads/index.php?type=leads') ?>" class="btn btn-sm <?= ($type === 'leads') ? 'btn-primary' : 'btn-ghost' ?>" style="font-weight:700; border-radius:8px;">
+    Active Leads
+  </a>
+  <a href="<?= base_url('leads/index.php?type=customers') ?>" class="btn btn-sm <?= ($type === 'customers') ? 'btn-primary' : 'btn-ghost' ?>" style="font-weight:700; border-radius:8px;">
+    Converted Customers
+  </a>
+</div>
+
+<!-- Advanced Search & Filter Bar (Requirement 2 & 3: Region Number, Prospectivity, Phone Verification) -->
+<div class="card" style="margin-bottom:1.5rem; padding:1.25rem; border-radius:12px;">
   <form method="GET" action="<?= base_url('leads/index.php') ?>" style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center;">
     <?php if ($type !== 'all'): ?>
       <input type="hidden" name="type" value="<?= htmlspecialchars($type) ?>">
     <?php endif; ?>
-    <?php if (!empty($stageFilter)): ?>
-      <input type="hidden" name="stage" value="<?= htmlspecialchars($stageFilter) ?>">
-    <?php endif; ?>
 
-    <div style="flex:1; min-width:240px; position:relative;">
-      <input type="text" name="search" class="form-control" placeholder="Search by name, code, phone, email, college..." value="<?= htmlspecialchars($search) ?>" style="padding-left:2.4rem;">
+    <!-- Search Input -->
+    <div style="flex:2; min-width:260px; position:relative;">
+      <input type="text" name="search" class="form-control" placeholder="Search by region (e.g. REG-01), customer ID, phone, name, business..." value="<?= htmlspecialchars($search) ?>" style="padding-left:2.4rem;">
       <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-light);"></i>
     </div>
 
-    <!-- Module Section 9.2.2: By Date Filter -->
-    <div style="display:flex; align-items:center; gap:6px;">
-      <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); white-space:nowrap;">From:</span>
-      <input type="date" name="date_from" class="form-control" value="<?= htmlspecialchars($dateFrom) ?>" style="font-size:0.8rem; padding:4px 8px; max-width:140px;">
-    </div>
-    <div style="display:flex; align-items:center; gap:6px;">
-      <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); white-space:nowrap;">To:</span>
-      <input type="date" name="date_to" class="form-control" value="<?= htmlspecialchars($dateTo) ?>" style="font-size:0.8rem; padding:4px 8px; max-width:140px;">
-    </div>
-
-    <div style="min-width:130px;">
-      <select name="priority" class="form-control">
-        <option value="">All Priorities</option>
-        <option value="High" <?= $priorityFilter === 'High' ? 'selected' : '' ?>>High Priority</option>
-        <option value="Moderate" <?= $priorityFilter === 'Moderate' ? 'selected' : '' ?>>Moderate</option>
-        <option value="Low" <?= $priorityFilter === 'Low' ? 'selected' : '' ?>>Low</option>
-      </select>
-    </div>
-
+    <!-- Region Filter -->
     <div style="min-width:140px;">
-      <select name="source" class="form-control">
-        <option value="">All Sources</option>
-        <option value="College Data" <?= $sourceFilter === 'College Data' ? 'selected' : '' ?>>College Data</option>
-        <option value="Website" <?= $sourceFilter === 'Website' ? 'selected' : '' ?>>Website</option>
-        <option value="Meta Ads" <?= $sourceFilter === 'Meta Ads' ? 'selected' : '' ?>>Meta Ads</option>
-        <option value="Instagram" <?= $sourceFilter === 'Instagram' ? 'selected' : '' ?>>Instagram</option>
-        <option value="Google Ads" <?= $sourceFilter === 'Google Ads' ? 'selected' : '' ?>>Google Ads</option>
-        <option value="Referral" <?= $sourceFilter === 'Referral' ? 'selected' : '' ?>>Referral</option>
-        <option value="Walk-in" <?= $sourceFilter === 'Walk-in' ? 'selected' : '' ?>>Walk-in</option>
+      <select name="region" class="form-control">
+        <option value="">All Regions</option>
+        <option value="Central Zone" <?= $regionFilter === 'Central Zone' ? 'selected' : '' ?>>Central Zone</option>
+        <option value="North Zone" <?= $regionFilter === 'North Zone' ? 'selected' : '' ?>>North Zone</option>
+        <option value="South Zone" <?= $regionFilter === 'South Zone' ? 'selected' : '' ?>>South Zone</option>
+        <option value="West Zone" <?= $regionFilter === 'West Zone' ? 'selected' : '' ?>>West Zone</option>
       </select>
     </div>
 
-    <?php if (is_super_admin()): ?>
-      <div style="min-width:140px;">
-        <select name="branch_id" class="form-control">
-          <option value="0">All Branches</option>
-          <?php foreach ($branches as $b): ?>
-            <option value="<?= $b['id'] ?>" <?= $branchFilter === (int)$b['id'] ? 'selected' : '' ?>><?= htmlspecialchars($b['name']) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-    <?php endif; ?>
+    <!-- Zone Type Filter (Center vs Outer) -->
+    <div style="min-width:130px;">
+      <select name="zone_type" class="form-control">
+        <option value="">All Zones</option>
+        <option value="Center" <?= $zoneFilter === 'Center' ? 'selected' : '' ?>>Center (High Density)</option>
+        <option value="Sub-area" <?= $zoneFilter === 'Sub-area' ? 'selected' : '' ?>>Sub-area</option>
+        <option value="Outer Zone" <?= $zoneFilter === 'Outer Zone' ? 'selected' : '' ?>>Outer Zone</option>
+      </select>
+    </div>
 
-    <?php if (is_super_admin() || is_branch_manager()): ?>
-      <div style="min-width:150px;">
+    <!-- Prospectivity Filter -->
+    <div style="min-width:130px;">
+      <select name="prospectivity" class="form-control">
+        <option value="">All Prospectivity</option>
+        <option value="Hot" <?= $prospectFilter === 'Hot' ? 'selected' : '' ?>>🔥 Hot Leads</option>
+        <option value="Warm" <?= $prospectFilter === 'Warm' ? 'selected' : '' ?>>⚡ Warm Leads</option>
+        <option value="Cold" <?= $prospectFilter === 'Cold' ? 'selected' : '' ?>>💤 Cold Leads</option>
+      </select>
+    </div>
+
+    <!-- Active Status Filter -->
+    <div style="min-width:140px;">
+      <select name="active_status" class="form-control">
+        <option value="">All Statuses</option>
+        <option value="New Lead" <?= $statusFilter === 'New Lead' ? 'selected' : '' ?>>New Lead</option>
+        <option value="Call In Progress" <?= $statusFilter === 'Call In Progress' ? 'selected' : '' ?>>Call In Progress</option>
+        <option value="Contacted" <?= $statusFilter === 'Contacted' ? 'selected' : '' ?>>Contacted</option>
+        <option value="Follow-up Scheduled" <?= $statusFilter === 'Follow-up Scheduled' ? 'selected' : '' ?>>Follow-up Scheduled</option>
+        <option value="Prospect Qualified" <?= $statusFilter === 'Prospect Qualified' ? 'selected' : '' ?>>Prospect Qualified</option>
+        <option value="Escalated to Counselor" <?= $statusFilter === 'Escalated to Counselor' ? 'selected' : '' ?>>Escalated to Counselor</option>
+        <option value="Converted" <?= $statusFilter === 'Converted' ? 'selected' : '' ?>>Converted</option>
+        <option value="Disqualified" <?= $statusFilter === 'Disqualified' ? 'selected' : '' ?>>Disqualified</option>
+      </select>
+    </div>
+
+    <!-- Phone Verification Filter -->
+    <div style="min-width:130px;">
+      <select name="verified" class="form-control">
+        <option value="">Phone Verification</option>
+        <option value="1" <?= $verifiedFilter === '1' ? 'selected' : '' ?>>✓ Verified Only</option>
+        <option value="0" <?= $verifiedFilter === '0' ? 'selected' : '' ?>>Pending Cross-Check</option>
+      </select>
+    </div>
+
+    <!-- Counselor Filter -->
+    <?php if (is_super_admin() || is_team_leader() || is_operations()): ?>
+      <div style="min-width:140px;">
         <select name="counselor_id" class="form-control">
-          <option value="0">Created By / Counselor</option>
+          <option value="0">All Counselors</option>
           <?php foreach ($counselors as $c): ?>
             <option value="<?= $c['id'] ?>" <?= $counselorFilter === (int)$c['id'] ? 'selected' : '' ?>>
-              <?= htmlspecialchars($c['name']) ?> (<?= $c['active_caseload'] ?>)
+              <?= htmlspecialchars($c['name']) ?>
             </option>
           <?php endforeach; ?>
         </select>
       </div>
     <?php endif; ?>
 
-    <button type="submit" class="btn btn-primary btn-sm">
+    <button type="submit" class="btn btn-primary btn-sm" style="font-weight:700;">
       <i class="fa-solid fa-filter"></i> Apply
     </button>
     <a href="<?= base_url('leads/index.php' . ($type !== 'all' ? '?type=' . $type : '')) ?>" class="btn btn-secondary btn-sm" title="Reset Filters">
@@ -423,8 +260,8 @@ include __DIR__ . '/../includes/header.php';
   </form>
 </div>
 
-<!-- Main Active Leads Table -->
-<div class="card">
+<!-- Main Leads Directory Table -->
+<div class="card" style="border-radius:14px; overflow:hidden;">
   <div class="table-responsive">
     <table class="data-table">
       <thead>
@@ -432,13 +269,13 @@ include __DIR__ . '/../includes/header.php';
           <?php if (can('leads', 'reassign')): ?>
             <th style="width:36px;"><input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)"></th>
           <?php endif; ?>
-          <th>Reg.# & Student</th>
-          <th>Contact & Phone</th>
-          <th>Destination & Course</th>
+          <th>Record # & Lead Name</th>
+          <th>Business / Account Name</th>
+          <th>Contact Phone & Verification</th>
+          <th>Region & Zone</th>
           <th>Prospectivity</th>
-          <th>InTake</th>
-          <th>Assigned To & Branch</th>
-          <th>Follow-ups</th>
+          <th>Active Status</th>
+          <th>Assigned Counselor</th>
           <th style="text-align:right;">Actions</th>
         </tr>
       </thead>
@@ -447,138 +284,116 @@ include __DIR__ . '/../includes/header.php';
           <tr>
             <td colspan="<?= can('leads', 'reassign') ? 9 : 8 ?>" style="text-align:center; padding:3.5rem; color:var(--text-muted);">
               <div style="width:56px; height:56px; border-radius:50%; background:var(--primary-subtle); color:var(--primary); display:inline-flex; align-items:center; justify-content:center; font-size:1.8rem; margin-bottom:0.75rem;">
-                <i class="fa-solid fa-user-graduate"></i>
+                <i class="fa-solid fa-users"></i>
               </div>
-              <div style="font-size:1.15rem; font-weight:800; color:var(--text-heading); margin-bottom:0.35rem;">No Student Leads Found</div>
+              <div style="font-size:1.15rem; font-weight:800; color:var(--text-heading); margin-bottom:0.35rem;">No Leads Found</div>
               <p style="font-size:0.875rem; color:var(--text-muted); max-width:440px; margin:0 auto 1.25rem auto;">
-                <?php if (!empty($search) || !empty($stageFilter) || !empty($priorityFilter) || !empty($sourceFilter)): ?>
-                  No student leads match your current search and filter combination. Try clearing your filters.
-                <?php else: ?>
-                  No active student leads are recorded in this caseload yet. You can add a new inquiry anytime.
-                <?php endif; ?>
+                No lead records matched your filter criteria. Try clearing search filters or add a new lead inquiry.
               </p>
               <div style="display:flex; justify-content:center; gap:0.5rem;">
-                <?php if (!empty($search) || !empty($stageFilter) || !empty($priorityFilter) || !empty($sourceFilter)): ?>
-                  <a href="<?= base_url('leads/index.php') ?>" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate-left"></i> Reset Filters</a>
-                <?php endif; ?>
-                <?php if (can('leads', 'add')): ?>
-                  <button type="button" class="btn btn-primary btn-sm" onclick="openQuickLeadModal()"><i class="fa-solid fa-plus"></i> + Add Student Lead</button>
-                <?php endif; ?>
+                <a href="<?= base_url('leads/index.php') ?>" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate-left"></i> Reset Filters</a>
+                <button type="button" class="btn btn-primary btn-sm" onclick="openQuickLeadModal()"><i class="fa-solid fa-plus"></i> + Add Lead</button>
               </div>
             </td>
           </tr>
         <?php else: ?>
-          <?php foreach ($leads as $lead): 
-            $stageBadgeClass = match($lead['stage']) {
-                'ENQUIRY' => 'badge-secondary',
-                'CUSTOMER' => 'badge-info',
-                'APPLICATION' => 'badge-primary',
-                'OFFER RECEIVED' => 'badge-warning',
-                'TUITION FEES PAID' => 'badge-primary',
-                'ENROLLED' => 'badge-success',
-                default => 'badge-secondary'
-            };
-          ?>
+          <?php foreach ($leads as $l): ?>
             <tr>
               <?php if (can('leads', 'reassign')): ?>
                 <td>
-                  <input type="checkbox" class="lead-select-checkbox" value="<?= $lead['id'] ?>">
+                  <input type="checkbox" class="lead-select-checkbox" value="<?= $l['id'] ?>">
                 </td>
               <?php endif; ?>
+
+              <!-- Record # & Name -->
               <td>
                 <div style="font-family:monospace; font-size:0.75rem; font-weight:700; color:var(--primary); margin-bottom:2px;">
-                  <?= htmlspecialchars($lead['lead_code']) ?>
+                  <?= htmlspecialchars($l['lead_code']) ?>
                 </div>
-                <a href="<?= base_url('leads/view.php?id=' . $lead['id']) ?>" style="font-weight:700; color:var(--text-heading); text-decoration:none; font-size:0.92rem;">
-                  <?= htmlspecialchars($lead['full_name']) ?>
+                <a href="<?= base_url('leads/view.php?id=' . $l['id']) ?>" style="font-weight:700; color:var(--text-heading); text-decoration:none; font-size:0.92rem;">
+                  <?= htmlspecialchars($l['full_name']) ?>
                 </a>
-                <?php if ($lead['is_customer']): ?>
-                  <span class="badge badge-success" style="font-size:0.65rem; padding:1px 5px; margin-left:4px;" title="Official Customer (Invoiced)">
-                    <i class="fa-solid fa-certificate"></i> CLIENT
+                <?php if ($l['is_customer'] || $l['active_status'] === 'Converted'): ?>
+                  <span class="badge badge-success" style="font-size:0.65rem; padding:1px 5px; margin-left:4px;">
+                    <i class="fa-solid fa-check"></i> CUSTOMER
                   </span>
                 <?php endif; ?>
-                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
-                  <?= htmlspecialchars($lead['college_name'] ?? 'Higher Ed') ?>
-                </div>
               </td>
+
+              <!-- Business / Account -->
               <td>
-                <?php
-                  $waMsg = get_whatsapp_message($lead['stage'], $lead['full_name'], $currentUser['name'] ?? 'UniCRM Admissions', $lead['preferred_country'] ?? 'UK', $lead['preferred_course'] ?? 'Higher Ed');
-                  $waUrl = "https://wa.me/91" . normalize_phone($lead['phone']) . "?text=" . urlencode($waMsg);
-                  $dialUrl = "tel:" . preg_replace('/[^0-9+]/', '', $lead['phone']);
-                ?>
-                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                  <span style="font-family:monospace; font-weight:700; color:var(--text-heading); font-size:0.85rem;">
-                    <?= htmlspecialchars($lead['phone']) ?>
-                  </span>
-                  <a href="<?= $waUrl ?>" target="_blank" class="btn btn-sm" style="background:#25d366; color:#fff; font-size:0.75rem; padding:2px 7px; border-radius:6px; font-weight:700; display:inline-flex; align-items:center; gap:4px;" title="WhatsApp Candidate">
-                    <i class="fa-brands fa-whatsapp"></i> Chat
-                  </a>
-                  <a href="<?= $dialUrl ?>" class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.75rem; border-radius:6px;" title="Direct Call">
-                    <i class="fa-solid fa-phone" style="font-size:0.75rem; color:var(--primary);"></i>
-                  </a>
-                </div>
-                <?php if (!empty($lead['email'])): ?>
-                  <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
-                    <?= htmlspecialchars($lead['email']) ?>
-                  </div>
-                <?php endif; ?>
-              </td>
-              <td>
-                <div style="font-weight:600; font-size:0.85rem; color:var(--text-heading);">
-                  <?= htmlspecialchars($lead['preferred_country'] ?: 'Global') ?>
-                </div>
-                <div style="font-size:0.75rem; color:var(--text-muted);">
-                  <?= htmlspecialchars($lead['preferred_course'] ?: 'General') ?>
-                </div>
-              </td>
-              <td>
-                <div onclick="openChangeProspectivityModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['prospectivity'] ?? $lead['priority']) ?>')" style="cursor:pointer;" title="Click to change Prospectivity">
-                  <span class="badge <?= ($lead['prospectivity'] ?? $lead['priority']) === 'Hot' || ($lead['prospectivity'] ?? $lead['priority']) === 'High' ? 'badge-danger' : (($lead['prospectivity'] ?? $lead['priority']) === 'Cold' || ($lead['prospectivity'] ?? $lead['priority']) === 'Low' ? 'badge-secondary' : 'badge-warning') ?>" style="font-size:0.72rem;">
-                    <?= htmlspecialchars($lead['prospectivity'] ?: $lead['priority'] ?: 'Warm') ?>
-                  </span>
-                  <i class="fa-solid fa-pen" style="font-size:0.6rem; color:var(--text-light); margin-left:2px;"></i>
-                </div>
-              </td>
-              <td>
-                <div onclick="openChangeIntakeModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['intake_term'] ?? 'September') ?>', '<?= htmlspecialchars($lead['intake_year'] ?? '2026') ?>')" style="cursor:pointer;" title="Click to change InTake">
-                  <span class="badge badge-secondary" style="font-size:0.7rem; font-weight:600; padding:2px 6px;">
-                    <?= htmlspecialchars($lead['intake_term'] ?: 'Sept') ?> <?= htmlspecialchars($lead['intake_year'] ?: date('Y')) ?>
-                    <i class="fa-solid fa-pen" style="font-size:0.6rem; color:var(--text-light); margin-left:2px;"></i>
-                  </span>
-                </div>
-              </td>
-              <td>
-                <div style="font-size:0.82rem; font-weight:600; color:var(--text-heading);">
-                  <?= htmlspecialchars($lead['counselor_name'] ?? 'Unassigned') ?>
+                <div style="font-weight:600; font-size:0.85rem; color:#334155;">
+                  <?= htmlspecialchars($l['business_name'] ?: 'Individual Account') ?>
                 </div>
                 <div style="font-size:0.72rem; color:var(--text-muted);">
-                  <i class="fa-solid fa-location-dot" style="font-size:0.68rem;"></i> <?= htmlspecialchars($lead['branch_name'] ?? 'General') ?>
+                  Completeness: <?= (int)($l['record_completeness'] ?? 85) ?>%
                 </div>
               </td>
+
+              <!-- Phone & Verification Status -->
               <td>
-                <span class="badge badge-secondary" style="font-weight:600; font-size:0.75rem;">
-                  <?= (int)$lead['followup_count'] ?> Logs
-                </span>
-                <?php if (!empty($lead['next_followup_date'])): ?>
-                  <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
-                    Next: <strong><?= date('d M', strtotime($lead['next_followup_date'])) ?></strong>
-                  </div>
-                <?php endif; ?>
-              </td>
-              <td style="text-align:right;">
-                <div style="display:flex; justify-content:flex-end; gap:0.35rem; align-items:center;">
-                  <button type="button" class="btn btn-primary btn-sm" style="font-size:0.75rem; padding:3px 8px; font-weight:600;" onclick="openLogCallModal(<?= $lead['id'] ?>, '<?= htmlspecialchars(addslashes($lead['full_name'])) ?>', '<?= htmlspecialchars($lead['stage']) ?>')" title="Log Call Outcome & Next Follow-up">
-                    <i class="fa-solid fa-phone-volume"></i> <span class="d-none d-lg-inline">Log Call</span>
-                  </button>
-                  <a href="<?= base_url('leads/view.php?id=' . $lead['id']) ?>" class="btn btn-outline btn-sm" style="padding:3px 8px;" title="View Lead Details">
-                    <i class="fa-solid fa-eye"></i>
-                  </a>
-                  <?php if (can('leads', 'edit')): ?>
-                    <a href="<?= base_url('leads/edit.php?id=' . $lead['id']) ?>" class="btn btn-ghost btn-sm" style="padding:3px 8px;" title="Edit Lead">
-                      <i class="fa-solid fa-pen-to-square"></i>
-                    </a>
+                <div style="font-family:monospace; font-weight:800; font-size:0.9rem; color:var(--text-heading);">
+                  <?= htmlspecialchars($l['phone']) ?>
+                </div>
+                <div>
+                  <?php if (!empty($l['is_phone_verified'])): ?>
+                    <span class="badge badge-success" style="font-size:0.68rem; padding:1px 6px;">
+                      <i class="fa-solid fa-check"></i> Verified
+                    </span>
+                  <?php else: ?>
+                    <span class="badge badge-warning" style="font-size:0.68rem; padding:1px 6px;">
+                      Pending Cross-Check
+                    </span>
                   <?php endif; ?>
+                </div>
+              </td>
+
+              <!-- Region & Zone -->
+              <td>
+                <span class="badge" style="background:#334155; color:#fff; font-size:0.72rem; font-weight:700;">
+                  <?= htmlspecialchars($l['region_number'] ?? 'REG-01') ?>
+                </span>
+                <div style="font-size:0.78rem; font-weight:600; color:var(--text-heading); margin-top:2px;">
+                  <?= htmlspecialchars($l['main_region'] ?? 'Central Zone') ?>
+                </div>
+                <div style="font-size:0.7rem; color:var(--text-muted);">
+                  <?= htmlspecialchars($l['sub_area'] ?? 'Downtown Central') ?> &bull; <em><?= htmlspecialchars($l['zone_type'] ?? 'Center') ?></em>
+                </div>
+              </td>
+
+              <!-- Prospectivity -->
+              <td>
+                <span class="badge <?= ($l['prospectivity'] === 'Hot') ? 'badge-danger' : (($l['prospectivity'] === 'Cold') ? 'badge-secondary' : 'badge-warning') ?>" style="font-size:0.75rem; font-weight:700;">
+                  <?= ($l['prospectivity'] === 'Hot') ? '🔥 Hot' : (($l['prospectivity'] === 'Cold') ? '💤 Cold' : '⚡ Warm') ?>
+                </span>
+              </td>
+
+              <!-- Active Status -->
+              <td>
+                <span class="badge badge-primary" style="font-size:0.75rem; font-weight:700;">
+                  <?= htmlspecialchars($l['active_status'] ?? 'New Lead') ?>
+                </span>
+              </td>
+
+              <!-- Counselor -->
+              <td>
+                <div style="font-size:0.825rem; font-weight:600; color:var(--text-heading);">
+                  <?= htmlspecialchars($l['counselor_name'] ?? 'Unassigned') ?>
+                </div>
+              </td>
+
+              <!-- Actions -->
+              <td style="text-align:right;">
+                <div style="display:inline-flex; gap:4px; align-items:center;">
+                  <a href="<?= base_url('leads/view.php?id=' . $l['id']) ?>" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:3px 8px; font-weight:700;">
+                    Profile &rarr;
+                  </a>
+                  <button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px;" onclick="openLogCallModal(<?= $l['id'] ?>, '<?= htmlspecialchars(addslashes($l['full_name'])) ?>', '<?= htmlspecialchars($l['phone']) ?>')" title="Log Call">
+                    <i class="fa-solid fa-phone"></i>
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px;" onclick="openTopUpdateModal(<?= $l['id'] ?>)" title="Update Status">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -587,49 +402,63 @@ include __DIR__ . '/../includes/header.php';
       </tbody>
     </table>
   </div>
+
+  <!-- Pagination -->
+  <?php if ($totalPages > 1): ?>
+    <div style="padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-color); background:#f8fafc;">
+      <span style="font-size:0.8rem; color:var(--text-muted);">
+        Showing <?= $offset + 1 ?> to <?= min($offset + $perPage, $totalRecords) ?> of <?= $totalRecords ?> records
+      </span>
+      <div style="display:flex; gap:0.35rem;">
+        <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+          <a href="<?= base_url('leads/index.php?' . http_build_query(array_merge($_GET, ['page' => $p]))) ?>" class="btn btn-sm <?= ($p === $page) ? 'btn-primary' : 'btn-ghost' ?>" style="padding:3px 8px; font-size:0.75rem;">
+            <?= $p ?>
+          </a>
+        <?php endfor; ?>
+      </div>
+    </div>
+  <?php endif; ?>
 </div>
 
-<!-- Bulk Reassignment Modal (Super Admin & Branch Manager only) -->
+<!-- Bulk Reassignment Modal -->
 <?php if (can('leads', 'reassign')): ?>
   <div class="modal fade" id="bulkReassignModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.5); align-items:center; justify-content:center;">
-    <div class="modal-dialog" style="background:#fff; border-radius:14px; max-width:500px; width:92%; margin:auto; box-shadow:0 20px 50px rgba(0,0,0,0.2); overflow:hidden;">
-      <form method="POST" action="<?= base_url('leads/bulk_assign.php') ?>" id="bulkAssignForm">
+    <div class="modal-dialog" style="background:#fff; border-radius:14px; max-width:480px; width:92%; margin:auto; box-shadow:0 20px 50px rgba(0,0,0,0.2); overflow:hidden;">
+      <form method="POST" action="<?= base_url('leads/bulk_assign.php') ?>">
         <?= csrf_field() ?>
         <input type="hidden" name="lead_ids" id="bulk_lead_ids" value="">
 
-        <div class="modal-header" style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
-          <h3 style="font-size:1.15rem; font-weight:700; margin:0; color:var(--text-heading);">
-            <i class="fa-solid fa-shuffle" style="color:var(--primary); margin-right:8px;"></i> Reassign Selected Leads
+        <div class="modal-header" style="padding:1.2rem 1.5rem; background:#334155; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="font-size:1.15rem; font-weight:700; margin:0; color:#fff;">
+            <i class="fa-solid fa-users-gear"></i> Bulk Reassign Leads
           </h3>
-          <button type="button" onclick="closeBulkReassignModal()" style="border:none; background:none; font-size:1.4rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+          <button type="button" onclick="closeBulkReassignModal()" style="border:none; background:none; font-size:1.4rem; cursor:pointer; color:#fff;">&times;</button>
         </div>
 
         <div class="modal-body" style="padding:1.5rem;">
-          <div style="background:var(--bg-subtle); border-radius:8px; padding:0.85rem; margin-bottom:1.25rem; font-size:0.85rem;">
-            Selected Leads: <strong id="selected_count_badge">0 leads</strong>
+          <div style="background:#f1f5f9; border-radius:8px; padding:0.75rem; margin-bottom:1rem; font-size:0.85rem;">
+            Selected Leads: <strong id="selected_count_badge">0</strong>
           </div>
 
-          <div class="form-group" style="margin-bottom:1.25rem;">
-            <label class="form-label">New Assigned Counselor <span style="color:red;">*</span></label>
+          <div class="form-group" style="margin-bottom:1rem;">
+            <label class="form-label" style="font-weight:700;">Assign to Counselor <span style="color:red;">*</span></label>
             <select name="target_counselor_id" class="form-control" required>
               <option value="">Select Counselor...</option>
               <?php foreach ($counselors as $c): ?>
-                <option value="<?= $c['id'] ?>">
-                  <?= htmlspecialchars($c['name']) ?> (<?= htmlspecialchars($c['branch_name'] ?? 'Hub') ?>) — Active: <?= $c['active_caseload'] ?>
-                </option>
+                <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['name']) ?> (<?= htmlspecialchars($c['role_label'] ?? 'Staff') ?>)</option>
               <?php endforeach; ?>
             </select>
           </div>
 
-          <div class="form-group" style="margin-bottom:0.5rem;">
-            <label class="form-label">Reassignment Reason / Note</label>
-            <textarea name="reassign_reason" class="form-control" rows="2" placeholder="Caseload rebalance or regional intake reallocation..."></textarea>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" style="font-weight:700;">Reassignment Reason</label>
+            <textarea name="reassign_reason" class="form-control" rows="2" placeholder="Regional caseload balance..."></textarea>
           </div>
         </div>
 
-        <div class="modal-footer" style="padding:1rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem;">
+        <div class="modal-footer" style="padding:0.85rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
           <button type="button" onclick="closeBulkReassignModal()" class="btn btn-secondary btn-sm">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm">
+          <button type="submit" class="btn btn-primary btn-sm" style="font-weight:700;">
             <i class="fa-solid fa-check"></i> Execute Reassignment
           </button>
         </div>
@@ -650,7 +479,7 @@ include __DIR__ . '/../includes/header.php';
       return;
     }
     document.getElementById('bulk_lead_ids').value = selected.join(',');
-    document.getElementById('selected_count_badge').innerText = selected.length + ' leads selected';
+    document.getElementById('selected_count_badge').innerText = selected.length + ' leads';
     document.getElementById('bulkReassignModal').style.display = 'flex';
   }
 

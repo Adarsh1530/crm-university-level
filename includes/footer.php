@@ -1,19 +1,19 @@
     </main>
 
-    <!-- App Global Footer (Steady Fixed & Perfectly Aligned with Sidebar Footer) -->
+    <!-- App Global Footer -->
     <footer id="app-footer">
       <div class="footer-left">
-        <strong>UniCRM</strong> &bull; Global University Admissions Cloud
+        <strong>CRM</strong> &bull; Customer Relationship Management Platform
       </div>
       <div class="footer-right">
-        <span>&copy; <?= date('Y') ?> UniCRM. Multi-branch University Admissions & Enrollment Management System.</span>
+        <span>&copy; <?= date('Y') ?> CRM. Core Operations, Regional Segmentation & Lead Routing System.</span>
       </div>
     </footer>
 
   </div><!-- /#main-wrapper -->
 </div><!-- /#app-layout -->
 
-<!-- Include Global Modals (Quick Lead, Log Call, Stage Advancer, User Guide) -->
+<!-- Include Global Modals (Quick Lead, Log Call, Top Update, User Guide) -->
 <?php include __DIR__ . '/global_modals.php'; ?>
 
 <!-- Core Main Interactions Script -->

@@ -1,8 +1,13 @@
 <?php
 /**
- * Main Institutional Dashboard - Multi-Branch Hierarchy
- * Enterprise University Admissions & Enrollment Management System (UniCRM)
- * Ultra-Simple, Clean & Fast Daily Workflow for All Roles
+ * Main CRM Operations Cockpit - Customer Relationship Management
+ * Aligned 1:1 with Client Requirements:
+ * 1. System Identity: Core CRM Platform & Multi-Role Oversight
+ * 2. Daily CRM Duties Checklist Card
+ * 3. Regional Geographic Segmentation: Region distribution, Central Zone density vs Outer Zone prospectivity, Regional expansion
+ * 4. 4-Stage Follow-Up Management Lifecycle: New/First, Scheduled, Pending Backlog, Long-Cycle
+ * 5. Call Data Integration: Linked Call Records & Recent Outcomes
+ * 6. Social Media Leads Prioritization Queue
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -13,12 +18,13 @@ require_login();
 require_permission('dashboard', 'view');
 
 $currentUser = current_user();
-$pageTitle = 'Admissions Cockpit';
+$pageTitle = 'CRM Operations Cockpit';
 $activePage = 'dashboard';
 
 // Role identifiers
 $isCounselor = is_counselor();
-$isManager = is_branch_manager();
+$isTeamLeader = is_team_leader();
+$isOperations = is_operations();
 $isSuperAdmin = is_super_admin();
 
 // Scoping clause for current user
@@ -26,49 +32,64 @@ $scopeLeads = get_crm_scope_clause('l', 'assigned_counselor_id', 'branch_id');
 
 // 1. Core KPIs
 $totalLeads = (int)$pdo->query("SELECT COUNT(*) FROM leads l WHERE l.is_archived = 0 AND {$scopeLeads}")->fetchColumn();
-$totalCustomers = (int)$pdo->query("SELECT COUNT(*) FROM leads l WHERE l.is_customer = 1 AND l.is_archived = 0 AND {$scopeLeads}")->fetchColumn();
-$totalEnrolled = (int)$pdo->query("SELECT COUNT(*) FROM leads l WHERE l.stage = 'ENROLLED' AND l.is_archived = 0 AND {$scopeLeads}")->fetchColumn();
+$totalConverted = (int)$pdo->query("SELECT COUNT(*) FROM leads l WHERE (l.is_customer = 1 OR l.active_status = 'Converted') AND l.is_archived = 0 AND {$scopeLeads}")->fetchColumn();
+$totalVerifiedPhones = (int)$pdo->query("SELECT COUNT(*) FROM leads l WHERE l.is_phone_verified = 1 AND l.is_archived = 0 AND {$scopeLeads}")->fetchColumn();
+$conversionRate = ($totalLeads > 0) ? round(($totalConverted / $totalLeads) * 100, 1) : 0;
 
-$revStats = $pdo->query("
-    SELECT 
-        COALESCE(SUM(l.invoiced_total), 0) as total_invoiced,
-        COALESCE(SUM(l.paid_total), 0) as total_collected,
-        COALESCE(SUM(l.balance_total), 0) as total_balance
-    FROM leads l
-    WHERE l.is_customer = 1 AND l.is_archived = 0 AND {$scopeLeads}
-")->fetch();
+// 2. The 4-Stage Follow-Up Management Lifecycle
+// Stage 1: New / First Follow-Up (Immediate touchpoint for freshly generated leads, 0 followups done)
+$countNewFollowup = (int)$pdo->query("
+    SELECT COUNT(*) FROM leads l
+    WHERE l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
+")->fetchColumn();
 
-$totalInvoiced = (float)($revStats['total_invoiced'] ?? 0);
-$totalCollected = (float)($revStats['total_collected'] ?? 0);
-$totalBalance = (float)($revStats['total_balance'] ?? 0);
-$conversionRate = ($totalLeads > 0) ? round(($totalCustomers / $totalLeads) * 100, 1) : 0;
-
-// 2. The 4 Operational Task Queues Counts
-$countScheduled = (int)$pdo->query("
+// Stage 2: Scheduled Follow-Ups (Scheduled for today or future with alarms)
+$countScheduledFollowups = (int)$pdo->query("
     SELECT COUNT(*) FROM followups f
     JOIN leads l ON f.lead_id = l.id
     WHERE f.scheduled_date = CURDATE() AND f.status = 'Pending' AND l.is_archived = 0 AND {$scopeLeads}
 ")->fetchColumn();
 
-$countOverdue = (int)$pdo->query("
+// Stage 3: Pending Follow-Ups Backlog (Critical daily queue that agents must clear: overdue calls)
+$countPendingBacklog = (int)$pdo->query("
     SELECT COUNT(*) FROM followups f
     JOIN leads l ON f.lead_id = l.id
     WHERE f.scheduled_date < CURDATE() AND f.status = 'Pending' AND l.is_archived = 0 AND {$scopeLeads}
 ")->fetchColumn();
 
-$countTodayLeads = (int)$pdo->query("
+// Stage 4: Long-Cycle Follow-Ups (Prolonged prospect cycles over weeks/months)
+$countLongCycle = (int)$pdo->query("
     SELECT COUNT(*) FROM leads l
-    WHERE DATE(l.assigned_at) = CURDATE() AND l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
+    WHERE l.is_long_cycle = 1 AND l.is_archived = 0 AND {$scopeLeads}
 ")->fetchColumn();
 
-$countPendingLeads = (int)$pdo->query("
-    SELECT COUNT(*) FROM leads l
-    WHERE DATE(l.assigned_at) < CURDATE() AND l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
-")->fetchColumn();
+$totalLifecycleTasks = $countNewFollowup + $countScheduledFollowups + $countPendingBacklog + $countLongCycle;
 
-$totalTasks = $countScheduled + $countOverdue + $countTodayLeads + $countPendingLeads;
+// 3. Social Media Leads Count
+$countSocialMediaLeads = 0;
+try {
+    $countSocialMediaLeads = (int)$pdo->query("SELECT COUNT(*) FROM web_leads WHERE status = 'Pending'")->fetchColumn();
+} catch (Exception $e) {}
 
-// 3. Lead Prospectivity Breakdown (Section 9.2.3)
+// 4. Regional Geographic Segmentation Data
+$regionalData = [];
+try {
+    $regionalData = $pdo->query("
+        SELECT 
+            COALESCE(l.main_region, 'Central Zone') as region_name,
+            COUNT(*) as total_count,
+            SUM(CASE WHEN l.zone_type = 'Center' THEN 1 ELSE 0 END) as center_density,
+            SUM(CASE WHEN l.zone_type != 'Center' THEN 1 ELSE 0 END) as outer_density,
+            SUM(CASE WHEN l.prospectivity = 'Hot' THEN 1 ELSE 0 END) as hot_count,
+            SUM(CASE WHEN l.is_phone_verified = 1 THEN 1 ELSE 0 END) as verified_count
+        FROM leads l
+        WHERE l.is_archived = 0 AND {$scopeLeads}
+        GROUP BY region_name
+        ORDER BY total_count DESC
+    ")->fetchAll();
+} catch (Exception $e) {}
+
+// 5. Lead Prospectivity Breakdown (Hot, Warm, Cold)
 $prospectivityStats = $pdo->query("
     SELECT COALESCE(l.prospectivity, 'Warm') as prospect, COUNT(*) as count 
     FROM leads l 
@@ -83,44 +104,28 @@ $prospectData = [
     (int)($prospectivityStats['Cold'] ?? 0)
 ];
 
-// 4. Branch Yields (for Super Admin)
-$branchStats = [];
-if ($isSuperAdmin) {
-    $branchStats = $pdo->query("
-        SELECT b.id, b.name as branch_name, b.city,
-               COUNT(l.id) as lead_count,
-               COUNT(CASE WHEN l.stage = 'ENROLLED' THEN 1 END) as enrolled_count,
-               COALESCE(SUM(l.paid_total), 0) as collected_amount
-        FROM branches b
-        LEFT JOIN leads l ON b.id = l.branch_id AND l.is_archived = 0
-        GROUP BY b.id, b.name, b.city
-        ORDER BY lead_count DESC
+// 6. Recent Call Data Records
+$recentCallLogs = [];
+try {
+    $recentCallLogs = $pdo->query("
+        SELECT c.*, l.lead_code, l.full_name as lead_name, l.phone as lead_phone, l.region_number, u.name as caller_name
+        FROM call_logs c
+        LEFT JOIN leads l ON c.lead_id = l.id
+        LEFT JOIN users u ON c.caller_id = u.id
+        ORDER BY c.id DESC
+        LIMIT 6
     ")->fetchAll();
-}
+} catch (Exception $e) {}
 
-$branchChartLabels = array_column($branchStats, 'branch_name');
-$branchChartLeads = array_column($branchStats, 'lead_count');
+// 7. Recent Inbound Social Media Leads awaiting triage
+$pendingSocialLeads = [];
+try {
+    $pendingSocialLeads = $pdo->query("
+        SELECT w.* FROM web_leads w WHERE w.status = 'Pending' ORDER BY w.id DESC LIMIT 4
+    ")->fetchAll();
+} catch (Exception $e) {}
 
-// 5. Branch Counselors Summary (for Branch Manager)
-$branchCounselors = [];
-if ($isManager) {
-    $bId = (int)($currentUser['branch_id'] ?? 0);
-    $stmtBc = $pdo->prepare("
-        SELECT u.id, u.name, u.email,
-               (SELECT COUNT(*) FROM leads WHERE assigned_counselor_id = u.id AND is_archived = 0) as active_leads,
-               (SELECT COUNT(*) FROM followups f JOIN leads l ON f.lead_id = l.id WHERE l.assigned_counselor_id = u.id AND f.scheduled_date = CURDATE() AND f.status = 'Pending' AND l.is_archived = 0) as today_calls,
-               (SELECT COUNT(*) FROM followups f JOIN leads l ON f.lead_id = l.id WHERE l.assigned_counselor_id = u.id AND f.scheduled_date < CURDATE() AND f.status = 'Pending' AND l.is_archived = 0) as overdue_calls,
-               (SELECT COUNT(*) FROM leads WHERE assigned_counselor_id = u.id AND stage = 'ENROLLED' AND is_archived = 0) as enrolled_count
-        FROM users u
-        JOIN roles r ON u.role_id = r.id
-        WHERE r.name = 'counselor' AND u.status = 'Active' AND u.branch_id = ?
-        ORDER BY active_leads DESC
-    ");
-    $stmtBc->execute([$bId]);
-    $branchCounselors = $stmtBc->fetchAll();
-}
-
-// 6. Recent Active Leads
+// 8. Recent Active Leads
 $recentLeads = $pdo->query("
     SELECT l.*, b.name as branch_name, u.name as counselor_name
     FROM leads l
@@ -131,568 +136,233 @@ $recentLeads = $pdo->query("
     LIMIT 6
 ")->fetchAll();
 
-// 7. Recent Activity Logs (Admin only)
-$recentActivities = [];
-if ($isSuperAdmin) {
-    $recentActivities = $pdo->query("
-        SELECT a.*, u.name as user_name
-        FROM activity_logs a
-        LEFT JOIN users u ON a.user_id = u.id
-        ORDER BY a.id DESC
-        LIMIT 5
-    ")->fetchAll();
-}
-
-// 8. Urgent Follow-up Calls Due Today
-$urgentCalls = $pdo->query("
-    SELECT f.id as followup_id, f.lead_id, f.scheduled_date, f.scheduled_time, f.notes as last_notes,
-           l.full_name, l.phone, l.preferred_country, l.stage, l.lead_code
-    FROM followups f
-    JOIN leads l ON f.lead_id = l.id
-    WHERE f.status = 'Pending' AND f.scheduled_date <= CURDATE() AND l.is_archived = 0 AND {$scopeLeads}
-    ORDER BY f.scheduled_date ASC, f.id DESC
-    LIMIT 6
-")->fetchAll();
-
-// 9. Inbound Leads awaiting allocation (for Manager / Admin)
-$unassignedWebLeads = [];
-if (!$isCounselor) {
-    $unassignedWebLeads = $pdo->query("
-        SELECT w.* FROM web_leads w WHERE w.status = 'Pending' AND w.assigned_counselor_id IS NULL ORDER BY w.id DESC LIMIT 4
-    ")->fetchAll();
-}
-
-// 10. General Training Documents
-$generalDocs = [];
-try {
-    $generalDocs = $pdo->query("SELECT * FROM general_documents ORDER BY id DESC LIMIT 5")->fetchAll();
-} catch (Exception $e) {
-    $generalDocs = [];
-}
-
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- 1. HERO BANNER: Clean, Personalized Daily Command -->
+<!-- 1. HERO OPERATIONS BANNER -->
 <div class="card" style="margin-bottom:1.5rem; padding:1.5rem 1.75rem; background:linear-gradient(135deg, #ffffff 0%, #f8faff 100%); border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1.25rem;">
     <div>
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.35rem;">
         <h1 style="font-size:1.65rem; font-weight:800; color:var(--text-heading); margin:0;">
-          <?php if ($isCounselor): ?>
-            Good day, <?= htmlspecialchars($currentUser['name']) ?>! ☀️
-          <?php elseif ($isManager): ?>
-            Welcome back, <?= htmlspecialchars($currentUser['name']) ?>! 🏢
-          <?php else: ?>
-            Welcome, <?= htmlspecialchars($currentUser['name']) ?>! 🎓
-          <?php endif; ?>
+          CRM Operations Cockpit
         </h1>
+        <span class="badge badge-primary" style="font-size:0.75rem; font-weight:700;"><?= htmlspecialchars($currentUser['role_label'] ?? 'Staff') ?></span>
       </div>
-      <p style="font-size:0.9rem; color:var(--text-muted); margin:0; line-height:1.5;">
-        <?php if ($isCounselor): ?>
-          <strong><?= htmlspecialchars($currentUser['branch_name'] ?? 'Admissions') ?></strong> &bull; 
-          You have <strong style="color:var(--primary);"><?= $countScheduled ?> calls</strong> due today
-          <?php if ($countOverdue > 0): ?>
-            and <strong style="color:var(--danger);"><?= $countOverdue ?> overdue</strong>.
-          <?php else: ?>
-            and <strong style="color:var(--success);">0 overdue</strong> 🎉.
-          <?php endif; ?>
-        <?php elseif ($isManager): ?>
-          Managing <strong><?= htmlspecialchars($currentUser['branch_name'] ?? 'Division') ?></strong> &bull;
-          <strong><?= $totalLeads ?></strong> active students &bull; <strong><?= count($branchCounselors) ?></strong> active counselors.
-        <?php else: ?>
-          Institutional Executive Cockpit &bull; Global multi-campus oversight.
-        <?php endif; ?>
+      <p style="font-size:0.875rem; color:var(--text-muted); margin:0; line-height:1.5;">
+        Welcome back, <strong><?= htmlspecialchars($currentUser['name']) ?></strong> &bull; 
+        Centralized lead ingestion, regional segmentation, phone cross-checking, and 4-stage follow-up queues.
       </p>
     </div>
 
     <!-- Quick Action Launchpad -->
     <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
-      <button type="button" class="btn btn-primary" id="btn-quick-add-lead" onclick="openQuickLeadModal()" style="font-weight:700; padding:0.55rem 1.15rem; font-size:0.875rem; border-radius:10px; box-shadow:0 3px 8px rgba(89,85,209,0.25);">
+      <button type="button" class="btn btn-primary" id="btn-quick-add-lead" onclick="openQuickLeadModal()" style="font-weight:700; padding:0.55rem 1.15rem; font-size:0.875rem; border-radius:10px; box-shadow:0 3px 8px rgba(79,70,229,0.25);">
         <i class="fa-solid fa-plus"></i> Quick Add Lead
       </button>
 
-      <?php if ($isCounselor): ?>
-        <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="btn btn-success" style="font-weight:700; padding:0.55rem 1.15rem; font-size:0.875rem; border-radius:10px;">
-          <i class="fa-solid fa-phone-volume"></i> Start Calling (<?= $countScheduled ?>)
-        </a>
-      <?php elseif ($isManager && !empty($unassignedWebLeads)): ?>
-        <a href="<?= base_url('data/web_leads.php') ?>" class="btn btn-info" style="font-weight:700; padding:0.55rem 1.15rem; font-size:0.875rem; border-radius:10px; background:#0284c7; color:#fff;">
-          <i class="fa-solid fa-bolt"></i> Triage Leads (<?= count($unassignedWebLeads) ?>)
-        </a>
-      <?php endif; ?>
+      <button type="button" class="btn btn-success" onclick="openTopUpdateModal()" style="font-weight:700; padding:0.55rem 1.15rem; font-size:0.875rem; border-radius:10px; background:#059669; border-color:#059669; color:#fff;">
+        <i class="fa-solid fa-arrows-rotate"></i> 1-Click Update
+      </button>
 
-      <?php if (can('invoices', 'add')): ?>
-        <a href="<?= base_url('finance/create_invoice.php') ?>" class="btn btn-secondary" id="btn-generate-invoice" style="font-weight:600; padding:0.55rem 1rem; font-size:0.875rem; border-radius:10px;">
-          <i class="fa-solid fa-file-invoice-dollar"></i> Invoice
-        </a>
-      <?php endif; ?>
+      <a href="<?= base_url('tasks/index.php') ?>" class="btn btn-ghost" style="font-weight:700; padding:0.55rem 1rem; font-size:0.875rem; border-radius:10px; border:1px solid var(--border-color); background:#fff;">
+        <i class="fa-solid fa-list-check" style="color:var(--primary);"></i> Assigned Tasks (<?= $totalLifecycleTasks ?>)
+      </a>
     </div>
   </div>
 </div>
 
-<!-- 2. ROLE-TAILORED PRIMARY METRICS (Keep #widget-metric-cards for Tutorial) -->
-<div id="widget-metric-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
-  <?php if ($isCounselor): ?>
-    <!-- Counselor KPI 1: My Active Students -->
-    <a href="<?= base_url('leads/index.php') ?>" class="card" style="padding:1.15rem 1.25rem; display:flex; align-items:center; gap:1rem; text-decoration:none; transition:all 0.15s; border-radius:12px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="width:48px; height:48px; border-radius:12px; background:var(--primary-subtle); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-        <i class="fa-solid fa-user-graduate"></i>
-      </div>
-      <div>
-        <div style="font-size:1.55rem; font-weight:800; color:var(--text-heading); line-height:1.1;"><?= number_format($totalLeads) ?></div>
-        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-top:2px;">My Active Students</div>
-      </div>
-    </a>
+<!-- 2. SUMMARY CHECKLIST OF DAILY CRM DUTIES (From Client Audio & Specifications) -->
+<div class="card" style="margin-bottom:1.5rem; padding:1.25rem 1.5rem; border-radius:14px; border-left:4px solid var(--primary); background:#fff;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.85rem; flex-wrap:wrap; gap:0.5rem;">
+    <div>
+      <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin:0; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-clipboard-check" style="color:var(--primary);"></i> Summary Checklist of Daily CRM Duties
+      </h3>
+      <span style="font-size:0.78rem; color:var(--text-muted);">Standard operating procedures for Counselors, Team Leaders, and Operations/Accessors</span>
+    </div>
+    <span class="badge badge-success" style="font-size:0.75rem; font-weight:700;">Daily Operating Protocol</span>
+  </div>
 
-    <!-- Counselor KPI 2: Today's Scheduled Calls -->
-    <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="card" style="padding:1.15rem 1.25rem; display:flex; align-items:center; gap:1rem; text-decoration:none; transition:all 0.15s; border-radius:12px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="width:48px; height:48px; border-radius:12px; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-        <i class="fa-solid fa-phone-volume"></i>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:0.85rem;">
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.85rem 1rem;">
+      <div style="font-weight:800; font-size:0.825rem; color:#1e293b; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+        <span style="background:var(--primary-subtle); color:var(--primary); width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">1</span>
+        Daily Start
       </div>
-      <div>
-        <div style="font-size:1.55rem; font-weight:800; color:#0284c7; line-height:1.1;"><?= number_format($countScheduled) ?></div>
-        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-top:2px;">Calls Due Today</div>
-      </div>
-    </a>
-
-    <!-- Counselor KPI 3: Overdue / Action Needed -->
-    <a href="<?= base_url('tasks/index.php?queue=pending_followup') ?>" class="card" style="padding:1.15rem 1.25rem; display:flex; align-items:center; gap:1rem; text-decoration:none; transition:all 0.15s; border-radius:12px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="width:48px; height:48px; border-radius:12px; background:<?= $countOverdue > 0 ? '#fee2e2' : '#dcfce7' ?>; color:<?= $countOverdue > 0 ? '#b91c1c' : '#15803d' ?>; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-        <i class="fa-solid <?= $countOverdue > 0 ? 'fa-triangle-exclamation' : 'fa-circle-check' ?>"></i>
-      </div>
-      <div>
-        <div style="font-size:1.55rem; font-weight:800; color:<?= $countOverdue > 0 ? '#b91c1c' : '#15803d' ?>; line-height:1.1;"><?= number_format($countOverdue) ?></div>
-        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-top:2px;"><?= $countOverdue > 0 ? 'Overdue Follow-ups' : '0 Overdue (Caught Up!)' ?></div>
-      </div>
-    </a>
-
-    <!-- Counselor KPI 4: My Enrolled Students -->
-    <a href="<?= base_url('leads/index.php?stage=ENROLLED') ?>" class="card" style="padding:1.15rem 1.25rem; display:flex; align-items:center; gap:1rem; text-decoration:none; transition:all 0.15s; border-radius:12px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="width:48px; height:48px; border-radius:12px; background:#dcfce7; color:#15803d; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-        <i class="fa-solid fa-trophy"></i>
-      </div>
-      <div>
-        <div style="font-size:1.55rem; font-weight:800; color:#15803d; line-height:1.1;"><?= number_format($totalEnrolled) ?></div>
-        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-top:2px;">My Enrolled Students</div>
-      </div>
-    </a>
-
-  <?php elseif ($isManager): ?>
-    <!-- Manager KPI 1: Branch Active Leads -->
-    <a href="<?= base_url('leads/index.php') ?>" class="card" style="padding:1.15rem 1.25rem; display:flex; align-items:center; gap:1rem; text-decoration:none; border-radius:12px;">
-      <div style="width:48px; height:48px; border-radius:12px; background:var(--primary-subtle); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-        <i class="fa-solid fa-building-user"></i>
-      </div>
-      <div>
-        <div style="font-size:1.55rem; font-weight:800; color:var(--text-heading); line-height:1.1;"><?= number_format($totalLeads) ?></div>
-        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Branch Active Leads</div>
-      </div>
-    </a>
-
-    <!-- Manager KPI 2: Team Calls Due Today -->
-    <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="card" style="padding:1.15rem 1.25rem; display:flex; align-items:center; gap:1rem; text-decoration:none; border-radius:12px;">
-      <div style="width:48px; height:48px; border-radius:12px; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-        <i class="fa-solid fa-phone-volume"></i>
-      </div>
-      <div>
-        <div style="font-size:1.55rem; font-weight:800; color:#0284c7; line-height:1.1;"><?= number_format($countScheduled) ?></div>
-        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Team Calls Due Today</div>
-      </div>
-    </a>
-
-    <!-- Manager KPI 3: Overdue Lag -->
-    <a href="<?= base_url('tasks/index.php?queue=pending_followup') ?>" class="card" style="padding:1.15rem 1.25rem; display:flex; align-items:center; gap:1rem; text-decoration:none; border-radius:12px;">
-      <div style="width:48px; height:48px; border-radius:12px; background:<?= $countOverdue > 0 ? '#fee2e2' : '#dcfce7' ?>; color:<?= $countOverdue > 0 ? '#b91c1c' : '#15803d' ?>; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-        <i class="fa-solid fa-clock-rotate-left"></i>
-      </div>
-      <div>
-        <div style="font-size:1.55rem; font-weight:800; color:<?= $countOverdue > 0 ? '#b91c1c' : '#15803d' ?>; line-height:1.1;"><?= number_format($countOverdue) ?></div>
-        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Overdue Calls Lag</div>
-      </div>
-    </a>
-
-    <!-- Manager KPI 4: Branch Enrolled Students -->
-    <a href="<?= base_url('leads/index.php?stage=ENROLLED') ?>" class="card" style="padding:1.15rem 1.25rem; display:flex; align-items:center; gap:1rem; text-decoration:none; border-radius:12px;">
-      <div style="width:48px; height:48px; border-radius:12px; background:#dcfce7; color:#15803d; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-        <i class="fa-solid fa-award"></i>
-      </div>
-      <div>
-        <div style="font-size:1.55rem; font-weight:800; color:#15803d; line-height:1.1;"><?= number_format($totalEnrolled) ?></div>
-        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Branch Enrolled</div>
-      </div>
-    </a>
-
-  <?php else: ?>
-    <!-- Super Admin KPI 1: Total Active Leads -->
-    <div class="card" style="padding:1.15rem 1.25rem; display:flex; align-items:center; gap:1rem; border-radius:12px;">
-      <div style="width:48px; height:48px; border-radius:12px; background:var(--primary-subtle); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-        <i class="fa-solid fa-user-graduate"></i>
-      </div>
-      <div>
-        <div style="font-size:1.55rem; font-weight:800; color:var(--text-heading); line-height:1.1;"><?= number_format($totalLeads) ?></div>
-        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Total Active Leads</div>
-      </div>
+      <p style="margin:0; font-size:0.78rem; color:#475569; line-height:1.4;">
+        Open the CRM task list via the top header bar (<strong>Tasks</strong>) to review active worklists.
+      </p>
     </div>
 
-    <!-- Super Admin KPI 2: Enrolled Clients -->
-    <div class="card" style="padding:1.15rem 1.25rem; display:flex; align-items:center; gap:1rem; border-radius:12px;">
-      <div style="width:48px; height:48px; border-radius:12px; background:#dcfce7; color:#15803d; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-        <i class="fa-solid fa-certificate"></i>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.85rem 1rem;">
+      <div style="font-weight:800; font-size:0.825rem; color:#1e293b; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+        <span style="background:var(--primary-subtle); color:var(--primary); width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">2</span>
+        Data Review
       </div>
-      <div>
-        <div style="font-size:1.55rem; font-weight:800; color:#15803d; line-height:1.1;"><?= number_format($totalCustomers) ?></div>
-        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Enrolled (<?= $conversionRate ?>%)</div>
-      </div>
+      <p style="margin:0; font-size:0.78rem; color:#475569; line-height:1.4;">
+        Pull active <strong>Social Media Leads</strong> and inspect assigned regions & central density.
+      </p>
     </div>
 
-    <!-- Super Admin KPI 3: Collected Revenue -->
-    <div class="card" style="padding:1.15rem 1.25rem; display:flex; align-items:center; gap:1rem; border-radius:12px;">
-      <div style="width:48px; height:48px; border-radius:12px; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-        <i class="fa-solid fa-wallet"></i>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.85rem 1rem;">
+      <div style="font-weight:800; font-size:0.825rem; color:#1e293b; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+        <span style="background:var(--primary-subtle); color:var(--primary); width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">3</span>
+        Call Execution
       </div>
-      <div>
-        <div style="font-size:1.4rem; font-weight:800; color:#059669; line-height:1.1;"><?= format_currency($totalCollected) ?></div>
-        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Collected Revenue</div>
-      </div>
+      <p style="margin:0; font-size:0.78rem; color:#475569; line-height:1.4;">
+        Review linked <strong>Call Data</strong>, initiate contact, and log connection outcome.
+      </p>
     </div>
 
-    <!-- Super Admin KPI 4: Outstanding Balance -->
-    <div class="card" style="padding:1.15rem 1.25rem; display:flex; align-items:center; gap:1rem; border-radius:12px;">
-      <div style="width:48px; height:48px; border-radius:12px; background:#fee2e2; color:#b91c1c; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-        <i class="fa-solid fa-scale-unbalanced"></i>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.85rem 1rem;">
+      <div style="font-weight:800; font-size:0.825rem; color:#1e293b; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+        <span style="background:var(--primary-subtle); color:var(--primary); width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">4</span>
+        Queue Maintenance
       </div>
-      <div>
-        <div style="font-size:1.4rem; font-weight:800; color:#b91c1c; line-height:1.1;"><?= format_currency($totalBalance) ?></div>
-        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Pending Balance</div>
-      </div>
+      <p style="margin:0; font-size:0.78rem; color:#475569; line-height:1.4;">
+        Clear all <strong>Pending Follow-ups Backlog</strong> and book next <strong>Scheduled Follow-ups</strong>.
+      </p>
     </div>
-  <?php endif; ?>
+
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.85rem 1rem;">
+      <div style="font-weight:800; font-size:0.825rem; color:#1e293b; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+        <span style="background:var(--primary-subtle); color:var(--primary); width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">5</span>
+        Data Verification
+      </div>
+      <p style="margin:0; font-size:0.78rem; color:#475569; line-height:1.4;">
+        Cross-verify contact phone numbers aloud and update fields using the top <strong>Update</strong> button.
+      </p>
+    </div>
+
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.85rem 1rem;">
+      <div style="font-weight:800; font-size:0.825rem; color:#1e293b; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+        <span style="background:var(--primary-subtle); color:var(--primary); width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">6</span>
+        Escalation
+      </div>
+      <p style="margin:0; font-size:0.78rem; color:#475569; line-height:1.4;">
+        Route qualified Hot/Warm prospects to <strong>Counselors</strong> following standard procedure.
+      </p>
+    </div>
+  </div>
 </div>
 
-<!-- 3. COUNSELOR'S TODAY ACTION CALL QUEUE (Prominent, High Priority) -->
-<?php if ($isCounselor): ?>
-  <div class="card" id="widget-action-calls" style="margin-bottom:1.5rem; padding:1.25rem; border-left:4px solid #10b981; border-radius:12px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
-      <div>
-        <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin:0; display:flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-phone-volume" style="color:#10b981;"></i> Today's Action Call List
-          <?php if (!empty($urgentCalls)): ?>
-            <span class="badge badge-success"><?= count($urgentCalls) ?> Ready</span>
-          <?php endif; ?>
-        </h3>
-        <p style="font-size:0.8rem; color:var(--text-muted); margin:2px 0 0 0;">Candidates scheduled for consultation today. 1-click WhatsApp or Call to connect.</p>
-      </div>
-      <a href="<?= base_url('tasks/index.php') ?>" class="btn btn-outline btn-sm">Full Call Queue &rarr;</a>
-    </div>
-
-    <?php if (empty($urgentCalls)): ?>
-      <div style="text-align:center; padding:2rem 1rem; background:#f0fdf4; border-radius:10px; border:1px solid #bbf7d0;">
-        <div style="width:48px; height:48px; border-radius:50%; background:#dcfce7; color:#15803d; display:inline-flex; align-items:center; justify-content:center; font-size:1.4rem; margin-bottom:0.6rem;">
-          <i class="fa-solid fa-circle-check"></i>
-        </div>
-        <h4 style="font-size:1.1rem; font-weight:800; color:#166534; margin:0 0 0.35rem 0;">All caught up for today! 🎉</h4>
-        <p style="font-size:0.85rem; color:#15803d; margin:0 0 1rem 0;">You have zero pending follow-ups due right now. Ready for fresh inquiries or advancing student applications.</p>
-        <div style="display:flex; justify-content:center; gap:0.5rem;">
-          <a href="<?= base_url('leads/index.php') ?>" class="btn btn-secondary btn-sm"><i class="fa-solid fa-list"></i> View My Students</a>
-          <button type="button" class="btn btn-primary btn-sm" onclick="openQuickLeadModal()"><i class="fa-solid fa-plus"></i> + Add New Lead</button>
-        </div>
-      </div>
-    <?php else: ?>
-      <div class="table-responsive">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Candidate</th>
-              <th>1-Click Contact</th>
-              <th>Target Country</th>
-              <th>Current Stage</th>
-              <th>Last Discussion</th>
-              <th style="text-align:right;">Immediate Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($urgentCalls as $call): 
-              $dialUrl = "tel:" . preg_replace('/[^0-9+]/', '', $call['phone']);
-              $waMsg = get_whatsapp_message($call['stage'], $call['full_name'], $currentUser['name'] ?? 'UniCRM Admissions', $call['preferred_country'] ?? 'UK');
-              $waUrl = "https://wa.me/91" . normalize_phone($call['phone']) . "?text=" . urlencode($waMsg);
-            ?>
-              <tr>
-                <td>
-                  <a href="<?= base_url('leads/view.php?id=' . $call['lead_id']) ?>" style="font-weight:700; color:var(--text-heading); text-decoration:none; font-size:0.95rem;">
-                    <?= htmlspecialchars($call['full_name']) ?>
-                  </a>
-                  <div style="font-family:monospace; font-size:0.75rem; color:var(--primary); font-weight:700;"><?= htmlspecialchars($call['lead_code']) ?></div>
-                </td>
-                <td>
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <a href="<?= $waUrl ?>" target="_blank" class="btn btn-sm" style="background:#25d366; color:#fff; font-weight:700; padding:4px 10px; font-size:0.8rem; border-radius:6px; display:inline-flex; align-items:center; gap:5px;" title="Send WhatsApp Message">
-                      <i class="fa-brands fa-whatsapp"></i> WhatsApp
-                    </a>
-                    <a href="<?= $dialUrl ?>" class="btn btn-outline btn-sm" style="padding:4px 9px; font-size:0.8rem; border-radius:6px;" title="Call Phone">
-                      <i class="fa-solid fa-phone" style="color:var(--primary);"></i>
-                    </a>
-                  </div>
-                </td>
-                <td><span style="font-weight:700; font-size:0.85rem; color:var(--text-heading);"><?= htmlspecialchars($call['preferred_country']) ?></span></td>
-                <td><span class="badge badge-primary" style="font-size:0.72rem; font-weight:700;"><?= htmlspecialchars($call['stage']) ?></span></td>
-                <td style="font-size:0.8rem; color:var(--text-muted); max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                  <?= htmlspecialchars($call['last_notes'] ?: 'Scheduled consultation') ?>
-                </td>
-                <td style="text-align:right;">
-                  <button type="button" class="btn btn-primary btn-sm" style="font-size:0.8rem; padding:4px 12px; font-weight:700; border-radius:6px;" onclick="openLogCallModal(<?= $call['lead_id'] ?>, '<?= htmlspecialchars(addslashes($call['full_name'])) ?>', '<?= htmlspecialchars($call['stage']) ?>')">
-                    <i class="fa-solid fa-check"></i> Log Outcome
-                  </button>
-                </td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-    <?php endif; ?>
-  </div>
-<?php endif; ?>
-
-<!-- 5. BRANCH MANAGER: COUNSELOR CASELOAD & PERFORMANCE BALANCE -->
-<?php if ($isManager && !empty($branchCounselors)): ?>
-  <div class="card" id="widget-counselor-caseload" style="margin-bottom:1.5rem; padding:1.25rem; border-radius:12px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
-      <div>
-        <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin:0; display:flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-users-viewfinder" style="color:var(--primary);"></i> Counselor Caseload & Performance Balance
-        </h3>
-        <p style="font-size:0.8rem; color:var(--text-muted); margin:2px 0 0 0;">Live tracking of counselor workload, daily follow-up discipline, and student enrollments.</p>
-      </div>
-      <a href="<?= base_url('organization/users.php') ?>" class="btn btn-outline btn-sm">Manage Team &rarr;</a>
-    </div>
-
-    <div class="table-responsive">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Counselor</th>
-            <th>Active Caseload</th>
-            <th>Calls Due Today</th>
-            <th>Follow-up Discipline</th>
-            <th>Enrolled Students</th>
-            <th style="text-align:right;">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($branchCounselors as $bc): ?>
-            <tr>
-              <td>
-                <div style="font-weight:700; color:var(--text-heading); font-size:0.92rem;">
-                  <?= htmlspecialchars($bc['name']) ?>
-                </div>
-                <div style="font-size:0.75rem; color:var(--text-muted);"><?= htmlspecialchars($bc['email']) ?></div>
-              </td>
-              <td>
-                <span class="badge badge-primary" style="font-size:0.85rem; font-weight:800; padding:4px 10px;"><?= $bc['active_leads'] ?> Students</span>
-              </td>
-              <td>
-                <span style="font-weight:700; color:var(--text-heading);"><?= $bc['today_calls'] ?> Due</span>
-              </td>
-              <td>
-                <?php if ($bc['overdue_calls'] > 0): ?>
-                  <span class="badge badge-red" style="font-weight:700;"><?= $bc['overdue_calls'] ?> Overdue</span>
-                <?php else: ?>
-                  <span class="badge badge-green" style="font-weight:600;"><i class="fa-solid fa-check"></i> On Track</span>
-                <?php endif; ?>
-              </td>
-              <td>
-                <strong style="color:#15803d; font-size:0.92rem;"><?= $bc['enrolled_count'] ?> Enrolled</strong>
-              </td>
-              <td style="text-align:right;">
-                <a href="<?= base_url('leads/index.php?counselor_id=' . $bc['id']) ?>" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:3px 10px; font-weight:600;">
-                  View Leads &rarr;
-                </a>
-              </td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-  </div>
-<?php endif; ?>
-
-<!-- 7. THE 4 OPERATIONAL TASK QUEUES (Keep #widget-task-queues for Tutorial) -->
-<div class="card" id="widget-task-queues" style="margin-bottom:1.5rem; padding:1.25rem; border-radius:12px;">
+<!-- 3. THE 4-STAGE FOLLOW-UP LIFECYCLE QUEUES -->
+<div class="card" id="widget-task-queues" style="margin-bottom:1.5rem; padding:1.25rem 1.5rem; border-radius:14px;">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
-    <div style="display:flex; align-items:center; gap:0.5rem;">
-      <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin:0;">
-        <i class="fa-solid fa-list-check" style="color:var(--primary); margin-right:4px;"></i> Daily Operational Task Queues
+    <div>
+      <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin:0; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-clock-rotate-left" style="color:var(--primary);"></i> 4-Stage Follow-Up Management Lifecycle
       </h3>
-      <span class="badge badge-primary" style="font-weight:700;"><?= $totalTasks ?> Actions Pending</span>
+      <span style="font-size:0.78rem; color:var(--text-muted);">Daily operational queues to ensure no leads remain stagnant in the pipeline</span>
     </div>
-    <a href="<?= base_url('tasks/index.php') ?>" style="font-size:0.825rem; color:var(--primary); font-weight:700; text-decoration:none;">
-      Open Task Surface &rarr;
+    <a href="<?= base_url('tasks/index.php') ?>" class="btn btn-outline btn-sm" style="font-size:0.78rem; font-weight:700;">
+      Open Tasks Hub &rarr;
     </a>
   </div>
 
-  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:0.85rem;">
-    <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" style="text-decoration:none; background:var(--primary-subtle); border-radius:10px; padding:1rem; display:flex; justify-content:space-between; align-items:center; transition:transform 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:1rem;">
+    <!-- Stage 1: New / First Follow-Up -->
+    <a href="<?= base_url('tasks/index.php?stage=new_first') ?>" style="text-decoration:none; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:12px; padding:1.15rem; display:flex; justify-content:space-between; align-items:center; transition:transform 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
       <div>
-        <span style="font-size:0.75rem; font-weight:700; color:var(--primary); text-transform:uppercase;">Scheduled Follow-ups</span>
-        <div style="font-size:1.35rem; font-weight:800; color:var(--text-heading); margin-top:2px;">Today's Calls</div>
+        <span style="font-size:0.72rem; font-weight:800; color:#047857; text-transform:uppercase; letter-spacing:0.04em; display:block;">Stage 1</span>
+        <div style="font-size:1.15rem; font-weight:800; color:#064e3b; margin-top:2px;">New / First Touch</div>
+        <div style="font-size:0.75rem; color:#065f46; margin-top:2px;">Fresh Inbound Leads</div>
       </div>
-      <span class="badge badge-blue" style="font-size:1rem; font-weight:800;"><?= $countScheduled ?></span>
+      <span class="badge" style="background:#059669; color:#fff; font-size:1.1rem; font-weight:800; padding:6px 12px; border-radius:10px;"><?= $countNewFollowup ?></span>
     </a>
 
-    <a href="<?= base_url('tasks/index.php?queue=pending_followup') ?>" style="text-decoration:none; background:#fee2e2; border-radius:10px; padding:1rem; display:flex; justify-content:space-between; align-items:center; transition:transform 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+    <!-- Stage 2: Scheduled Follow-Ups -->
+    <a href="<?= base_url('tasks/index.php?stage=scheduled') ?>" style="text-decoration:none; background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:1.15rem; display:flex; justify-content:space-between; align-items:center; transition:transform 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
       <div>
-        <span style="font-size:0.75rem; font-weight:700; color:#b91c1c; text-transform:uppercase;">Pending Follow-ups</span>
-        <div style="font-size:1.35rem; font-weight:800; color:#b91c1c; margin-top:2px;">Overdue Calls</div>
+        <span style="font-size:0.72rem; font-weight:800; color:#1d4ed8; text-transform:uppercase; letter-spacing:0.04em; display:block;">Stage 2</span>
+        <div style="font-size:1.15rem; font-weight:800; color:#1e3a8a; margin-top:2px;">Scheduled Calls</div>
+        <div style="font-size:0.75rem; color:#1e40af; margin-top:2px;">Dates & Reminder Alarms</div>
       </div>
-      <span class="badge badge-red" style="font-size:1rem; font-weight:800;"><?= $countOverdue ?></span>
+      <span class="badge" style="background:#2563eb; color:#fff; font-size:1.1rem; font-weight:800; padding:6px 12px; border-radius:10px;"><?= $countScheduledFollowups ?></span>
     </a>
 
-    <a href="<?= base_url('tasks/index.php?queue=today_leads') ?>" style="text-decoration:none; background:#dcfce7; border-radius:10px; padding:1rem; display:flex; justify-content:space-between; align-items:center; transition:transform 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+    <!-- Stage 3: Pending Follow-Ups Backlog -->
+    <a href="<?= base_url('tasks/index.php?stage=pending_backlog') ?>" style="text-decoration:none; background:#fef2f2; border:1px solid #fecaca; border-radius:12px; padding:1.15rem; display:flex; justify-content:space-between; align-items:center; transition:transform 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
       <div>
-        <span style="font-size:0.75rem; font-weight:700; color:#15803d; text-transform:uppercase;">Today Leads</span>
-        <div style="font-size:1.35rem; font-weight:800; color:#15803d; margin-top:2px;">Fresh Inbound</div>
+        <span style="font-size:0.72rem; font-weight:800; color:#b91c1c; text-transform:uppercase; letter-spacing:0.04em; display:block;">Stage 3 &bull; Critical</span>
+        <div style="font-size:1.15rem; font-weight:800; color:#7f1d1d; margin-top:2px;">Pending Backlog</div>
+        <div style="font-size:0.75rem; color:#991b1b; margin-top:2px;">Overdue Must-Clear Queue</div>
       </div>
-      <span class="badge badge-green" style="font-size:1rem; font-weight:800;"><?= $countTodayLeads ?></span>
+      <span class="badge" style="background:#dc2626; color:#fff; font-size:1.1rem; font-weight:800; padding:6px 12px; border-radius:10px;"><?= $countPendingBacklog ?></span>
     </a>
 
-    <a href="<?= base_url('tasks/index.php?queue=pending_leads') ?>" style="text-decoration:none; background:#fef3c7; border-radius:10px; padding:1rem; display:flex; justify-content:space-between; align-items:center; transition:transform 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+    <!-- Stage 4: Long-Cycle Follow-Ups -->
+    <a href="<?= base_url('tasks/index.php?stage=long_cycle') ?>" style="text-decoration:none; background:#fdf4ff; border:1px solid #f5d0fe; border-radius:12px; padding:1.15rem; display:flex; justify-content:space-between; align-items:center; transition:transform 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
       <div>
-        <span style="font-size:0.75rem; font-weight:700; color:#b45309; text-transform:uppercase;">Pending Leads</span>
-        <div style="font-size:1.35rem; font-weight:800; color:#b45309; margin-top:2px;">Uncontacted</div>
+        <span style="font-size:0.72rem; font-weight:800; color:#a21caf; text-transform:uppercase; letter-spacing:0.04em; display:block;">Stage 4</span>
+        <div style="font-size:1.15rem; font-weight:800; color:#701a75; margin-top:2px;">Long-Cycle Leads</div>
+        <div style="font-size:0.75rem; color:#86198f; margin-top:2px;">Prolonged Prospect Cycles</div>
       </div>
-      <span class="badge badge-warning" style="font-size:1rem; font-weight:800;"><?= $countPendingLeads ?></span>
+      <span class="badge" style="background:#a21caf; color:#fff; font-size:1.1rem; font-weight:800; padding:6px 12px; border-radius:10px;"><?= $countLongCycle ?></span>
     </a>
   </div>
 </div>
 
-<!-- 8. PROSPECTIVITY DISTRIBUTION & QUICK GUIDANCE (Keep #widget-pipeline-chart and #widget-branch-chart) -->
-<div style="display:grid; grid-template-columns:<?= $isCounselor ? '1fr 1fr' : '1fr 1fr' ?>; gap:1.5rem; margin-bottom:1.5rem; align-items:start;">
-  <!-- Lead Prospectivity Chart (Section 9.2.3) -->
-  <div class="card" id="widget-pipeline-chart" style="padding:1.5rem; border-radius:12px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-      <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-heading); margin:0;">
-        <i class="fa-solid fa-fire" style="color:#ef4444; margin-right:4px;"></i> 
-        <?= $isCounselor ? 'My Lead Prospectivity Tiers' : 'Lead Prospectivity Distribution' ?>
-      </h3>
-      <a href="<?= base_url('leads/index.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">View Leads &rarr;</a>
-    </div>
-    <div style="height:250px;">
-      <canvas id="prospectChart"></canvas>
-    </div>
-  </div>
-
-  <?php if ($isCounselor): ?>
-    <!-- Counselor Guidance & Daily Best Practices Card -->
-    <div class="card" id="widget-branch-chart" style="padding:1.5rem; border-radius:12px; background:linear-gradient(135deg, #ffffff 0%, #fafafa 100%);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-        <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-heading); margin:0;">
-          <i class="fa-solid fa-lightbulb" style="color:#f59e0b; margin-right:4px;"></i> Counselor Daily Tips
+<!-- 4. REGIONAL & GEOGRAPHIC SEGMENTATION CARD (Client Audio Requirement) -->
+<div style="display:grid; grid-template-columns:2fr 1fr; gap:1.5rem; margin-bottom:1.5rem; align-items:start;">
+  <!-- Regional Density Breakdown -->
+  <div class="card" style="padding:1.5rem; border-radius:14px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+      <div>
+        <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin:0; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-map-location-dot" style="color:var(--primary);"></i> Regional & Geographic Segmentation
         </h3>
-        <span class="badge badge-primary" style="font-size:0.72rem;">Operational Guide</span>
+        <span style="font-size:0.78rem; color:var(--text-muted);">
+          Mapping distribution and density across central zones &bull; <em>"The area that are located in the center is prospectivity"</em>
+        </span>
       </div>
-      <div style="display:flex; flex-direction:column; gap:0.75rem; font-size:0.825rem;">
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.75rem 1rem;">
-          <strong style="color:var(--text-heading); display:flex; align-items:center; gap:6px;">
-            <i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> 1-Click WhatsApp Outreach
-          </strong>
-          <p style="margin:4px 0 0 0; color:var(--text-muted); font-size:0.78rem;">Click WhatsApp directly from your task lists to initiate consultation greetings without saving numbers on your phone.</p>
-        </div>
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.75rem 1rem;">
-          <strong style="color:var(--text-heading); display:flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-phone-volume" style="color:#10b981;"></i> Always Schedule Next Follow-up
-          </strong>
-          <p style="margin:4px 0 0 0; color:var(--text-muted); font-size:0.78rem;">After each call, record the outcome notes and next appointment date to maintain scheduled task momentum.</p>
-        </div>
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.75rem 1rem;">
-          <strong style="color:var(--text-heading); display:flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-file-invoice-dollar" style="color:var(--primary);"></i> Convert to Customer
-          </strong>
-          <p style="margin:4px 0 0 0; color:var(--text-muted); font-size:0.78rem;">When a student confirms enrollment, click "Convert to Customer" on their profile to generate their service invoice.</p>
-        </div>
-      </div>
-    </div>
-  <?php else: ?>
-    <!-- Branch / Campus Chart for Super Admin & Branch Managers -->
-    <div class="card" id="widget-branch-chart" style="padding:1.5rem; border-radius:12px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-        <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-heading); margin:0;">
-          <i class="fa-solid fa-chart-pie" style="color:var(--primary); margin-right:4px;"></i> Regional Branch Lead Distribution
-        </h3>
-        <a href="<?= base_url('leads/index.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">View Leads &rarr;</a>
-      </div>
-      <div style="height:250px;">
-        <canvas id="branchChart"></canvas>
-      </div>
-    </div>
-  <?php endif; ?>
-</div>
-
-<!-- 9. RECENT LEADS TABLE (Keep #widget-recent-leads for Tutorial) -->
-<div style="display:grid; grid-template-columns:<?= $isSuperAdmin ? '2fr 1fr' : '1fr' ?>; gap:1.5rem; align-items:start;">
-  <!-- Recent Leads Table -->
-  <div class="card" id="widget-recent-leads" style="padding:1.5rem; border-radius:12px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-      <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-heading); margin:0;">
-        <i class="fa-solid fa-user-graduate" style="color:var(--primary); margin-right:4px;"></i> 
-        <?= $isCounselor ? 'My Recent Student Inquiries' : 'Recent Student Inquiries' ?>
-      </h3>
-      <a href="<?= base_url('leads/index.php') ?>" style="font-size:0.8rem; color:var(--primary); font-weight:600; text-decoration:none;">View All Leads &rarr;</a>
+      <a href="<?= base_url('leads/index.php') ?>" class="btn btn-outline btn-sm" style="font-size:0.78rem; font-weight:600;">Filter by Region &rarr;</a>
     </div>
 
     <div class="table-responsive">
       <table class="data-table">
         <thead>
           <tr>
-            <th>Student Name</th>
-            <th>Target Country</th>
-            <th>Stage</th>
-            <?php if (!$isCounselor): ?>
-              <th>Branch</th>
-              <th>Counselor</th>
-            <?php endif; ?>
-            <th>1-Click WhatsApp & Call</th>
-            <th style="text-align:right;">Action</th>
+            <th>Main Region</th>
+            <th>Total Pipeline</th>
+            <th>Center Zone Density</th>
+            <th>Hot Prospects</th>
+            <th>Phone Verified</th>
+            <th>Conversion Prospectivity</th>
           </tr>
         </thead>
         <tbody>
-          <?php if (empty($recentLeads)): ?>
-            <tr>
-              <td colspan="<?= $isCounselor ? 5 : 6 ?>" style="text-align:center; padding:2.5rem; color:var(--text-muted);">
-                <i class="fa-solid fa-user-graduate" style="font-size:1.6rem; margin-bottom:0.5rem; display:block; color:var(--text-light);"></i>
-                No active student inquiries recorded yet. New leads will automatically display here.
-              </td>
-            </tr>
+          <?php if (empty($regionalData)): ?>
+            <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No regional data available.</td></tr>
           <?php else: ?>
-            <?php foreach ($recentLeads as $rl): 
-              $dialUrl = "tel:" . preg_replace('/[^0-9+]/', '', $rl['phone']);
-              $waMsg = get_whatsapp_message($rl['stage'], $rl['full_name'], $currentUser['name'] ?? 'UniCRM Admissions', $rl['preferred_country'] ?? 'UK');
-              $waUrl = "https://wa.me/91" . normalize_phone($rl['phone']) . "?text=" . urlencode($waMsg);
+            <?php foreach ($regionalData as $rd): 
+              $ratio = ($rd['total_count'] > 0) ? round(($rd['center_density'] / $rd['total_count']) * 100) : 0;
             ?>
               <tr>
                 <td>
-                  <a href="<?= base_url('leads/view.php?id=' . $rl['id']) ?>" style="font-weight:700; color:var(--text-heading); font-size:0.92rem; text-decoration:none;">
-                    <?= htmlspecialchars($rl['full_name']) ?>
-                  </a>
-                  <div style="font-family:monospace; font-size:0.75rem; color:var(--primary); font-weight:700;"><?= htmlspecialchars($rl['lead_code']) ?></div>
+                  <strong style="color:var(--text-heading); font-size:0.9rem;"><?= htmlspecialchars($rd['region_name']) ?></strong>
                 </td>
-                <td style="font-size:0.85rem; font-weight:600;"><?= htmlspecialchars($rl['preferred_country']) ?></td>
-                <td><span class="badge badge-primary" style="font-size:0.7rem; font-weight:700;"><?= htmlspecialchars($rl['stage']) ?></span></td>
-                <?php if (!$isCounselor): ?>
-                  <td style="font-size:0.8rem; color:var(--text-muted);"><?= htmlspecialchars($rl['branch_name'] ?? 'Branch') ?></td>
-                  <td style="font-size:0.8rem; font-weight:600;"><?= htmlspecialchars($rl['counselor_name'] ?? 'Counselor') ?></td>
-                <?php endif; ?>
+                <td><strong style="font-size:0.92rem;"><?= $rd['total_count'] ?></strong> leads</td>
+                <td>
+                  <span class="badge badge-primary" style="font-weight:700;"><?= $rd['center_density'] ?> Center</span>
+                  <?php if ($rd['outer_density'] > 0): ?>
+                    <span class="badge badge-secondary" style="font-size:0.72rem;"><?= $rd['outer_density'] ?> Outer</span>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <span class="badge badge-danger" style="font-weight:700;">🔥 <?= $rd['hot_count'] ?> Hot</span>
+                </td>
+                <td>
+                  <span class="badge badge-success" style="font-weight:700;">✓ <?= $rd['verified_count'] ?> Verified</span>
+                </td>
                 <td>
                   <div style="display:flex; align-items:center; gap:6px;">
-                    <a href="<?= $waUrl ?>" target="_blank" class="btn btn-sm" style="background:#25d366; color:#fff; font-size:0.78rem; padding:3px 8px; border-radius:6px; font-weight:700;" title="WhatsApp">
-                      <i class="fa-brands fa-whatsapp"></i> Chat
-                    </a>
-                    <a href="<?= $dialUrl ?>" class="btn btn-outline btn-sm" style="padding:3px 7px; font-size:0.78rem; border-radius:6px;" title="Call">
-                      <i class="fa-solid fa-phone" style="color:var(--primary);"></i>
-                    </a>
+                    <div style="flex:1; height:6px; background:#e2e8f0; border-radius:3px; overflow:hidden; max-width:80px;">
+                      <div style="height:100%; width:<?= $ratio ?>%; background:var(--primary);"></div>
+                    </div>
+                    <span style="font-size:0.75rem; font-weight:700; color:var(--text-heading);"><?= $ratio ?>% Center</span>
                   </div>
-                </td>
-                <td style="text-align:right;">
-                  <a href="<?= base_url('leads/view.php?id=' . $rl['id']) ?>" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:3px 10px; font-weight:600;">Dossier &rarr;</a>
                 </td>
               </tr>
             <?php endforeach; ?>
@@ -702,83 +372,241 @@ include __DIR__ . '/../includes/header.php';
     </div>
   </div>
 
-  <!-- General Documents (Displays training docs in PDF format, click opens in new tab) -->
-  <div class="card" style="padding:1.5rem; border-radius:12px;">
+  <!-- Prospectivity Distribution Donut Chart -->
+  <div class="card" style="padding:1.5rem; border-radius:14px;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-      <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-heading); margin:0;">
-        <i class="fa-solid fa-folder-open" style="color:var(--primary); margin-right:4px;"></i> General Documents
+      <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin:0; display:flex; align-items:center; gap:6px;">
+        <i class="fa-solid fa-fire" style="color:#ef4444;"></i> Lead Prospectivity
       </h3>
-      <a href="<?= base_url('documents/general.php') ?>" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none;">View All &rarr;</a>
+      <span class="badge badge-secondary" style="font-size:0.72rem;">Warmth Tier</span>
+    </div>
+    <div style="height:210px;">
+      <canvas id="prospectChart"></canvas>
+    </div>
+    <div style="display:flex; justify-content:space-around; margin-top:1rem; border-top:1px solid var(--border-color); padding-top:0.75rem; text-align:center;">
+      <div>
+        <div style="font-size:1.2rem; font-weight:800; color:#ef4444;"><?= (int)($prospectivityStats['Hot'] ?? 0) ?></div>
+        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Hot Leads</div>
+      </div>
+      <div>
+        <div style="font-size:1.2rem; font-weight:800; color:#f59e0b;"><?= (int)($prospectivityStats['Warm'] ?? 0) ?></div>
+        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Warm Leads</div>
+      </div>
+      <div>
+        <div style="font-size:1.2rem; font-weight:800; color:#64748b;"><?= (int)($prospectivityStats['Cold'] ?? 0) ?></div>
+        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Cold Leads</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5. CALL DATA INTEGRATION & SOCIAL MEDIA LEADS INGESTION -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem; align-items:start;">
+  
+  <!-- Call Data Integration Widget -->
+  <div class="card" style="padding:1.5rem; border-radius:14px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+      <div>
+        <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin:0; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-phone-volume" style="color:#0284c7;"></i> Call Data Integration
+        </h3>
+        <span style="font-size:0.78rem; color:var(--text-muted);">Centralized call logging linked directly to prospect profiles</span>
+      </div>
+      <a href="<?= base_url('followups/call_data.php') ?>" class="btn btn-outline btn-sm" style="font-size:0.78rem; font-weight:700;">
+        Full Call Center &rarr;
+      </a>
     </div>
 
-    <div style="display:flex; flex-direction:column; gap:0.65rem;">
-      <?php if (empty($generalDocs)): ?>
-        <div style="text-align:center; padding:2rem 1rem; color:var(--text-muted); font-size:0.85rem;">
-          <i class="fa-solid fa-file-pdf" style="font-size:1.6rem; margin-bottom:0.4rem; display:block; color:var(--text-light);"></i>
-          No general training documents uploaded yet.
+    <div style="display:flex; flex-direction:column; gap:0.75rem;">
+      <?php if (empty($recentCallLogs)): ?>
+        <div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">
+          <i class="fa-solid fa-phone-slash" style="font-size:1.6rem; color:var(--text-light); margin-bottom:0.5rem; display:block;"></i>
+          No call data records found. Use the Call Data action to record calls.
         </div>
       <?php else: ?>
-        <?php foreach ($generalDocs as $gdoc): 
-          $rawPath = !empty($gdoc['file_path']) ? $gdoc['file_path'] : (!empty($gdoc['file_name']) ? 'uploads/documents/' . $gdoc['file_name'] : '');
-          $docUrl = base_url($rawPath);
+        <?php foreach ($recentCallLogs as $cl): 
+          $statusBg = ($cl['call_status'] === 'Connected') ? '#dcfce7' : (($cl['call_status'] === 'Busy') ? '#fef3c7' : '#fee2e2');
+          $statusColor = ($cl['call_status'] === 'Connected') ? '#15803d' : (($cl['call_status'] === 'Busy') ? '#b45309' : '#b91c1c');
         ?>
-          <a href="<?= $docUrl ?>" target="_blank" style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.85rem; border-radius:8px; background:var(--bg-subtle); text-decoration:none; transition:background 0.15s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='var(--bg-subtle)'">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <i class="fa-solid fa-file-pdf" style="color:#ef4444; font-size:1.1rem;"></i>
-              <div>
-                <div style="font-weight:700; font-size:0.825rem; color:var(--text-heading);"><?= htmlspecialchars($gdoc['title']) ?></div>
-                <div style="font-size:0.7rem; color:var(--text-muted);"><?= htmlspecialchars($gdoc['category'] ?? 'Guideline') ?></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.75rem 1rem;">
+            <div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="badge" style="background:<?= $cl['call_direction'] === 'Inbound' ? '#dbeafe' : '#f1f5f9' ?>; color:<?= $cl['call_direction'] === 'Inbound' ? '#1e40af' : '#334155' ?>; font-size:0.7rem; font-weight:700;">
+                  <i class="fa-solid <?= $cl['call_direction'] === 'Inbound' ? 'fa-arrow-down-left' : 'fa-arrow-up-right' ?>"></i> <?= htmlspecialchars($cl['call_direction']) ?>
+                </span>
+                <span style="font-weight:700; font-size:0.875rem; color:var(--text-heading);"><?= htmlspecialchars($cl['lead_name'] ?: 'Contact') ?></span>
+                <span style="font-size:0.75rem; color:var(--text-muted);">(<?= htmlspecialchars($cl['lead_phone']) ?>)</span>
+              </div>
+              <div style="font-size:0.78rem; color:var(--text-muted); margin-top:3px; max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                <?= htmlspecialchars($cl['notes'] ?: 'Call interaction logged') ?>
               </div>
             </div>
-            <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.75rem; color:var(--primary);"></i>
-          </a>
+            <div style="text-align:right;">
+              <span class="badge" style="background:<?= $statusBg ?>; color:<?= $statusColor ?>; font-weight:700; font-size:0.72rem;">
+                <?= htmlspecialchars($cl['call_status']) ?>
+              </span>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
+                <?= $cl['duration_seconds'] ?>s &bull; <?= date('M d, H:i', strtotime($cl['created_at'])) ?>
+              </div>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      <?php endif; ?>
+    </div>
+  </div>
+
+  <!-- Social Media Leads Ingestion Widget -->
+  <div class="card" style="padding:1.5rem; border-radius:14px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+      <div>
+        <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin:0; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-hashtag" style="color:#7c3aed;"></i> Social Media Leads Ingestion
+        </h3>
+        <span style="font-size:0.78rem; color:var(--text-muted);">Inbound advertising campaigns (Meta, Instagram, Google Ads)</span>
+      </div>
+      <a href="<?= base_url('data/web_leads.php') ?>" class="btn btn-outline btn-sm" style="font-size:0.78rem; font-weight:700;">
+        View Queue (<?= $countSocialMediaLeads ?>) &rarr;
+      </a>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:0.75rem;">
+      <?php if (empty($pendingSocialLeads)): ?>
+        <div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">
+          <i class="fa-solid fa-circle-check" style="font-size:1.6rem; color:#10b981; margin-bottom:0.5rem; display:block;"></i>
+          All social media inbound leads have been triaged and routed!
+        </div>
+      <?php else: ?>
+        <?php foreach ($pendingSocialLeads as $sl): ?>
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.75rem 1rem;">
+            <div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="badge" style="background:#f3e8ff; color:#7e22ce; font-size:0.72rem; font-weight:700;">
+                  <i class="fa-brands <?= strpos($sl['source'], 'Meta') !== false ? 'fa-meta' : (strpos($sl['source'], 'Instagram') !== false ? 'fa-instagram' : 'fa-google') ?>"></i> <?= htmlspecialchars($sl['source']) ?>
+                </span>
+                <strong style="font-size:0.875rem; color:var(--text-heading);"><?= htmlspecialchars($sl['student_name'] ?: $sl['full_name']) ?></strong>
+              </div>
+              <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">
+                <?= htmlspecialchars($sl['phone']) ?> &bull; <?= htmlspecialchars($sl['city_state'] ?: 'Central Hub') ?>
+              </div>
+            </div>
+            <div>
+              <a href="<?= base_url('data/web_leads.php') ?>" class="btn btn-primary btn-sm" style="font-size:0.75rem; padding:4px 10px; font-weight:700;">
+                Triage & Verify &rarr;
+              </a>
+            </div>
+          </div>
         <?php endforeach; ?>
       <?php endif; ?>
     </div>
   </div>
 </div>
 
+<!-- 6. RECENT LEADS DIRECTORY OVERVIEW -->
+<div class="card" style="padding:1.5rem; border-radius:14px; margin-bottom:1.5rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+    <div>
+      <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin:0; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-users" style="color:var(--primary);"></i> Active Lead Accounts
+      </h3>
+      <span style="font-size:0.78rem; color:var(--text-muted);">Fast access to lead records, phone verification status, and regional identifiers</span>
+    </div>
+    <a href="<?= base_url('leads/index.php') ?>" class="btn btn-outline btn-sm" style="font-size:0.78rem; font-weight:700;">
+      View All Leads &rarr;
+    </a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Record # & Lead Name</th>
+          <th>Business / Account</th>
+          <th>Phone (Cross-Check)</th>
+          <th>Region & Zone</th>
+          <th>Prospectivity</th>
+          <th>Active Status</th>
+          <th>Counselor</th>
+          <th style="text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (empty($recentLeads)): ?>
+          <tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">No active leads found.</td></tr>
+        <?php else: ?>
+          <?php foreach ($recentLeads as $rl): ?>
+            <tr>
+              <td>
+                <a href="<?= base_url('leads/view.php?id=' . $rl['id']) ?>" style="font-weight:700; color:var(--text-heading); font-size:0.92rem; text-decoration:none;">
+                  <?= htmlspecialchars($rl['full_name']) ?>
+                </a>
+                <div style="font-family:monospace; font-size:0.75rem; color:var(--primary); font-weight:700;"><?= htmlspecialchars($rl['lead_code']) ?></div>
+              </td>
+              <td style="font-size:0.85rem; font-weight:600; color:#334155;">
+                <?= htmlspecialchars($rl['business_name'] ?: 'Individual Account') ?>
+              </td>
+              <td>
+                <div style="font-weight:700; font-size:0.85rem; color:var(--text-heading);"><?= htmlspecialchars($rl['phone']) ?></div>
+                <?php if (!empty($rl['is_phone_verified'])): ?>
+                  <span class="badge badge-success" style="font-size:0.68rem; padding:1px 6px;">✓ Verified</span>
+                <?php else: ?>
+                  <span class="badge badge-warning" style="font-size:0.68rem; padding:1px 6px;">Pending Cross-Check</span>
+                <?php endif; ?>
+              </td>
+              <td>
+                <span class="badge badge-secondary" style="font-size:0.72rem; font-weight:700;"><?= htmlspecialchars($rl['region_number'] ?? 'REG-01') ?></span>
+                <span style="font-size:0.78rem; color:var(--text-muted); display:block;"><?= htmlspecialchars($rl['main_region'] ?? 'Central Zone') ?></span>
+              </td>
+              <td>
+                <span class="badge <?= ($rl['prospectivity'] === 'Hot') ? 'badge-danger' : (($rl['prospectivity'] === 'Cold') ? 'badge-secondary' : 'badge-warning') ?>" style="font-size:0.72rem; font-weight:700;">
+                  <?= htmlspecialchars($rl['prospectivity'] ?? 'Warm') ?>
+                </span>
+              </td>
+              <td>
+                <span class="badge badge-primary" style="font-size:0.72rem; font-weight:700;">
+                  <?= htmlspecialchars($rl['active_status'] ?? 'New Lead') ?>
+                </span>
+              </td>
+              <td style="font-size:0.825rem; font-weight:600;">
+                <?= htmlspecialchars($rl['counselor_name'] ?? 'Unassigned') ?>
+              </td>
+              <td style="text-align:right;">
+                <div style="display:inline-flex; gap:4px;">
+                  <a href="<?= base_url('leads/view.php?id=' . $rl['id']) ?>" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:3px 8px; font-weight:600;">
+                    Profile &rarr;
+                  </a>
+                  <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:3px 8px;" onclick="openLogCallModal(<?= $rl['id'] ?>, '<?= htmlspecialchars(addslashes($rl['full_name'])) ?>', '<?= htmlspecialchars($rl['phone']) ?>')" title="Log Call">
+                    <i class="fa-solid fa-phone"></i>
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:3px 8px;" onclick="openTopUpdateModal(<?= $rl['id'] ?>)" title="Update Status">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Prospectivity Distribution Chart (Section 9.2.3)
   var prospectEl = document.getElementById('prospectChart');
   if (prospectEl) {
     new Chart(prospectEl, {
-      type: 'bar',
+      type: 'doughnut',
       data: {
         labels: <?= json_encode($prospectLabels) ?>,
         datasets: [{
-          label: 'Candidate Leads',
           data: <?= json_encode($prospectData) ?>,
-          backgroundColor: ['#ef4444', '#f59e0b', '#64748b'],
-          borderRadius: 6
+          backgroundColor: ['#ef4444', '#f59e0b', '#64748b']
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-      }
-    });
-  }
-
-  // Branch Chart (only rendered if canvas exists)
-  var branchEl = document.getElementById('branchChart');
-  if (branchEl) {
-    new Chart(branchEl, {
-      type: 'doughnut',
-      data: {
-        labels: <?= json_encode($branchChartLabels) ?>,
-        datasets: [{
-          data: <?= json_encode($branchChartLeads) ?>,
-          backgroundColor: ['#5955D1', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#6366f1']
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { position: 'right' } }
+        plugins: { legend: { display: false } }
       }
     });
   }

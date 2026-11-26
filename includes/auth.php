@@ -92,26 +92,42 @@ function has_role($roles) {
 }
 
 /**
- * Convenience role checks
+ * Convenience role checks aligned with Core CRM Role Hierarchy:
+ * 1. Super Admin (Full Governance & Multi-Role Switching)
+ * 2. Operations / Accessor (Inbound & Outbound Lead Assignment & Verification)
+ * 3. Team Leader (Regional Supervision & Oversight)
+ * 4. Counselor / Advisor (Client Advisory & Follow-ups)
  */
 function is_super_admin() {
-    return has_role('super_admin');
+    return has_role(['super_admin', 'admin']) || (int)(current_user()['role_id'] ?? 0) === 1;
 }
 
 function is_admin() {
-    return has_role(['super_admin', 'admin']);
+    return is_super_admin();
+}
+
+function is_operations() {
+    return has_role(['operations', 'accessor']) || (int)(current_user()['role_id'] ?? 0) === 4;
+}
+
+function is_accessor() {
+    return is_operations();
+}
+
+function is_team_leader() {
+    return has_role(['team_leader', 'manager', 'branch_manager']) || (int)(current_user()['role_id'] ?? 0) === 2;
 }
 
 function is_branch_manager() {
-    return has_role(['manager', 'branch_manager']);
+    return is_team_leader();
 }
 
 function is_manager() {
-    return has_role(['super_admin', 'admin', 'manager', 'branch_manager']);
+    return is_super_admin() || is_team_leader() || is_operations();
 }
 
 function is_counselor() {
-    return has_role(['counselor', 'counsellor']);
+    return has_role(['counselor', 'counsellor', 'advisor']) || (int)(current_user()['role_id'] ?? 0) === 3;
 }
 
 function can_manage_staff() {
@@ -121,9 +137,9 @@ function can_manage_staff() {
 /**
  * SQL Where Clause for Multi-Branch Record Isolation
  *
- * - Super Admin: unrestricted global visibility (1=1)
- * - Branch Manager: designated branch visibility ({tableAlias}.branch_id = {user.branch_id})
- * - Counselor: strictly assigned leads visibility ({tableAlias}.assigned_counselor_id = {user.id})
+ * - Super Admin & Operations (Accessor): global lead visibility for routing & verification (1=1)
+ * - Team Leader: regional/branch visibility ({tableAlias}.branch_id = {user.branch_id})
+ * - Counselor / Advisor: assigned caseload visibility ({tableAlias}.assigned_counselor_id = {user.id})
  *
  * @param string $tableAlias
  * @param string $counselorCol
@@ -134,16 +150,18 @@ function get_crm_scope_clause($tableAlias = 'l', $counselorCol = 'assigned_couns
     $user = current_user();
     if (!$user) return '1=0';
     
-    if (is_super_admin()) {
+    // Super Admin and Operations / Accessors have global visibility for assignment & cross-checking
+    if (is_super_admin() || is_operations()) {
         return '1=1';
     }
     
-    if (is_branch_manager()) {
+    // Team Leader oversees their assigned branch/region
+    if (is_team_leader()) {
         $branchId = (int)($user['branch_id'] ?? 0);
-        return $branchId > 0 ? "{$tableAlias}.{$branchCol} = {$branchId}" : '1=0';
+        return $branchId > 0 ? "{$tableAlias}.{$branchCol} = {$branchId}" : '1=1';
     }
     
-    // Counselor and other staff
+    // Counselor / Advisor handles their assigned clients
     $userId = (int)$user['id'];
     return "{$tableAlias}.{$counselorCol} = {$userId}";
 }
@@ -158,7 +176,7 @@ function can_access_lead($leadId) {
     global $pdo;
     $user = current_user();
     if (!$user) return false;
-    if (is_super_admin()) return true;
+    if (is_super_admin() || is_operations()) return true;
     
     $leadId = (int)$leadId;
     if ($leadId <= 0) return false;
@@ -168,9 +186,9 @@ function can_access_lead($leadId) {
     $lead = $stmt->fetch();
     if (!$lead) return false;
     
-    if (is_branch_manager()) {
+    if (is_team_leader()) {
         $userBranchId = (int)($user['branch_id'] ?? 0);
-        if ($userBranchId <= 0) return false;
+        if ($userBranchId <= 0) return true;
         return ((int)$lead['branch_id'] === $userBranchId);
     }
     

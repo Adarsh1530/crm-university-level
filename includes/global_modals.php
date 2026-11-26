@@ -1,7 +1,12 @@
 <?php
 /**
- * Global Modals & User-Friendly Operational Helpers
- * Provides: Quick Add Lead, Quick Log Call / Follow-up, Stage Advancer, and Comprehensive User Manual
+ * Global Modals & User-Friendly Operational Helpers - Core CRM
+ * Provides: 
+ * 1. Top Header 1-Click Update Action Modal (Active Status, Prospectivity, Notes, Call Log)
+ * 2. Global Quick Add Lead Modal (with instant duplicate phone checking)
+ * 3. Centralized Call Logger Modal (Call Direction, Status, Duration, Notes)
+ * 4. Change Prospectivity & Counselor Escalation Modals
+ * 5. Comprehensive CRM Architecture & Roles Guide
  */
 
 global $pdo, $currentUser;
@@ -9,32 +14,153 @@ if (!$pdo || !$currentUser) return;
 
 // Fetch reference data for global modals
 $counselorsList = [];
-if (!is_counselor()) {
-    $cStmt = $pdo->query("SELECT u.id, u.name, b.name as branch_name FROM users u LEFT JOIN branches b ON u.branch_id = b.id WHERE u.status = 'Active' AND u.role_id IN (2, 3) ORDER BY u.name ASC");
+try {
+    $cStmt = $pdo->query("SELECT u.id, u.name, r.label as role_label, b.name as branch_name FROM users u JOIN roles r ON u.role_id = r.id LEFT JOIN branches b ON u.branch_id = b.id WHERE u.status = 'Active' ORDER BY u.name ASC");
     $counselorsList = $cStmt->fetchAll(PDO::FETCH_ASSOC);
-}
+} catch (Exception $e) {}
+
+$recentActiveLeads = [];
+try {
+    $scopeM = get_crm_scope_clause('l', 'assigned_counselor_id', 'branch_id');
+    $recentActiveLeads = $pdo->query("SELECT l.id, l.lead_code, l.full_name, l.phone, l.active_status, l.prospectivity, l.region_number, l.main_region FROM leads l WHERE l.is_archived = 0 AND {$scopeM} ORDER BY l.id DESC LIMIT 15")->fetchAll();
+} catch (Exception $e) {}
 
 $interactionTitles = [];
 try {
     $tStmt = $pdo->query("SELECT id, title, max_duration_days FROM interaction_titles WHERE status = 'Active' ORDER BY sort_order ASC");
     $interactionTitles = $tStmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {}
-
-$standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVED', 'TUITION FEES PAID', 'ENROLLED'];
 ?>
 
-<!-- 1. GLOBAL QUICK ADD LEAD MODAL -->
+<!-- 1. TOP HEADER 1-CLICK UPDATE ACTION MODAL ("if you have an update, you can use it in the top") -->
+<div class="modal fade" id="topUpdateModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+  <div class="modal-dialog" style="background:#fff; border-radius:16px; max-width:540px; width:92%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden; max-height:92vh; display:flex; flex-direction:column;">
+    <form method="POST" action="<?= base_url('leads/update_meta.php') ?>" style="display:flex; flex-direction:column; overflow:hidden;">
+      <?= csrf_field() ?>
+      <input type="hidden" name="field" value="top_update">
+      <input type="hidden" name="return_url" id="topUpdateReturnUrl" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '') ?>">
+
+      <div class="modal-header" style="padding:1.2rem 1.5rem; background:linear-gradient(135deg, #059669 0%, #10b981 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h3 style="font-size:1.15rem; font-weight:700; margin:0; color:#fff; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-arrows-rotate"></i> 1-Click Record & Status Update
+          </h3>
+          <span style="font-size:0.75rem; color:rgba(255,255,255,0.9);">Update active statuses, prospectivity, and log interaction outcome</span>
+        </div>
+        <button type="button" onclick="closeTopUpdateModal()" style="border:none; background:rgba(255,255,255,0.2); color:#fff; width:30px; height:30px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding:1.5rem; overflow-y:auto; flex:1;">
+        <!-- Lead Selector -->
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label class="form-label" style="font-weight:700; font-size:0.825rem;">Select Lead / Account <span style="color:red;">*</span></label>
+          <select name="lead_id" id="topUpdateLeadSelect" class="form-control" required style="font-size:0.85rem; font-weight:600;">
+            <?php foreach ($recentActiveLeads as $ral): ?>
+              <option value="<?= $ral['id'] ?>" data-status="<?= htmlspecialchars($ral['active_status'] ?? 'Contacted') ?>" data-prospect="<?= htmlspecialchars($ral['prospectivity'] ?? 'Warm') ?>">
+                <?= htmlspecialchars($ral['lead_code']) ?> &bull; <?= htmlspecialchars($ral['full_name']) ?> (<?= htmlspecialchars($ral['region_number'] ?? 'REG-01') ?> - <?= htmlspecialchars($ral['main_region'] ?? 'Central') ?>)
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem; margin-bottom:1rem;">
+          <!-- Active Status -->
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" style="font-weight:700; font-size:0.825rem;">Active Status <span style="color:red;">*</span></label>
+            <select name="active_status" id="topUpdateStatusSelect" class="form-control" style="font-size:0.85rem; font-weight:600;">
+              <option value="New Lead">New Lead</option>
+              <option value="Call In Progress">Call In Progress</option>
+              <option value="Contacted" selected>Contacted</option>
+              <option value="Follow-up Scheduled">Follow-up Scheduled</option>
+              <option value="Prospect Qualified">Prospect Qualified</option>
+              <option value="Escalated to Counselor">Escalated to Counselor</option>
+              <option value="Converted">Converted to Customer</option>
+              <option value="Disqualified">Disqualified</option>
+            </select>
+          </div>
+
+          <!-- Prospectivity -->
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" style="font-weight:700; font-size:0.825rem;">Prospectivity Tier <span style="color:red;">*</span></label>
+            <select name="prospectivity" id="topUpdateProspectivitySelect" class="form-control" style="font-size:0.85rem; font-weight:700;">
+              <option value="Hot">🔥 Hot (High Conversion Readiness)</option>
+              <option value="Warm" selected>⚡ Warm (Active Engagement)</option>
+              <option value="Cold">💤 Cold (Low Immediate Intent)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Update Notes -->
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label class="form-label" style="font-weight:700; font-size:0.825rem;">Action Notes / Outcome Summary <span style="color:red;">*</span></label>
+          <textarea name="notes" id="topUpdateNotes" class="form-control" rows="2" placeholder="Record brief notes on this interaction..." required></textarea>
+        </div>
+
+        <!-- Optional Direct Call Log Checkbox -->
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.85rem; margin-bottom:0.5rem;">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:700; font-size:0.825rem; color:#1e293b; cursor:pointer; margin-bottom:0;">
+            <input type="checkbox" name="log_call_now" id="topUpdateLogCallCheck" value="1" onchange="document.getElementById('topUpdateCallFields').style.display = this.checked ? 'block' : 'none';">
+            <span>Also log this as a call interaction in Call Data</span>
+          </label>
+
+          <div id="topUpdateCallFields" style="display:none; margin-top:0.75rem; border-top:1px dashed #cbd5e1; padding-top:0.75rem;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.65rem; margin-bottom:0.5rem;">
+              <div>
+                <label style="font-size:0.75rem; font-weight:600; display:block; margin-bottom:3px;">Call Direction</label>
+                <select name="call_direction" class="form-control" style="font-size:0.8rem; padding:4px 8px;">
+                  <option value="Outbound">Outbound (Agent Dialed)</option>
+                  <option value="Inbound">Inbound (Customer Called)</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:0.75rem; font-weight:600; display:block; margin-bottom:3px;">Call Status</label>
+                <select name="call_status" class="form-control" style="font-size:0.8rem; padding:4px 8px;">
+                  <option value="Connected">Connected & Spoke</option>
+                  <option value="Busy">Line Busy</option>
+                  <option value="No Answer">No Answer / Ringing</option>
+                  <option value="Left Voicemail">Left Voicemail</option>
+                  <option value="Switched Off">Phone Switched Off</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:0.75rem; font-weight:600; display:block; margin-bottom:3px;">Duration (Seconds)</label>
+              <input type="number" name="duration_seconds" class="form-control" value="60" style="font-size:0.8rem; padding:4px 8px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Long-cycle toggle -->
+        <div style="margin-top:0.5rem;">
+          <label style="display:flex; align-items:center; gap:8px; font-size:0.78rem; color:var(--text-muted); cursor:pointer;">
+            <input type="checkbox" name="is_long_cycle" value="1">
+            <span>Mark as Long-Cycle Follow-Up (prolonged prospect cycle requiring multi-week nurturing)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding:1rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeTopUpdateModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm" style="background:#059669; border-color:#059669; font-weight:700; padding:0.45rem 1.25rem;">
+          <i class="fa-solid fa-floppy-disk"></i> Submit Update
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 2. GLOBAL QUICK ADD LEAD MODAL -->
 <div class="modal fade" id="quickLeadModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
   <div class="modal-dialog" style="background:#fff; border-radius:16px; max-width:540px; width:92%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden; max-height:92vh; display:flex; flex-direction:column;">
     <form method="POST" action="<?= base_url('leads/quick_add.php') ?>" style="display:flex; flex-direction:column; overflow:hidden;">
       <?= csrf_field() ?>
 
-      <div class="modal-header" style="padding:1.2rem 1.5rem; background:linear-gradient(135deg, #7008E7 0%, #4a049e 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+      <div class="modal-header" style="padding:1.2rem 1.5rem; background:linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
         <div>
           <h3 style="font-size:1.15rem; font-weight:700; margin:0; color:#fff; display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-user-plus"></i> Quick Add Student Lead
+            <i class="fa-solid fa-user-plus"></i> Quick Add Lead
           </h3>
-          <span style="font-size:0.75rem; color:rgba(255,255,255,0.85);">Fast inquiry capture for calls & walk-ins</span>
+          <span style="font-size:0.75rem; color:rgba(255,255,255,0.85);">Fast lead registration with phone cross-checking</span>
         </div>
         <button type="button" onclick="closeQuickLeadModal()" style="border:none; background:rgba(255,255,255,0.2); color:#fff; width:30px; height:30px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
       </div>
@@ -43,72 +169,64 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
         <!-- Core Contact -->
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem; margin-bottom:0.85rem;">
           <div class="form-group" style="margin:0;">
-            <label class="form-label" style="font-weight:700; font-size:0.825rem;">Candidate Name <span style="color:red;">*</span></label>
-            <input type="text" name="full_name" class="form-control" placeholder="e.g. Rahul Sharma" required autofocus>
+            <label class="form-label" style="font-weight:700; font-size:0.825rem;">Contact Name <span style="color:red;">*</span></label>
+            <input type="text" name="full_name" class="form-control" placeholder="e.g. Rahul Nair" required autofocus>
           </div>
           <div class="form-group" style="margin:0;">
-            <label class="form-label" style="font-weight:700; font-size:0.825rem;">Mobile / WhatsApp <span style="color:red;">*</span></label>
+            <label class="form-label" style="font-weight:700; font-size:0.825rem;">Phone Number <span style="color:red;">*</span></label>
             <input type="tel" id="quickLeadPhone" name="phone" class="form-control" placeholder="10-digit mobile" required oninput="checkLeadPhoneDuplicate(this.value, 'quickLeadPhoneFeedback', 'quickLeadSubmitBtn')">
             <div id="quickLeadPhoneFeedback" style="display:none; margin-top:4px; font-size:0.75rem;"></div>
           </div>
         </div>
 
-        <div class="form-group" style="margin-bottom:0.85rem;">
-          <label class="form-label" style="font-weight:600; font-size:0.825rem;">Email Address</label>
-          <input type="email" name="email" class="form-control" placeholder="candidate@example.com">
-        </div>
-
-        <!-- Academic Target -->
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem; margin-bottom:0.85rem;">
           <div class="form-group" style="margin:0;">
-            <label class="form-label" style="font-weight:700; font-size:0.825rem;">Target Country</label>
-            <select name="preferred_country" class="form-control" required>
-              <option value="United Kingdom">United Kingdom (UK)</option>
-              <option value="Australia">Australia</option>
-              <option value="Canada">Canada</option>
-              <option value="Ireland">Ireland</option>
-              <option value="Germany">Germany</option>
-              <option value="United States">United States (USA)</option>
-              <option value="New Zealand">New Zealand</option>
-              <option value="Europe General">Europe General</option>
-            </select>
+            <label class="form-label" style="font-weight:600; font-size:0.825rem;">Business / Account Name</label>
+            <input type="text" name="business_name" class="form-control" placeholder="e.g. Nair Global Enterprises">
           </div>
           <div class="form-group" style="margin:0;">
-            <label class="form-label" style="font-weight:700; font-size:0.825rem;">Course / Degree Interest</label>
-            <input type="text" name="preferred_course" class="form-control" placeholder="e.g. MSc Data Science / MBA">
+            <label class="form-label" style="font-weight:600; font-size:0.825rem;">Email Address</label>
+            <input type="email" name="email" class="form-control" placeholder="contact@example.com">
           </div>
         </div>
 
+        <!-- Regional Segmentation -->
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.75rem; margin-bottom:0.85rem;">
           <div class="form-group" style="margin:0;">
-            <label class="form-label" style="font-size:0.78rem;">Target Intake</label>
-            <select name="intake_term" class="form-control" style="font-size:0.82rem;">
-              <option value="September">September (Fall)</option>
-              <option value="January">January (Spring)</option>
-              <option value="May">May (Summer)</option>
+            <label class="form-label" style="font-size:0.78rem; font-weight:700;">Region Number</label>
+            <select name="region_number" class="form-control" style="font-size:0.82rem;">
+              <option value="REG-01">REG-01</option>
+              <option value="REG-02">REG-02</option>
+              <option value="REG-03">REG-03</option>
+              <option value="REG-04">REG-04</option>
             </select>
           </div>
           <div class="form-group" style="margin:0;">
-            <label class="form-label" style="font-size:0.78rem;">Year</label>
-            <input type="number" name="intake_year" class="form-control" value="<?= date('Y') ?>" style="font-size:0.82rem;">
+            <label class="form-label" style="font-size:0.78rem; font-weight:700;">Main Region</label>
+            <select name="main_region" class="form-control" style="font-size:0.82rem;">
+              <option value="Central Zone">Central Zone</option>
+              <option value="North Zone">North Zone</option>
+              <option value="South Zone">South Zone</option>
+              <option value="West Zone">West Zone</option>
+            </select>
           </div>
           <div class="form-group" style="margin:0;">
-            <label class="form-label" style="font-size:0.78rem;">Priority</label>
-            <select name="priority" class="form-control" style="font-size:0.82rem;">
-              <option value="High">🔥 High</option>
-              <option value="Moderate" selected>⚡ Moderate</option>
-              <option value="Low">💤 Low</option>
+            <label class="form-label" style="font-size:0.78rem; font-weight:700;">Prospectivity</label>
+            <select name="prospectivity" class="form-control" style="font-size:0.82rem; font-weight:700;">
+              <option value="Hot">🔥 Hot</option>
+              <option value="Warm" selected>⚡ Warm</option>
+              <option value="Cold">💤 Cold</option>
             </select>
           </div>
         </div>
 
         <?php if (!is_counselor() && !empty($counselorsList)): ?>
           <div class="form-group" style="margin-bottom:0.85rem;">
-            <label class="form-label" style="font-weight:700; font-size:0.825rem;">Assign Admissions Counselor</label>
+            <label class="form-label" style="font-weight:700; font-size:0.825rem;">Assign Counselor / Advisor</label>
             <select name="counselor_id" class="form-control">
               <?php foreach ($counselorsList as $cl): ?>
                 <option value="<?= $cl['id'] ?>" <?= $cl['id'] == $currentUser['id'] ? 'selected' : '' ?>>
-                  <?= htmlspecialchars($cl['name']) ?> (<?= htmlspecialchars($cl['branch_name'] ?? 'Counselor') ?>)
+                  <?= htmlspecialchars($cl['name']) ?> (<?= htmlspecialchars($cl['role_label'] ?? 'Staff') ?>)
                 </option>
               <?php endforeach; ?>
             </select>
@@ -116,12 +234,12 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
         <?php endif; ?>
 
         <div class="form-group" style="margin-bottom:0.85rem;">
-          <label class="form-label" style="font-weight:600; font-size:0.825rem;">Initial Consultation Notes</label>
-          <textarea name="notes" class="form-control" rows="2" placeholder="Summary of initial call / candidate aspirations..."></textarea>
+          <label class="form-label" style="font-weight:600; font-size:0.825rem;">Initial Notes</label>
+          <textarea name="notes" class="form-control" rows="2" placeholder="Initial discussion summary..."></textarea>
         </div>
 
         <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label" style="font-weight:700; font-size:0.825rem;">Schedule Next Follow-up Call</label>
+          <label class="form-label" style="font-weight:700; font-size:0.825rem;">Schedule First Follow-up</label>
           <div style="display:flex; gap:0.5rem; align-items:center;">
             <input type="date" name="next_followup_date" id="quickLeadFollowupDate" class="form-control" value="<?= date('Y-m-d', strtotime('+1 day')) ?>" required>
             <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('quickLeadFollowupDate').value = '<?= date('Y-m-d', strtotime('+1 day')) ?>'">Tomorrow</button>
@@ -133,76 +251,112 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
       <div class="modal-footer" style="padding:1rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
         <button type="button" class="btn btn-secondary" onclick="closeQuickLeadModal()">Cancel</button>
         <button type="submit" id="quickLeadSubmitBtn" class="btn btn-primary" style="font-weight:700; padding:0.5rem 1.25rem;">
-          <i class="fa-solid fa-check"></i> Register Lead
+          <i class="fa-solid fa-check"></i> Save Lead
         </button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- 2. GLOBAL LOG CALL / FOLLOW-UP MODAL -->
+<!-- 3. CENTRALIZED CALL LOGGER MODAL -->
 <div class="modal fade" id="globalLogCallModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
   <div class="modal-dialog" style="background:#fff; border-radius:16px; max-width:520px; width:92%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden;">
-    <form method="POST" action="<?= base_url('followups/add.php') ?>">
+    <form method="POST" action="<?= base_url('leads/update_meta.php') ?>">
       <?= csrf_field() ?>
+      <input type="hidden" name="field" value="log_call">
       <input type="hidden" name="lead_id" id="logCallLeadId" value="0">
+      <input type="hidden" name="phone_dialed" id="logCallPhoneDialed" value="">
       <input type="hidden" name="return_url" id="logCallReturnUrl" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '') ?>">
 
-      <div class="modal-header" style="padding:1.2rem 1.5rem; background:linear-gradient(135deg, #10b981 0%, #059669 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+      <div class="modal-header" style="padding:1.2rem 1.5rem; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
         <div>
           <h3 style="font-size:1.15rem; font-weight:700; margin:0; color:#fff; display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-phone-volume"></i> Record Consultation Call
+            <i class="fa-solid fa-phone-volume"></i> Record Call Interaction
           </h3>
-          <span style="font-size:0.75rem; color:rgba(255,255,255,0.9);" id="logCallStudentLabel">Student: Candidate</span>
+          <span style="font-size:0.75rem; color:rgba(255,255,255,0.9);" id="logCallStudentLabel">Lead: Contact</span>
         </div>
         <button type="button" onclick="closeLogCallModal()" style="border:none; background:rgba(255,255,255,0.2); color:#fff; width:30px; height:30px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
       </div>
 
       <div class="modal-body" style="padding:1.5rem;">
-        <div class="form-group" style="margin-bottom:1rem;">
-          <label class="form-label" style="font-weight:700; font-size:0.825rem;">Call Outcome / Interaction Title <span style="color:red;">*</span></label>
-          <select name="interaction_title_id" id="logCallTitleSelect" class="form-control" required onchange="updateMaxFollowupNotice(this)">
-            <?php foreach ($interactionTitles as $it): ?>
-              <option value="<?= $it['id'] ?>" data-max="<?= $it['max_duration_days'] ?>">
-                <?= htmlspecialchars($it['title']) ?> (Max Next Call: <?= $it['max_duration_days'] ?> days)
-              </option>
-            <?php endforeach; ?>
-          </select>
-          <div id="maxDaysNotice" style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">
-            Next follow-up must be scheduled within allowed policy limit.
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" style="font-weight:700; font-size:0.825rem;">Call Direction <span style="color:red;">*</span></label>
+            <select name="call_direction" class="form-control" required style="font-weight:600;">
+              <option value="Outbound">Outbound (Agent Initiated)</option>
+              <option value="Inbound">Inbound (Client Called)</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" style="font-weight:700; font-size:0.825rem;">Connection Outcome <span style="color:red;">*</span></label>
+            <select name="call_status" class="form-control" required style="font-weight:600;">
+              <option value="Connected">Connected & Spoke</option>
+              <option value="Busy">Line Busy</option>
+              <option value="No Answer">No Answer / Ringing</option>
+              <option value="Left Voicemail">Left Voicemail</option>
+              <option value="Switched Off">Switched Off</option>
+            </select>
           </div>
         </div>
 
         <div class="form-group" style="margin-bottom:1rem;">
-          <label class="form-label" style="font-weight:700; font-size:0.825rem;">Discussion Summary / Call Notes <span style="color:red;">*</span></label>
-          <textarea name="notes" class="form-control" rows="3" placeholder="What was discussed with the student? (e.g. course choice, document submission date, visa requirements)" required></textarea>
+          <label class="form-label" style="font-weight:700; font-size:0.825rem;">Duration (Seconds)</label>
+          <input type="number" name="duration_seconds" class="form-control" value="60" min="0">
         </div>
 
-        <input type="hidden" name="schedule_next" id="logCallScheduleNext" value="1">
-
-        <!-- Next Call Date -->
-        <div class="form-group" style="margin-bottom:0;" id="logCallNextDateGroup">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <label class="form-label" style="font-weight:700; font-size:0.825rem; margin:0;">Next Follow-up Date</label>
-            <span id="logCallWorkloadNotice" style="font-size:0.75rem; color:var(--primary); font-weight:700;"></span>
-          </div>
-          <input type="date" name="next_followup_date" id="logCallNextDate" class="form-control" value="<?= date('Y-m-d', strtotime('+2 days')) ?>" onchange="updateDateWorkloadNotice(this.value)" style="margin-top:4px;">
-          <div style="display:flex; gap:0.4rem; margin-top:6px; flex-wrap:wrap;">
-            <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:2px 8px;" onclick="setLogCallDate(1)">Tomorrow</button>
-            <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:2px 8px;" onclick="setLogCallDate(2)">In 2 Days</button>
-            <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:2px 8px;" onclick="setLogCallDate(5)">In 5 Days</button>
-            <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:2px 8px;" onclick="setLogCallDate(7)">Next Week</button>
-          </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label" style="font-weight:700; font-size:0.825rem;">Call Notes & Next Action Plan <span style="color:red;">*</span></label>
+          <textarea name="notes" class="form-control" rows="3" placeholder="Summary of call discussion and agreed next steps..." required></textarea>
         </div>
       </div>
 
-      <div class="modal-footer" style="padding:1rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc; flex-wrap:wrap;">
+      <div class="modal-footer" style="padding:1rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
         <button type="button" class="btn btn-secondary btn-sm" onclick="closeLogCallModal()">Cancel</button>
-        <button type="submit" onclick="document.getElementById('logCallScheduleNext').value='0'; document.getElementById('logCallNextDate').required=false;" class="btn btn-outline btn-sm" style="font-weight:600;">
-          <i class="fa-solid fa-check"></i> Save Outcome Only
+        <button type="submit" class="btn btn-primary btn-sm" style="background:#0284c7; border-color:#0284c7; font-weight:700; padding:0.45rem 1.25rem;">
+          <i class="fa-solid fa-floppy-disk"></i> Save Call Log
         </button>
-        <button type="submit" onclick="document.getElementById('logCallScheduleNext').value='1'; document.getElementById('logCallNextDate').required=true;" class="btn btn-primary btn-sm" style="background:#059669; border-color:#059669; font-weight:700;">
-          <i class="fa-solid fa-calendar-check"></i> Save & Schedule Next
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 4. COUNSELOR ESCALATION MODAL -->
+<div class="modal fade" id="escalateCounselorModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+  <div class="modal-dialog" style="background:#fff; border-radius:14px; max-width:440px; width:92%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden;">
+    <form method="POST" action="<?= base_url('leads/update_meta.php') ?>">
+      <?= csrf_field() ?>
+      <input type="hidden" name="field" value="escalate_counselor">
+      <input type="hidden" name="lead_id" id="escalateLeadId" value="0">
+      <input type="hidden" name="return_url" id="escalateReturnUrl" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '') ?>">
+
+      <div class="modal-header" style="padding:1.2rem 1.5rem; background:linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h3 style="font-size:1.1rem; font-weight:700; margin:0; color:#fff;">Escalate to Counselor</h3>
+          <span style="font-size:0.75rem; color:rgba(255,255,255,0.9);" id="escalateLeadLabel">Qualified Prospect</span>
+        </div>
+        <button type="button" onclick="closeEscalateCounselorModal()" style="border:none; background:rgba(255,255,255,0.2); color:#fff; width:28px; height:28px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding:1.5rem;">
+        <div style="background:#f5f3ff; border:1px solid #ddd6fe; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.8rem; color:#5b21b6;">
+          <i class="fa-solid fa-circle-check"></i> Lead meets prospectivity criteria (Hot/Warm) and is ready for counselor consultation.
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label" style="font-weight:700; font-size:0.825rem;">Select Designated Counselor</label>
+          <select name="counselor_id" class="form-control" style="font-size:0.85rem; font-weight:600;">
+            <?php foreach ($counselorsList as $cl): ?>
+              <?php if (($cl['role_label'] ?? '') === 'Counselor / Advisor' || ($cl['id'] == 3)): ?>
+                <option value="<?= $cl['id'] ?>"><?= htmlspecialchars($cl['name']) ?> (Counselor)</option>
+              <?php endif; ?>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding:0.85rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeEscalateCounselorModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm" style="background:#7c3aed; border-color:#7c3aed; font-weight:700; padding:0.45rem 1.25rem;">
+          <i class="fa-solid fa-share"></i> Route to Counselor
         </button>
       </div>
     </form>
@@ -226,13 +380,13 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
       </div>
       <div class="modal-body" style="padding:1.5rem;">
         <label class="form-label" style="font-weight:700; font-size:0.85rem; margin-bottom:0.5rem;">Select Prospectivity Level</label>
-        <select name="priority" id="prospectivitySelect" class="form-control" style="font-size:0.9rem; font-weight:700;">
-          <option value="High">🔥 High (Strong interest / immediate conversion)</option>
-          <option value="Moderate">⚡ Moderate (Interested / evaluating options)</option>
-          <option value="Low">💤 Low (Mild interest / future intake)</option>
+        <select name="prospectivity" id="prospectivitySelect" class="form-control" style="font-size:0.9rem; font-weight:700;">
+          <option value="Hot">🔥 Hot (High Conversion Prospect)</option>
+          <option value="Warm">⚡ Warm (Active Engagement)</option>
+          <option value="Cold">💤 Cold (Low Immediate Prospect)</option>
         </select>
         <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.75rem; line-height:1.4;">
-          High prospectivity students are prioritized in daily counselor follow-up calls.
+          Hot prospectivity leads are prioritized for counselor consultations.
         </p>
       </div>
       <div class="modal-footer" style="padding:0.85rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
@@ -243,521 +397,103 @@ $standardAdmissionStages = ['ENQUIRY', 'CUSTOMER', 'APPLICATION', 'OFFER RECEIVE
   </div>
 </div>
 
-<!-- 6. CHANGE INTAKE MODAL -->
-<div class="modal fade" id="changeIntakeModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
-  <div class="modal-dialog" style="background:#fff; border-radius:14px; max-width:420px; width:92%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden;">
-    <form method="POST" action="<?= base_url('leads/update_meta.php') ?>">
-      <?= csrf_field() ?>
-      <input type="hidden" name="field" value="intake">
-      <input type="hidden" name="lead_id" id="intakeLeadId" value="0">
-      <input type="hidden" name="return_url" id="intakeReturnUrl" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '') ?>">
-      <div class="modal-header" style="padding:1.2rem 1.5rem; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <h3 style="font-size:1.1rem; font-weight:700; margin:0; color:#fff;">Change InTake</h3>
-          <span style="font-size:0.75rem; color:rgba(255,255,255,0.9);" id="intakeStudentLabel">Candidate</span>
-        </div>
-        <button type="button" onclick="closeChangeIntakeModal()" style="border:none; background:rgba(255,255,255,0.2); color:#fff; width:28px; height:28px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+<!-- 6. USER MANUAL & CRM ARCHITECTURE GUIDE MODAL -->
+<div class="modal fade" id="userManualModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+  <div class="modal-dialog" style="background:#fff; border-radius:16px; max-width:820px; width:94%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden; max-height:92vh; display:flex; flex-direction:column;">
+    <div class="modal-header" style="padding:1.2rem 1.5rem; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h3 style="font-size:1.2rem; font-weight:800; margin:0; color:#fff; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-book-open"></i> CRM Operations & Roles Guide
+        </h3>
+        <span style="font-size:0.75rem; color:rgba(255,255,255,0.8);">Customer Relationship Management &bull; 6 Core Pillars</span>
       </div>
-      <div class="modal-body" style="padding:1.5rem;">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
-          <div class="form-group" style="margin:0;">
-            <label class="form-label" style="font-weight:700; font-size:0.825rem;">InTake Term</label>
-            <select name="intake_term" id="intakeTermSelect" class="form-control" style="font-size:0.85rem; font-weight:600;">
-              <option value="September">September (Fall)</option>
-              <option value="January">January (Spring)</option>
-              <option value="May">May (Summer)</option>
-              <option value="February">February</option>
-              <option value="November">November</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin:0;">
-            <label class="form-label" style="font-weight:700; font-size:0.825rem;">InTake Year</label>
-            <input type="number" name="intake_year" id="intakeYearInput" class="form-control" value="<?= date('Y') ?>" style="font-size:0.85rem; font-weight:600;" required>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer" style="padding:0.85rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
-        <button type="button" class="btn btn-secondary btn-sm" onclick="closeChangeIntakeModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary btn-sm" style="font-weight:700; padding:0.45rem 1.25rem;">Update</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- 7. REASSIGN COUNSELOR MODAL -->
-<div class="modal fade" id="changeCounselorModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.55); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
-  <div class="modal-dialog" style="background:#fff; border-radius:14px; max-width:440px; width:92%; margin:auto; box-shadow:0 25px 60px rgba(0,0,0,0.25); overflow:hidden;">
-    <form method="POST" action="<?= base_url('leads/assign.php') ?>">
-      <?= csrf_field() ?>
-      <input type="hidden" name="lead_id" id="reassignLeadId" value="0">
-      <input type="hidden" name="return" id="reassignReturnUrl" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '') ?>">
-      <div class="modal-header" style="padding:1.2rem 1.5rem; background:linear-gradient(135deg, #475569 0%, #334155 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <h3 style="font-size:1.1rem; font-weight:700; margin:0; color:#fff;">ReAssign Lead</h3>
-          <span style="font-size:0.75rem; color:rgba(255,255,255,0.9);" id="reassignStudentLabel">Candidate</span>
-        </div>
-        <button type="button" onclick="closeChangeCounselorModal()" style="border:none; background:rgba(255,255,255,0.2); color:#fff; width:28px; height:28px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
-      </div>
-      <div class="modal-body" style="padding:1.5rem;">
-        <label class="form-label" style="font-weight:700; font-size:0.85rem; margin-bottom:0.5rem;">Assigned To</label>
-        <select name="counselor_id" id="reassignCounselorSelect" class="form-control" style="font-size:0.875rem;" required>
-          <option value="">-- Select Counselor --</option>
-          <?php foreach ($counselorsList as $cl): ?>
-            <option value="<?= $cl['id'] ?>">
-              <?= htmlspecialchars($cl['name']) ?> (<?= htmlspecialchars($cl['branch_name'] ?? 'Counselor') ?>)
-            </option>
-          <?php endforeach; ?>
-        </select>
-        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.75rem; line-height:1.4;">
-          The newly assigned counselor will receive an internal work notification in their Notifications Center.
-        </p>
-      </div>
-      <div class="modal-footer" style="padding:0.85rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem; background:#f8fafc;">
-        <button type="button" class="btn btn-secondary btn-sm" onclick="closeChangeCounselorModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary btn-sm" style="font-weight:700; padding:0.45rem 1.25rem;">Change Assigned To User</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- 4. INTERACTIVE USER MANUAL & ROLE GUIDELINES MODAL -->
-<div class="modal fade" id="userManualModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.6); align-items:center; justify-content:center; backdrop-filter:blur(4px);">
-  <div class="modal-dialog" style="background:#fff; border-radius:18px; max-width:880px; width:95%; margin:auto; box-shadow:0 30px 80px rgba(0,0,0,0.3); overflow:hidden; max-height:90vh; display:flex; flex-direction:column;">
-    <!-- Modal Header -->
-    <div class="modal-header" style="padding:1.25rem 1.75rem; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:#fff; display:flex; justify-content:space-between; align-items:center;">
-      <div style="display:flex; align-items:center; gap:12px;">
-        <div style="width:40px; height:40px; border-radius:10px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
-          <i class="fa-solid fa-book-open" style="color:#f59e0b;"></i>
-        </div>
-        <div>
-          <h3 style="font-size:1.2rem; font-weight:800; margin:0; color:#fff; display:flex; align-items:center; gap:8px;">
-            UniCRM Standard Operating Guide
-            <span style="font-size:0.68rem; font-weight:700; background:rgba(245,158,11,0.25); color:#fbbf24; border:1px solid rgba(245,158,11,0.4); padding:2px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:0.04em;">Operational Playbook</span>
-          </h3>
-          <span style="font-size:0.78rem; color:rgba(255,255,255,0.8);">Step-by-step role instructions, daily routines & admission workflows</span>
-        </div>
-      </div>
-      <button type="button" onclick="closeUserManualModal()" style="border:none; background:rgba(255,255,255,0.15); color:#fff; width:34px; height:34px; border-radius:50%; font-size:1.35rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.2s;" title="Close Guide">&times;</button>
+      <button type="button" onclick="closeUserManualModal()" style="border:none; background:rgba(255,255,255,0.2); color:#fff; width:30px; height:30px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
     </div>
 
-    <!-- Guide Navigation Tabs -->
-    <div style="background:#f1f5f9; padding:0.65rem 1.25rem; display:flex; gap:0.4rem; border-bottom:1px solid var(--border-color); overflow-x:auto; flex-shrink:0;">
-      <button type="button" class="btn btn-sm guide-tab-btn active" id="tabBtn-counselor" onclick="switchGuideTab('counselor')" style="font-weight:700; border-radius:6px; padding:0.45rem 0.95rem; font-size:0.8rem; display:inline-flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-headset" style="color:#10b981;"></i> Counselor Playbook
-      </button>
-      <button type="button" class="btn btn-sm guide-tab-btn" id="tabBtn-manager" onclick="switchGuideTab('manager')" style="font-weight:700; border-radius:6px; padding:0.45rem 0.95rem; font-size:0.8rem; display:inline-flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-building-user" style="color:#f59e0b;"></i> Admissions Manager
-      </button>
-      <button type="button" class="btn btn-sm guide-tab-btn" id="tabBtn-admin" onclick="switchGuideTab('admin')" style="font-weight:700; border-radius:6px; padding:0.45rem 0.95rem; font-size:0.8rem; display:inline-flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-crown" style="color:#ef4444;"></i> Super Admin
-      </button>
-      <button type="button" class="btn btn-sm guide-tab-btn" id="tabBtn-stages" onclick="switchGuideTab('stages')" style="font-weight:700; border-radius:6px; padding:0.45rem 0.95rem; font-size:0.8rem; display:inline-flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-users-gear" style="color:#7008E7;"></i> Lead Lifecycle & Conversion
-      </button>
-      <button type="button" class="btn btn-sm guide-tab-btn" id="tabBtn-faq" onclick="switchGuideTab('faq')" style="font-weight:700; border-radius:6px; padding:0.45rem 0.95rem; font-size:0.8rem; display:inline-flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-circle-question" style="color:#0284c7;"></i> FAQ & Help
-      </button>
+    <div class="modal-body" style="padding:1.5rem; overflow-y:auto; flex:1; font-size:0.875rem; line-height:1.6;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.25rem;">
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:1rem;">
+          <h4 style="font-size:0.95rem; font-weight:800; color:#1e293b; margin:0 0 0.5rem 0; display:flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-crown" style="color:#b91c1c;"></i> 1. Super Admin
+          </h4>
+          <p style="margin:0; font-size:0.8rem; color:#475569;">
+            Full administrative governance, system identity management, and seamless multi-role persona switching.
+          </p>
+        </div>
+
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:1rem;">
+          <h4 style="font-size:0.95rem; font-weight:800; color:#1e293b; margin:0 0 0.5rem 0; display:flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-people-roof" style="color:#b45309;"></i> 2. Team Leader
+          </h4>
+          <p style="margin:0; font-size:0.8rem; color:#475569;">
+            Regional supervisor with lead review, pipeline density monitoring across Central/Outer zones, and assignment oversight.
+          </p>
+        </div>
+
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:1rem;">
+          <h4 style="font-size:0.95rem; font-weight:800; color:#1e293b; margin:0 0 0.5rem 0; display:flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-user-tie" style="color:#15803d;"></i> 3. Counselor / Advisor
+          </h4>
+          <p style="margin:0; font-size:0.8rem; color:#475569;">
+            Conducts qualified consultations, manages scheduled follow-up dates and reminder alarms, and closes conversions.
+          </p>
+        </div>
+
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:1rem;">
+          <h4 style="font-size:0.95rem; font-weight:800; color:#1e293b; margin:0 0 0.5rem 0; display:flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-headset" style="color:#7e22ce;"></i> 4. Operations / Accessor
+          </h4>
+          <p style="margin:0; font-size:0.8rem; color:#475569;">
+            Inbound and outbound social media lead triage, phone verification cross-checking, initial contact logging, and counselor routing.
+          </p>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid #e2e8f0; padding-top:1rem;">
+        <h4 style="font-size:0.9rem; font-weight:800; color:#0f172a; margin-bottom:0.75rem;">Daily Duties Workflow:</h4>
+        <ol style="margin:0; padding-left:1.25rem; font-size:0.825rem; color:#334155;">
+          <li><strong>Daily Start:</strong> Check active worklists via the top header <strong>Tasks Bar</strong>.</li>
+          <li><strong>Data Review:</strong> Triage incoming <strong>Social Media Leads</strong> and verify assigned regional distribution.</li>
+          <li><strong>Call Execution:</strong> Review linked <strong>Call Data</strong>, initiate contact, and log connection status.</li>
+          <li><strong>Queue Maintenance:</strong> Clear all <strong>Pending Follow-ups Backlog</strong> and book next <strong>Scheduled Follow-ups</strong>.</li>
+          <li><strong>Data Verification:</strong> Cross-verify contact phone numbers digit-by-digit and submit updates via the top <strong>Update Button</strong>.</li>
+          <li><strong>Escalation:</strong> Route qualified Hot/Warm prospects to designated <strong>Counselors</strong>.</li>
+        </ol>
+      </div>
     </div>
 
-    <!-- Guide Content Container -->
-    <div class="modal-body" style="padding:1.5rem 1.75rem; overflow-y:auto; flex:1; font-size:0.875rem; line-height:1.65; color:var(--text-main);">
-      
-      <!-- Interactive Walkthrough Launcher Card -->
-      <div style="background: linear-gradient(135deg, #7008E7 0%, #5955D1 100%); color: #fff; padding: 0.95rem 1.35rem; border-radius: 12px; margin-bottom: 1.35rem; display: flex; justify-content: space-between; align-items: center; gap: 12px; box-shadow: 0 4px 15px rgba(112,8,231,0.25);">
-        <div>
-          <strong style="font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-wand-magic-sparkles" style="color: #fbbf24;"></i> Prefer a live interactive walkthrough?
-          </strong>
-          <span style="font-size: 0.8rem; color: rgba(255,255,255,0.9); display: block; margin-top: 2px;">
-            Take a step-by-step interactive guided tutorial highlighting your actual dashboard buttons and tools.
-          </span>
-        </div>
-        <button type="button" class="btn btn-sm" onclick="closeUserManualModal(); startInteractiveTutorial();" style="background: #fff; color: #7008E7; font-weight: 800; border: none; padding: 0.5rem 1.15rem; border-radius: 8px; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.15); display: inline-flex; align-items: center; gap: 6px;">
-          Start Live Tour <i class="fa-solid fa-arrow-right"></i>
-        </button>
-      </div>
-      
-      <!-- TAB 1: COUNSELOR DAILY PLAYBOOK -->
-      <div id="guideContent-counselor" class="guide-content-panel">
-        <div style="background:#ecfdf5; border-left:4px solid #10b981; padding:1rem 1.25rem; border-radius:8px; margin-bottom:1.5rem;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <strong style="color:#065f46; font-size:0.95rem;"><i class="fa-solid fa-user-check"></i> Counselor Mission: Candidate Guidance & Conversion</strong>
-            <span style="font-size:0.7rem; font-weight:700; background:#d1fae5; color:#065f46; padding:2px 8px; border-radius:12px; text-transform:uppercase;">Daily Routine</span>
-          </div>
-          <span style="color:#047857; font-size:0.825rem;">Your daily responsibility is consulting prospective students, addressing questions on overseas universities, keeping prompt follow-ups, and advancing students across admission stages.</span>
-        </div>
-
-        <h4 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
-          <span style="background:var(--primary); color:#fff; width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">★</span>
-          Your 4-Step Daily Operational Routine:
-        </h4>
-
-        <!-- Step 1 Card -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem; margin-bottom:1rem;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.5rem;">
-            <span style="background:#10b981; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">STEP 1</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Review Today's Scheduled Calls</strong>
-          </div>
-          <p style="margin:0 0 0.5rem 0; color:var(--text-main); font-size:0.85rem;">
-            Start your day by opening <strong>Daily Follow-ups</strong> in the left sidebar or the blue <strong>Today's Calls</strong> widget on your dashboard.
-          </p>
-          <div style="background:#fff; border:1px dashed #cbd5e1; border-radius:8px; padding:0.6rem 0.85rem; font-size:0.8rem; color:var(--text-muted);">
-            <strong style="color:#0f172a;"><i class="fa-solid fa-arrow-right" style="color:#10b981;"></i> What to look for:</strong> Priority calls scheduled for today appear first. Overdue calls appear at the very top in red so you can attend to delayed inquiries first.
-          </div>
-        </div>
-
-        <!-- Step 2 Card -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem; margin-bottom:1rem;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.5rem;">
-            <span style="background:#10b981; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">STEP 2</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Connect with the Student (1-Click Calling & WhatsApp)</strong>
-          </div>
-          <p style="margin:0 0 0.5rem 0; color:var(--text-main); font-size:0.85rem;">
-            Connect directly with the student using the quick communication shortcuts:
-          </p>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
-            <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:0.65rem 0.85rem;">
-              <strong style="color:#065f46; font-size:0.825rem; display:flex; align-items:center; gap:6px;">
-                <i class="fa-brands fa-whatsapp" style="color:#10b981; font-size:1rem;"></i> 1-Click WhatsApp
-              </strong>
-              <span style="font-size:0.78rem; color:#047857; display:block; margin-top:3px;">Click the green WhatsApp icon to launch WhatsApp Web with a direct chat with the student's mobile number.</span>
-            </div>
-            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:0.65rem 0.85rem;">
-              <strong style="color:#1e40af; font-size:0.825rem; display:flex; align-items:center; gap:6px;">
-                <i class="fa-solid fa-phone" style="color:#3b82f6; font-size:0.9rem;"></i> Direct Phone Call
-              </strong>
-              <span style="font-size:0.78rem; color:#1d4ed8; display:block; margin-top:3px;">Click the student's mobile number to trigger direct dialing on your phone or softphone app.</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 3 Card -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem; margin-bottom:1rem;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.5rem;">
-            <span style="background:#10b981; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">STEP 3</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Record Consultation Outcome Immediately (Log Call)</strong>
-          </div>
-          <p style="margin:0 0 0.5rem 0; color:var(--text-main); font-size:0.85rem;">
-            Immediately after every conversation or consultation, click the green <strong>Log Call</strong> button next to the student's name:
-          </p>
-          <ul style="margin:0; padding-left:1.25rem; font-size:0.825rem; color:var(--text-main); display:flex; flex-direction:column; gap:4px;">
-            <li><strong>Select Outcome:</strong> Choose title (e.g. <em>Information Shared</em>, <em>Documents Requested</em>, <em>Parent Consultation</em>, <em>Attempted - No Answer</em>).</li>
-            <li><strong>Enter Notes:</strong> Type a clear 1-2 sentence summary of what was discussed (courses, intake, visa, required papers).</li>
-            <li><strong>Set Next Follow-up Date:</strong> Click a quick button (<em>Tomorrow</em>, <em>In 2 Days</em>, <em>In 5 Days</em>, <em>Next Week</em>) or choose a calendar date.</li>
-          </ul>
-        </div>
-
-        <!-- Step 4 Card -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem; margin-bottom:1.25rem;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.5rem;">
-            <span style="background:#10b981; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">STEP 4</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Convert Lead to Customer (Section 9.3.2)</strong>
-          </div>
-          <p style="margin:0 0 0.5rem 0; color:var(--text-main); font-size:0.85rem;">
-            When the prospective student is ready to enroll and begin processing:
-          </p>
-          <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem 0.85rem; font-size:0.8rem; color:var(--text-main);">
-            Click the green <strong>Convert to Customer</strong> button on the Lead Details screen. Generating a service invoice automatically transitions the candidate into an invoiced Customer.
-          </div>
-        </div>
-
-        <!-- Best Practices Box -->
-        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem;">
-          <strong style="color:#166534; font-size:0.85rem; display:flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-circle-check" style="color:#16a34a;"></i> 3 Golden Rules for High Counselor Performance:
-          </strong>
-          <ul style="margin:0.5rem 0 0 0; padding-left:1.25rem; font-size:0.8rem; color:#15803d; display:flex; flex-direction:column; gap:4px;">
-            <li><strong>Rule 1:</strong> Never finish a call without logging notes and setting the next follow-up date.</li>
-            <li><strong>Rule 2:</strong> If a student doesn't answer, log <em>Attempted - No Answer</em> and schedule the next call for 24 hours later.</li>
-            <li><strong>Rule 3:</strong> Keep all notes clear and professional—your notes are visible in the student's permanent audit dossier.</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- TAB 2: ADMISSIONS MANAGER GUIDE -->
-      <div id="guideContent-manager" class="guide-content-panel" style="display:none;">
-        <div style="background:#fffbeb; border-left:4px solid #f59e0b; padding:1rem 1.25rem; border-radius:8px; margin-bottom:1.5rem;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <strong style="color:#92400e; font-size:0.95rem;"><i class="fa-solid fa-users-gear"></i> Admissions Manager Mission: Team Orchestration & Quality Control</strong>
-            <span style="font-size:0.7rem; font-weight:700; background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:12px; text-transform:uppercase;">Supervision</span>
-          </div>
-          <span style="color:#b45309; font-size:0.825rem;">Oversee all active student caseloads, rapidly triage inbound digital leads, ensure balanced counselor capacity, and maintain high conversion standards.</span>
-        </div>
-
-        <h4 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
-          <span style="background:#f59e0b; color:#fff; width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">★</span>
-          Manager Key Operational Workflows:
-        </h4>
-
-        <!-- Workflow 1 -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem; margin-bottom:1rem;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.4rem;">
-            <span style="background:#f59e0b; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">WORKFLOW 1</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Triage Fresh Inbound Digital Leads (Morning & Afternoon)</strong>
-          </div>
-          <p style="margin:0 0 0.4rem 0; font-size:0.85rem; color:var(--text-main);">
-            Go to <strong>Lead Inbound & Triage &gt; Digital Web & Social Leads</strong>. Newly submitted student inquiries from Instagram Ads, Meta, and Google Ads arrive here in real time.
-          </p>
-          <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem 0.85rem; font-size:0.8rem; color:var(--text-muted);">
-            <strong style="color:var(--text-heading);">Action:</strong> Click <strong>Assign Counselor</strong> next to unassigned leads. Choose the most suitable counselor based on their specialty or current caseload, then confirm. The counselor is immediately notified.
-          </div>
-        </div>
-
-        <!-- Workflow 2 -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem; margin-bottom:1rem;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.4rem;">
-            <span style="background:#f59e0b; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">WORKFLOW 2</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Bulk Lead Reassignment & Rebalancing</strong>
-          </div>
-          <p style="margin:0 0 0.4rem 0; font-size:0.85rem; color:var(--text-main);">
-            When a counselor is on leave or when redistributing workload across your squad:
-          </p>
-          <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem 0.85rem; font-size:0.8rem; color:var(--text-muted);">
-            Open <strong>Student Leads</strong>, select checkboxes next to the students to transfer, click <strong>Bulk Reassign</strong> at the top of the table, pick the recipient counselor, and confirm. All records and tasks transfer instantly.
-          </div>
-        </div>
-
-        <!-- Workflow 3 -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem; margin-bottom:1rem;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.4rem;">
-            <span style="background:#f59e0b; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">WORKFLOW 3</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Import Campus Rosters & Bulk College Contacts</strong>
-          </div>
-          <p style="margin:0 0 0.4rem 0; font-size:0.85rem; color:var(--text-main);">
-            Navigate to <strong>Lead Inbound & Triage &gt; Import College List</strong>. Upload Excel (.xlsx) or CSV rosters from university education fairs, campus seminars, or partner events.
-          </p>
-          <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem 0.85rem; font-size:0.8rem; color:var(--text-muted);">
-            <strong style="color:var(--text-heading);">Duplicate Protection:</strong> UniCRM automatically screens mobile numbers to prevent duplicates. Clean records are imported straight into the Raw College Data Pool.
-          </div>
-        </div>
-
-        <!-- Workflow 4 -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem; margin-bottom:1rem;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.4rem;">
-            <span style="background:#f59e0b; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">WORKFLOW 4</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Daily SLA & Overdue Call Tracking</strong>
-          </div>
-          <p style="margin:0 0 0.4rem 0; font-size:0.85rem; color:var(--text-main);">
-            Open <strong>Daily Follow-ups</strong> (use the counselor filter dropdown) or open <strong>Staff & Team</strong>:
-          </p>
-          <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem 0.85rem; font-size:0.8rem; color:var(--text-muted);">
-            Ensure no counselor has uncompleted follow-ups older than 24 hours. Address bottlenecks quickly to maintain student satisfaction.
-          </div>
-        </div>
-
-        <!-- Workflow 5 -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.4rem;">
-            <span style="background:#f59e0b; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">WORKFLOW 5</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Issue Invoices & Track Receivables</strong>
-          </div>
-          <p style="margin:0 0 0.4rem 0; font-size:0.85rem; color:var(--text-main);">
-            Go to <strong>Finance & Invoices &gt; Generate Invoice</strong>. Select the student candidate, enter consultancy or visa fee items, and issue the bill. Download and share official PDF receipts.
-          </p>
-        </div>
-      </div>
-
-      <!-- TAB 3: SUPER ADMIN MANUAL -->
-      <div id="guideContent-admin" class="guide-content-panel" style="display:none;">
-        <div style="background:#fef2f2; border-left:4px solid #ef4444; padding:1rem 1.25rem; border-radius:8px; margin-bottom:1.5rem;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <strong style="color:#991b1b; font-size:0.95rem;"><i class="fa-solid fa-shield-halved"></i> Super Admin Governance: Global System Authority</strong>
-            <span style="font-size:0.7rem; font-weight:700; background:#fee2e2; color:#991b1b; padding:2px 8px; border-radius:12px; text-transform:uppercase;">Full Access</span>
-          </div>
-          <span style="color:#b91c1c; font-size:0.825rem;">Complete unrestricted governance over all 16 application modules, organizational branches, staff accounts, RBAC permissions, and system security audits.</span>
-        </div>
-
-        <h4 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
-          <span style="background:#ef4444; color:#fff; width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">★</span>
-          Administrative Governance Modules:
-        </h4>
-
-        <!-- Admin Area 1 -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem; margin-bottom:1rem;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.4rem;">
-            <span style="background:#ef4444; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">AREA 1</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Staff & User Account Provisioning</strong>
-          </div>
-          <p style="margin:0 0 0.4rem 0; font-size:0.85rem; color:var(--text-main);">
-            Go to <strong>Staff & Team</strong> to manage all organizational users:
-          </p>
-          <ul style="margin:0; padding-left:1.25rem; font-size:0.825rem; color:var(--text-main); display:flex; flex-direction:column; gap:4px;">
-            <li>Click <strong>+ Add New Staff</strong> to create credentials for new Counselors or Admissions Managers.</li>
-            <li>Assign staff to their designated operational branch location and role.</li>
-            <li>Deactivate accounts immediately when staff members depart to maintain data integrity.</li>
-          </ul>
-        </div>
-
-        <!-- Admin Area 2 -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem; margin-bottom:1rem;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.4rem;">
-            <span style="background:#ef4444; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">AREA 2</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Granular Roles & Permissions Control (RBAC Matrix)</strong>
-          </div>
-          <p style="margin:0 0 0.4rem 0; font-size:0.85rem; color:var(--text-main);">
-            Open <strong>Roles & Permissions</strong>. Configure exact feature capabilities across all 16 modules:
-          </p>
-          <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem 0.85rem; font-size:0.8rem; color:var(--text-muted);">
-            Manage <em>View</em>, <em>Add</em>, <em>Edit</em>, <em>Delete</em>, <em>Assign</em>, <em>Approve</em>, and <em>Export</em> capabilities individually for Admissions Managers and Counselors. Changes apply instantly across the PHP security layer.
-          </div>
-        </div>
-
-        <!-- Admin Area 3 -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem; margin-bottom:1rem;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.4rem;">
-            <span style="background:#ef4444; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">AREA 3</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Company Branch Locations Administration</strong>
-          </div>
-          <p style="margin:0 0 0.4rem 0; font-size:0.85rem; color:var(--text-main);">
-            Under <strong>System Settings &gt; Company Locations</strong>, create, edit, activate, or deactivate organizational branches. Each branch represents an operational admissions division.
-          </p>
-        </div>
-
-        <!-- Admin Area 4 -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.15rem;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.4rem;">
-            <span style="background:#ef4444; color:#fff; font-weight:800; font-size:0.75rem; padding:3px 9px; border-radius:6px;">AREA 4</span>
-            <strong style="font-size:0.95rem; color:var(--text-heading);">Security Audits, Activity Feeds & Archives</strong>
-          </div>
-          <p style="margin:0 0 0.4rem 0; font-size:0.85rem; color:var(--text-main);">
-            Open <strong>Archive Repository</strong> to inspect system logs: user sign-ins, lead reallocations, financial records, and milestone adjustments with actor names, timestamps, and IP addresses.
-          </p>
-        </div>
-      </div>
-
-      <!-- TAB 4: LEAD LIFECYCLE & CONVERSION -->
-      <div id="guideContent-stages" class="guide-content-panel" style="display:none;">
-        <div style="background:#f5f3ff; border-left:4px solid #7008E7; padding:1rem 1.25rem; border-radius:8px; margin-bottom:1.5rem;">
-          <strong style="color:#5b21b6; font-size:0.95rem; display:block; margin-bottom:4px;"><i class="fa-solid fa-users-gear"></i> Student Lead & Customer Operational Architecture</strong>
-          <span style="color:#6d28d9; font-size:0.825rem;">Standard operational pipeline based on User Manual Section 9: Inbound Leads &rarr; Follow-ups &rarr; Customer Conversion.</span>
-        </div>
-
-        <div style="display:flex; flex-direction:column; gap:0.9rem;">
-          <!-- Stage 1: Lead Capture -->
-          <div style="padding:1rem 1.25rem; border-radius:10px; background:#f8fafc; border:1px solid #e2e8f0; border-left:5px solid #64748b;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
-              <strong style="color:#1e293b; font-size:0.95rem;">1. Lead Registration & Allocation (Section 9.2.7)</strong>
-              <span style="font-size:0.7rem; font-weight:700; background:#e2e8f0; color:#475569; padding:2px 8px; border-radius:12px;">Step 1</span>
-            </div>
-            <p style="margin:0 0 0.35rem 0; font-size:0.825rem; color:var(--text-main);">
-              Candidates are registered via Website forms, College Data pool, walk-ins, or direct counselor registration. A strict 10-digit mobile duplicate guard ensures only one active lead exists per student.
-            </p>
-          </div>
-
-          <!-- Stage 2: Prospectivity Tiers -->
-          <div style="padding:1rem 1.25rem; border-radius:10px; background:#f0f9ff; border:1px solid #bae6fd; border-left:5px solid #0284c7;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
-              <strong style="color:#0369a1; font-size:0.95rem;">2. Prospectivity Tiers & InTake Planning (Section 9.2.3 & 9.2.4)</strong>
-              <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0284c7; padding:2px 8px; border-radius:12px;">Step 2</span>
-            </div>
-            <p style="margin:0 0 0.35rem 0; font-size:0.825rem; color:var(--text-main);">
-              Counselors categorize each candidate into <strong>Hot</strong> (high intent / immediate), <strong>Warm</strong> (moderate interest), or <strong>Cold</strong> (future planning). InTake cycles (September, January, May) can be updated anytime with a 1-click modal.
-            </p>
-          </div>
-
-          <!-- Stage 3: Follow-ups -->
-          <div style="padding:1rem 1.25rem; border-radius:10px; background:#fdf4ff; border:1px solid #f5d0fe; border-left:5px solid #c026d3;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
-              <strong style="color:#86198f; font-size:0.95rem;">3. Structured Consultations & Tasks (Section 9.4 & 9.7)</strong>
-              <span style="font-size:0.7rem; font-weight:700; background:#fae8ff; color:#c026d3; padding:2px 8px; border-radius:12px;">Step 3</span>
-            </div>
-            <p style="margin:0 0 0.35rem 0; font-size:0.825rem; color:var(--text-main);">
-              All counselor interactions (Phone Call, WhatsApp, Office Visit) are logged with consultation notes and a mandatory next follow-up date governed by policy time limits.
-            </p>
-          </div>
-
-          <!-- Stage 4: Customer Conversion -->
-          <div style="padding:1rem 1.25rem; border-radius:10px; background:#ecfdf5; border:1px solid #a7f3d0; border-left:5px solid #10b981;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
-              <strong style="color:#065f46; font-size:0.95rem;">4. Convert to Customer via Service Invoice (Section 9.3.2)</strong>
-              <span style="font-size:0.7rem; font-weight:700; background:#d1fae5; color:#059669; padding:2px 8px; border-radius:12px;">Step 4 • Customer Converted</span>
-            </div>
-            <p style="margin:0 0 0.35rem 0; font-size:0.825rem; color:var(--text-main);">
-              Clicking <strong>Convert to Customer</strong> opens the invoice creator. Once an official service invoice is generated, the candidate becomes an invoiced Customer with dedicated billing ledger and payment remittance tracking.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 5: FAQ & QUICK HELP -->
-      <div id="guideContent-faq" class="guide-content-panel" style="display:none;">
-        <div style="background:#f0f9ff; border-left:4px solid #0284c7; padding:1rem 1.25rem; border-radius:8px; margin-bottom:1.5rem;">
-          <strong style="color:#0369a1; font-size:0.95rem; display:block; margin-bottom:4px;"><i class="fa-solid fa-circle-question"></i> Frequently Asked Questions & Quick Help</strong>
-          <span style="color:#0284c7; font-size:0.825rem;">Practical answers to common daily tasks and system questions.</span>
-        </div>
-
-        <div style="display:flex; flex-direction:column; gap:0.9rem;">
-          <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:1rem 1.25rem;">
-            <strong style="color:var(--text-heading); font-size:0.9rem; display:flex; align-items:center; gap:8px;">
-              <i class="fa-brands fa-whatsapp" style="color:#10b981;"></i> How do I contact a student via WhatsApp?
-            </strong>
-            <p style="margin:6px 0 0 0; font-size:0.825rem; color:var(--text-muted);">
-              In the <strong>Student Leads</strong> table or <strong>Daily Follow-ups</strong> queue, look for the green WhatsApp icon next to the student's mobile number. Clicking it opens WhatsApp Web with the student's phone number ready so you can message them immediately.
-            </p>
-          </div>
-
-          <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:1rem 1.25rem;">
-            <strong style="color:var(--text-heading); font-size:0.9rem; display:flex; align-items:center; gap:8px;">
-              <i class="fa-solid fa-phone-slash" style="color:#ef4444;"></i> What should I do if a student didn't answer my call?
-            </strong>
-            <p style="margin:6px 0 0 0; font-size:0.825rem; color:var(--text-muted);">
-              Always record the attempt! Click the green <strong>Log Call</strong> button, choose <em>Attempted - No Answer</em>, and click <em>Tomorrow</em> for the next follow-up date. This ensures your follow-up queue remains accurate and compliant.
-            </p>
-          </div>
-
-          <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:1rem 1.25rem;">
-            <strong style="color:var(--text-heading); font-size:0.9rem; display:flex; align-items:center; gap:8px;">
-              <i class="fa-solid fa-lock" style="color:#f59e0b;"></i> Can Counselors see leads assigned to other Counselors?
-            </strong>
-            <p style="margin:6px 0 0 0; font-size:0.825rem; color:var(--text-muted);">
-              No. To ensure confidentiality, strict record isolation is enforced. Counselors can only see candidates assigned directly to them. Admissions Managers and Super Admin have oversight of all records.
-            </p>
-          </div>
-
-          <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:1rem 1.25rem;">
-            <strong style="color:var(--text-heading); font-size:0.9rem; display:flex; align-items:center; gap:8px;">
-              <i class="fa-solid fa-file-invoice-dollar" style="color:#7008E7;"></i> How do I generate and print a client invoice?
-            </strong>
-            <p style="margin:6px 0 0 0; font-size:0.825rem; color:var(--text-muted);">
-              Navigate to <strong>Finance & Invoices &gt; Generate Invoice</strong>. Select the candidate (must be in <em>Customer</em> or later stage), choose the fee package, verify the total, and click <em>Save & Issue</em>. You can print or download the official PDF receipt immediately.
-            </p>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Modal Footer -->
-    <div class="modal-footer" style="padding:1rem 1.75rem; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background:#f8fafc; flex-shrink:0;">
-      <span style="font-size:0.78rem; color:var(--text-muted);">
-        <i class="fa-solid fa-circle-info" style="color:var(--primary); margin-right:4px;"></i> UniCRM Standard Operations Manual &bull; Continuous Guidance
-      </span>
-      <div style="display:flex; gap:0.5rem; align-items:center;">
-        <button type="button" class="btn btn-outline" onclick="closeUserManualModal(); startInteractiveTutorial();" style="font-weight:700; border-radius:8px;">
-          <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--primary);"></i> Launch Live Tour
-        </button>
-        <button type="button" class="btn btn-primary" onclick="closeUserManualModal()" style="font-weight:700; padding:0.45rem 1.25rem; border-radius:8px;">
-          Close Guide
-        </button>
-      </div>
+    <div class="modal-footer" style="padding:0.85rem 1.5rem; border-top:1px solid #e2e8f0; background:#f8fafc; display:flex; justify-content:flex-end;">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="closeUserManualModal()">Close Guide</button>
     </div>
   </div>
 </div>
 
 <script>
-// Expose CRM environment & current user metadata globally for interactive tutorials
-window.CRM_BASE_URL = <?= json_encode(base_url()) ?>;
-window.CRM_CURRENT_USER = {
-  id: <?= (int)($currentUser['id'] ?? 0) ?>,
-  name: <?= json_encode($currentUser['name'] ?? 'User') ?>,
-  role_id: <?= (int)($currentUser['role_id'] ?? 0) ?>,
-  role_name: <?= json_encode($currentUser['role_name'] ?? 'counselor') ?>,
-  role_label: <?= json_encode($currentUser['role_label'] ?? 'Staff') ?>,
-  is_super_admin: <?= is_super_admin() ? 'true' : 'false' ?>,
-  is_branch_manager: <?= is_branch_manager() ? 'true' : 'false' ?>,
-  is_counselor: <?= is_counselor() ? 'true' : 'false' ?>
-};
-// Global Modals Controller Functions
+// Top Update Modal Controllers
+function openTopUpdateModal(leadId) {
+  const m = document.getElementById('topUpdateModal');
+  if (!m) return;
+  const sel = document.getElementById('topUpdateLeadSelect');
+  if (sel && leadId) {
+    sel.value = leadId;
+    const opt = sel.options[sel.selectedIndex];
+    if (opt) {
+      if (opt.dataset.status && document.getElementById('topUpdateStatusSelect')) {
+        document.getElementById('topUpdateStatusSelect').value = opt.dataset.status;
+      }
+      if (opt.dataset.prospect && document.getElementById('topUpdateProspectivitySelect')) {
+        document.getElementById('topUpdateProspectivitySelect').value = opt.dataset.prospect;
+      }
+    }
+  }
+  m.style.display = 'flex';
+}
+function closeTopUpdateModal() {
+  const m = document.getElementById('topUpdateModal');
+  if (m) m.style.display = 'none';
+}
+
+// Quick Lead Modal
 function openQuickLeadModal() {
   const m = document.getElementById('quickLeadModal');
   if (m) m.style.display = 'flex';
@@ -767,108 +503,34 @@ function closeQuickLeadModal() {
   if (m) m.style.display = 'none';
 }
 
-function openLogCallModal(leadId, studentName) {
+// Log Call Modal
+function openLogCallModal(leadId, leadName, phoneDialed) {
   const m = document.getElementById('globalLogCallModal');
   if (!m) return;
-  document.getElementById('logCallLeadId').value = leadId;
-  document.getElementById('logCallStudentLabel').textContent = 'Candidate: ' + (studentName || 'Student #' + leadId);
+  if (leadId) document.getElementById('logCallLeadId').value = leadId;
+  if (phoneDialed) document.getElementById('logCallPhoneDialed').value = phoneDialed;
+  if (leadName) document.getElementById('logCallStudentLabel').textContent = 'Lead: ' + leadName;
   m.style.display = 'flex';
 }
 function closeLogCallModal() {
   const m = document.getElementById('globalLogCallModal');
   if (m) m.style.display = 'none';
 }
-function setLogCallDate(days) {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  const dateStr = d.toISOString().split('T')[0];
-  document.getElementById('logCallNextDate').value = dateStr;
+
+// Escalate Counselor Modal
+function openEscalateCounselorModal(leadId, leadName) {
+  const m = document.getElementById('escalateCounselorModal');
+  if (!m) return;
+  if (leadId) document.getElementById('escalateLeadId').value = leadId;
+  if (leadName) document.getElementById('escalateLeadLabel').textContent = 'Candidate: ' + leadName;
+  m.style.display = 'flex';
 }
-function updateMaxFollowupNotice(selectElem) {
-  const opt = selectElem.options[selectElem.selectedIndex];
-  const max = parseInt(opt.getAttribute('data-max') || 7, 10);
-  const maxDate = new Date();
-  maxDate.setDate(maxDate.getDate() + max);
-  const day = String(maxDate.getDate()).padStart(2, '0');
-  const month = String(maxDate.getMonth() + 1).padStart(2, '0');
-  const year = maxDate.getFullYear();
-  const formattedDate = `${day}-${month}-${year}`;
-
-  const notice = document.getElementById('maxDaysNotice');
-  if (notice) {
-    notice.innerHTML = `<i class="fa-solid fa-clock" style="color:var(--primary);"></i> Governance Rule: Select a date on or before <strong>${formattedDate}</strong> (Max ${max} days).`;
-  }
-
-  const dateInput = document.getElementById('logCallNextDate');
-  if (dateInput) {
-    const isoMax = maxDate.toISOString().split('T')[0];
-    dateInput.max = isoMax;
-  }
+function closeEscalateCounselorModal() {
+  const m = document.getElementById('escalateCounselorModal');
+  if (m) m.style.display = 'none';
 }
 
-function updateDateWorkloadNotice(dateVal) {
-  const noticeElem = document.getElementById('logCallWorkloadNotice');
-  if (!noticeElem || !dateVal) return;
-
-  fetch((window.CRM_BASE_URL || '/') + 'api/check_workload.php?date=' + encodeURIComponent(dateVal))
-    .then(res => res.json())
-    .then(data => {
-      if (data && data.message) {
-        noticeElem.innerHTML = `<i class="fa-solid fa-calendar-check" style="color:#059669;"></i> ${data.message}`;
-      } else {
-        noticeElem.innerHTML = '';
-      }
-    })
-    .catch(() => {});
-}
-
-// Real-time Phone Duplicate Verification Engine
-let phoneCheckTimeout = null;
-function checkLeadPhoneDuplicate(phoneVal, feedbackElemId, submitBtnId) {
-  const feedback = document.getElementById(feedbackElemId);
-  const submitBtn = document.getElementById(submitBtnId);
-  if (!feedback) return;
-
-  clearTimeout(phoneCheckTimeout);
-  const clean = phoneVal.replace(/[^0-9]/g, '');
-
-  if (clean.length < 10) {
-    feedback.style.display = 'none';
-    feedback.innerHTML = '';
-    if (submitBtn) submitBtn.disabled = false;
-    return;
-  }
-
-  phoneCheckTimeout = setTimeout(() => {
-    fetch((window.CRM_BASE_URL || '/') + 'api/check_phone.php?phone=' + encodeURIComponent(clean))
-      .then(res => res.json())
-      .then(data => {
-        if (data.exists) {
-          feedback.style.display = 'block';
-          feedback.innerHTML = `
-            <div style="background:#fffbeb; border:1px solid #fef3c7; color:#92400e; padding:8px 12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
-              <span><i class="fa-solid fa-triangle-exclamation" style="color:#d97706;"></i> <strong>Already Exists!</strong> Student: <strong>${data.full_name}</strong> (${data.lead_code}).</span>
-              <a href="${(window.CRM_BASE_URL || '/') + 'leads/view.php?id=' + data.lead_id}" target="_blank" class="btn btn-sm btn-primary" style="padding:2px 8px; font-size:0.75rem; white-space:nowrap; text-decoration:none;">Details &rarr;</a>
-            </div>
-          `;
-          if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.title = 'Duplicate phone number already registered';
-          }
-        } else {
-          feedback.style.display = 'block';
-          feedback.innerHTML = `<span style="color:#10b981; font-size:0.75rem; font-weight:600;"><i class="fa-solid fa-check"></i> ${data.message}</span>`;
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.title = '';
-          }
-        }
-      })
-      .catch(() => {});
-  }, 300);
-}
-
-// 5. Change Prospectivity Modal Controller
+// Change Prospectivity Modal
 function openChangeProspectivityModal(leadId, studentName, currentProspectivity) {
   const m = document.getElementById('changeProspectivityModal');
   if (!m) return;
@@ -883,68 +545,47 @@ function closeChangeProspectivityModal() {
   if (m) m.style.display = 'none';
 }
 
-// 6. Change Intake Modal Controller
-function openChangeIntakeModal(leadId, studentName, currentTerm, currentYear) {
-  const m = document.getElementById('changeIntakeModal');
-  if (!m) return;
-  document.getElementById('intakeLeadId').value = leadId;
-  document.getElementById('intakeStudentLabel').textContent = 'Candidate: ' + (studentName || '#' + leadId);
-  if (currentTerm && document.getElementById('intakeTermSelect')) document.getElementById('intakeTermSelect').value = currentTerm;
-  if (currentYear && document.getElementById('intakeYearInput')) document.getElementById('intakeYearInput').value = currentYear;
-  m.style.display = 'flex';
-}
-function closeChangeIntakeModal() {
-  const m = document.getElementById('changeIntakeModal');
-  if (m) m.style.display = 'none';
-}
-
-// 7. Change Counselor Modal Controller
-function openChangeCounselorModal(leadId, studentName, currentCounselorId) {
-  const m = document.getElementById('changeCounselorModal');
-  if (!m) return;
-  document.getElementById('reassignLeadId').value = leadId;
-  document.getElementById('reassignStudentLabel').textContent = 'Candidate: ' + (studentName || '#' + leadId);
-  const sel = document.getElementById('reassignCounselorSelect');
-  if (sel && currentCounselorId) sel.value = currentCounselorId;
-  m.style.display = 'flex';
-}
-function closeChangeCounselorModal() {
-  const m = document.getElementById('changeCounselorModal');
-  if (m) m.style.display = 'none';
-}
-
-function openUserManualModal(tab) {
+// User Manual Guide Modal
+function openUserManualModal() {
   const m = document.getElementById('userManualModal');
-  if (m) {
-    m.style.display = 'flex';
-    switchGuideTab(tab || 'counselor');
-  }
+  if (m) m.style.display = 'flex';
 }
 function closeUserManualModal() {
   const m = document.getElementById('userManualModal');
   if (m) m.style.display = 'none';
 }
-function switchGuideTab(tabId) {
-  document.querySelectorAll('.guide-content-panel').forEach(p => p.style.display = 'none');
-  document.querySelectorAll('.guide-tab-btn').forEach(b => {
-    b.classList.remove('active', 'btn-primary');
-    b.style.background = '#e2e8f0';
-    b.style.color = '#334155';
-  });
-  
-  const target = document.getElementById('guideContent-' + tabId);
-  const btn = document.getElementById('tabBtn-' + tabId);
-  if (target) target.style.display = 'block';
-  if (btn) {
-    btn.classList.add('active', 'btn-primary');
-    btn.style.background = 'var(--primary)';
-    btn.style.color = '#fff';
+
+// Phone verification duplicate check
+let phoneCheckTimeout = null;
+function checkLeadPhoneDuplicate(phoneVal, feedbackElemId, submitBtnId) {
+  const feedback = document.getElementById(feedbackElemId);
+  const submitBtn = document.getElementById(submitBtnId);
+  if (!feedback) return;
+  clearTimeout(phoneCheckTimeout);
+  const clean = phoneVal.replace(/[^0-9]/g, '');
+  if (clean.length < 10) {
+    feedback.style.display = 'none';
+    if (submitBtn) submitBtn.disabled = false;
+    return;
   }
+  phoneCheckTimeout = setTimeout(() => {
+    fetch((window.CRM_BASE_URL || '/') + 'api/check_phone.php?phone=' + encodeURIComponent(clean))
+      .then(res => res.json())
+      .then(data => {
+        if (data.exists) {
+          feedback.style.display = 'block';
+          feedback.innerHTML = `<span style="color:#d97706; font-size:0.75rem;"><i class="fa-solid fa-triangle-exclamation"></i> Phone already exists for <strong>${data.full_name}</strong> (${data.lead_code})</span>`;
+        } else {
+          feedback.style.display = 'block';
+          feedback.innerHTML = `<span style="color:#10b981; font-size:0.75rem;"><i class="fa-solid fa-check"></i> Phone is unique & valid</span>`;
+        }
+      }).catch(() => {});
+  }, 300);
 }
 
 // Close modals when clicking outside
 window.addEventListener('click', function(e) {
-  ['quickLeadModal', 'globalLogCallModal', 'userManualModal', 'changeProspectivityModal', 'changeIntakeModal', 'changeCounselorModal'].forEach(id => {
+  ['topUpdateModal', 'quickLeadModal', 'globalLogCallModal', 'escalateCounselorModal', 'changeProspectivityModal', 'userManualModal'].forEach(id => {
     const el = document.getElementById(id);
     if (el && e.target === el) {
       el.style.display = 'none';

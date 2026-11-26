@@ -1,7 +1,11 @@
 <?php
 /**
- * Operational Task Queues Hub (UniCRM Admissions Engine)
- * 4 Dedicated Work Queues: Scheduled, Pending Follow-ups, Today Leads, Pending Leads
+ * Follow-Up Management Lifecycle Hub - Core CRM
+ * Fully Aligned with Client Requirements & Malayalam Training Audio:
+ * 1. New / First Follow-Up (Initial touchpoint following lead generation)
+ * 2. Scheduled Follow-Ups (Specific dates, times, and reminder alarms)
+ * 3. Pending Follow-Ups Backlog (Critical daily clearing queue)
+ * 4. Long-Cycle Follow-Ups (Prolonged prospect cycles over weeks/months)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -12,109 +16,123 @@ require_login();
 require_permission('tasks', 'view');
 
 $currentUser = current_user();
-$pageTitle = 'Operational Tasks';
+$pageTitle = 'Follow-Up Management Lifecycle';
 $activePage = 'tasks';
 
-$queue = $_GET['queue'] ?? 'scheduled'; // scheduled, pending_followup, today_leads, pending_leads
+// 4 Lifecycle Stages
+$stage = $_GET['stage'] ?? ($_GET['queue'] ?? 'scheduled');
+if (!in_array($stage, ['new_first', 'scheduled', 'pending_backlog', 'long_cycle'])) {
+    if ($stage === 'pending_followup') $stage = 'pending_backlog';
+    elseif ($stage === 'today_leads' || $stage === 'pending_leads') $stage = 'new_first';
+    else $stage = 'scheduled';
+}
+
 $scopeLeads = get_crm_scope_clause('l', 'assigned_counselor_id', 'branch_id');
 
-// 1. Calculate live counts for all 4 queues
+// 1. Calculate live counts for all 4 stages
+// Stage 1: New / First Follow-Up (Freshly generated leads, 0 followups conducted)
+$countNewFirst = (int)$pdo->query("
+    SELECT COUNT(*) FROM leads l 
+    WHERE l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
+")->fetchColumn();
+
+// Stage 2: Scheduled Follow-Ups (Scheduled for today or future with alarms)
 $countScheduled = (int)$pdo->query("
     SELECT COUNT(*) FROM followups f
     JOIN leads l ON f.lead_id = l.id
     WHERE f.scheduled_date = CURDATE() AND f.status = 'Pending' AND l.is_archived = 0 AND {$scopeLeads}
 ")->fetchColumn();
 
-$countOverdue = (int)$pdo->query("
+// Stage 3: Pending Follow-Ups Backlog (Critical daily queue: scheduled prior to today, must be cleared!)
+$countPendingBacklog = (int)$pdo->query("
     SELECT COUNT(*) FROM followups f
     JOIN leads l ON f.lead_id = l.id
     WHERE f.scheduled_date < CURDATE() AND f.status = 'Pending' AND l.is_archived = 0 AND {$scopeLeads}
 ")->fetchColumn();
 
-$countTodayLeads = (int)$pdo->query("
+// Stage 4: Long-Cycle Follow-Ups (Prolonged prospect cycles over weeks/months)
+$countLongCycle = (int)$pdo->query("
     SELECT COUNT(*) FROM leads l
-    WHERE DATE(l.assigned_at) = CURDATE() AND l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
+    WHERE l.is_long_cycle = 1 AND l.is_archived = 0 AND {$scopeLeads}
 ")->fetchColumn();
 
-$countPendingLeads = (int)$pdo->query("
-    SELECT COUNT(*) FROM leads l
-    WHERE DATE(l.assigned_at) < CURDATE() AND l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
-")->fetchColumn();
+$totalPendingTasks = $countNewFirst + $countScheduled + $countPendingBacklog + $countLongCycle;
 
-// 5. Website/Social Media Leads
-$countWebLeads = 0;
+// Interaction Titles for follow-up modal
+$interactionTitles = [];
 try {
-    $countWebLeads = (int)$pdo->query("SELECT COUNT(*) FROM web_leads WHERE status = 'Pending'")->fetchColumn();
+    $interactionTitles = $pdo->query("SELECT * FROM interaction_titles WHERE status = 'Active' ORDER BY sort_order ASC")->fetchAll();
 } catch (Exception $e) {}
 
-$totalPendingTasks = $countScheduled + $countOverdue + $countTodayLeads + $countPendingLeads + $countWebLeads;
-
-// Interaction Titles for follow-up form modal
-$interactionTitles = $pdo->query("SELECT * FROM interaction_titles WHERE status = 'Active' ORDER BY sort_order ASC")->fetchAll();
-
-// 2. Fetch records according to selected queue
+// 2. Fetch records according to selected lifecycle stage
 $records = [];
 
-if ($queue === 'scheduled') {
-    // Scheduled for today
+if ($stage === 'new_first') {
+    // Stage 1: Fresh leads needing initial contact
+    $stmt = $pdo->query("
+        SELECT NULL as followup_id, l.id as lead_id, l.lead_code, l.full_name, l.phone, l.email,
+               l.business_name, l.region_number, l.main_region, l.zone_type, l.is_phone_verified,
+               l.prospectivity, l.active_status, l.source, l.created_at as queued_date,
+               l.assigned_counselor_id, b.name as branch_name, u.name as counselor_name
+        FROM leads l
+        LEFT JOIN branches b ON l.branch_id = b.id
+        LEFT JOIN users u ON l.assigned_counselor_id = u.id
+        WHERE l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
+        ORDER BY l.id DESC
+    ");
+    $records = $stmt->fetchAll();
+
+} elseif ($stage === 'scheduled') {
+    // Stage 2: Scheduled follow-ups due today
     $stmt = $pdo->query("
         SELECT f.id as followup_id, f.scheduled_date, f.scheduled_time, f.notes as task_note,
-               it.title as interaction_title, it.max_duration_days,
-               l.id as lead_id, l.lead_code, l.full_name, l.phone, l.email, l.stage, l.priority,
-               l.preferred_country, l.preferred_course, l.assigned_counselor_id,
-               b.name as branch_name, u.name as counselor_name
+               it.title as interaction_title,
+               l.id as lead_id, l.lead_code, l.full_name, l.phone, l.email,
+               l.business_name, l.region_number, l.main_region, l.zone_type, l.is_phone_verified,
+               l.prospectivity, l.active_status, l.source,
+               l.assigned_counselor_id, b.name as branch_name, u.name as counselor_name
         FROM followups f
         JOIN leads l ON f.lead_id = l.id
         LEFT JOIN interaction_titles it ON f.interaction_title_id = it.id
         LEFT JOIN branches b ON l.branch_id = b.id
         LEFT JOIN users u ON l.assigned_counselor_id = u.id
         WHERE f.scheduled_date = CURDATE() AND f.status = 'Pending' AND l.is_archived = 0 AND {$scopeLeads}
-        ORDER BY f.scheduled_time ASC
+        ORDER BY f.scheduled_time ASC, f.id DESC
     ");
     $records = $stmt->fetchAll();
-} elseif ($queue === 'pending_followup') {
-    // Overdue scheduled before today
+
+} elseif ($stage === 'pending_backlog') {
+    // Stage 3: Pending Follow-Ups Backlog (overdue must-clear queue)
     $stmt = $pdo->query("
         SELECT f.id as followup_id, f.scheduled_date, f.scheduled_time, f.notes as task_note,
-               it.title as interaction_title, it.max_duration_days,
-               l.id as lead_id, l.lead_code, l.full_name, l.phone, l.email, l.stage, l.priority,
-               l.preferred_country, l.preferred_course, l.assigned_counselor_id,
-               b.name as branch_name, u.name as counselor_name,
-               DATEDIFF(CURDATE(), f.scheduled_date) as days_overdue
+               it.title as interaction_title,
+               DATEDIFF(CURDATE(), f.scheduled_date) as days_overdue,
+               l.id as lead_id, l.lead_code, l.full_name, l.phone, l.email,
+               l.business_name, l.region_number, l.main_region, l.zone_type, l.is_phone_verified,
+               l.prospectivity, l.active_status, l.source,
+               l.assigned_counselor_id, b.name as branch_name, u.name as counselor_name
         FROM followups f
         JOIN leads l ON f.lead_id = l.id
         LEFT JOIN interaction_titles it ON f.interaction_title_id = it.id
         LEFT JOIN branches b ON l.branch_id = b.id
         LEFT JOIN users u ON l.assigned_counselor_id = u.id
         WHERE f.scheduled_date < CURDATE() AND f.status = 'Pending' AND l.is_archived = 0 AND {$scopeLeads}
-        ORDER BY f.scheduled_date ASC
+        ORDER BY f.scheduled_date ASC, f.id DESC
     ");
     $records = $stmt->fetchAll();
-} elseif ($queue === 'today_leads') {
-    // Fresh leads assigned today with 0 follow-ups
+
+} elseif ($stage === 'long_cycle') {
+    // Stage 4: Long-Cycle Follow-Ups
     $stmt = $pdo->query("
         SELECT NULL as followup_id, l.id as lead_id, l.lead_code, l.full_name, l.phone, l.email,
-               l.stage, l.priority, l.source, l.preferred_country, l.preferred_course,
-               l.assigned_at, l.assigned_counselor_id, b.name as branch_name, u.name as counselor_name
+               l.business_name, l.region_number, l.main_region, l.zone_type, l.is_phone_verified,
+               l.prospectivity, l.active_status, l.source, l.created_at as queued_date,
+               l.assigned_counselor_id, b.name as branch_name, u.name as counselor_name
         FROM leads l
         LEFT JOIN branches b ON l.branch_id = b.id
         LEFT JOIN users u ON l.assigned_counselor_id = u.id
-        WHERE DATE(l.assigned_at) = CURDATE() AND l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
-        ORDER BY l.assigned_at DESC
-    ");
-    $records = $stmt->fetchAll();
-} elseif ($queue === 'pending_leads') {
-    // Leads assigned on previous dates with 0 follow-ups
-    $stmt = $pdo->query("
-        SELECT NULL as followup_id, l.id as lead_id, l.lead_code, l.full_name, l.phone, l.email,
-               l.stage, l.priority, l.source, l.preferred_country, l.preferred_course,
-               l.assigned_at, l.assigned_counselor_id, b.name as branch_name, u.name as counselor_name,
-               DATEDIFF(CURDATE(), DATE(l.assigned_at)) as days_uncontacted
-        FROM leads l
-        LEFT JOIN branches b ON l.branch_id = b.id
-        LEFT JOIN users u ON l.assigned_counselor_id = u.id
-        WHERE DATE(l.assigned_at) < CURDATE() AND l.followup_count = 0 AND l.is_archived = 0 AND {$scopeLeads}
-        ORDER BY l.assigned_at ASC
+        WHERE l.is_long_cycle = 1 AND l.is_archived = 0 AND {$scopeLeads}
+        ORDER BY l.updated_at DESC
     ");
     $records = $stmt->fetchAll();
 }
@@ -122,252 +140,226 @@ if ($queue === 'scheduled') {
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- Student Module Top Tab Bar -->
-<div class="pdf-student-nav-tabs" style="display:flex; gap:0.25rem; border-bottom:2px solid var(--border-color); margin-bottom:1.25rem; overflow-x:auto; padding-bottom:1px;">
-  <a href="<?= base_url('leads/index.php?type=all') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
-    <i class="fa-solid fa-users"></i> All
-  </a>
-  <a href="<?= base_url('leads/index.php?type=leads') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
-    <i class="fa-solid fa-user-graduate"></i> Leads
-  </a>
-  <a href="<?= base_url('customers/index.php') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
-    <i class="fa-solid fa-certificate"></i> Customers
-  </a>
-  <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="pdf-tab <?= in_array($queue, ['scheduled', 'pending_followup']) ? 'active' : '' ?>" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:<?= in_array($queue, ['scheduled', 'pending_followup']) ? 'var(--primary)' : 'var(--text-muted)' ?>; border-bottom:<?= in_array($queue, ['scheduled', 'pending_followup']) ? '3px solid var(--primary)' : '3px solid transparent' ?>; background:<?= in_array($queue, ['scheduled', 'pending_followup']) ? '#f5f3ff' : 'transparent' ?>; white-space:nowrap;">
-    <i class="fa-solid fa-phone-volume"></i> Follow-ups <span class="badge badge-warning" style="margin-left:4px; font-size:0.75rem;"><?= $countScheduled ?></span>
-  </a>
-  <a href="<?= base_url('data/college_data.php') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
-    <i class="fa-solid fa-database"></i> College Datas
-  </a>
-  <a href="<?= base_url('archive/index.php') ?>" class="pdf-tab" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--text-muted); border-bottom:3px solid transparent; white-space:nowrap;">
-    <i class="fa-solid fa-box-archive"></i> Archived
-  </a>
-  <a href="<?= base_url('tasks/index.php') ?>" class="pdf-tab active" style="padding:0.6rem 1.15rem; font-weight:700; text-decoration:none; font-size:0.875rem; border-radius:8px 8px 0 0; color:var(--primary); border-bottom:3px solid var(--primary); background:#f5f3ff; white-space:nowrap;">
-    <i class="fa-solid fa-list-check"></i> My Tasks <span class="badge badge-primary" style="margin-left:4px; font-size:0.75rem;"><?= $totalPendingTasks ?></span>
-  </a>
-</div>
-
+<!-- Header Title & Overview -->
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
   <div>
-    <h1 style="font-size:1.5rem; font-weight:700; color:var(--text-heading); margin:0 0 0.35rem 0;">My Tasks (Work Queues)</h1>
+    <h1 style="font-size:1.5rem; font-weight:800; color:var(--text-heading); margin:0 0 0.25rem 0;">
+      Follow-Up Management Lifecycle
+    </h1>
     <p style="font-size:0.875rem; color:var(--text-muted); margin:0;">
-      Counselor daily action surface. Contact leads, execute scheduled follow-ups, and log consultation outcomes to clear queues.
+      Systematic progression across 4 core follow-up stages &bull; <em>"Ensuring no unaddressed leads remain stagnant in the pipeline"</em>
     </p>
   </div>
-  <div>
-    <span class="badge badge-primary" style="font-size:0.8rem; padding:0.4rem 0.75rem;">
-      <i class="fa-solid fa-list-check"></i> Total Action Items: <strong><?= $totalPendingTasks ?></strong>
-    </span>
+  <div style="display:flex; gap:0.5rem; align-items:center;">
+    <button type="button" class="btn btn-success btn-sm" onclick="openTopUpdateModal()" style="font-weight:700;">
+      <i class="fa-solid fa-arrows-rotate"></i> 1-Click Update
+    </button>
+    <button type="button" class="btn btn-primary btn-sm" onclick="openQuickLeadModal()" style="font-weight:700;">
+      <i class="fa-solid fa-plus"></i> + New Lead
+    </button>
   </div>
 </div>
 
-<!-- 5 Work Queues (Scheduled Followup, Pending Followup, Today Leads, Pending Leads, Website/Social Media Leads) -->
-<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
-  <!-- Queue 1: Scheduled Follow-ups (PDF 9.7.1) -->
-  <a href="<?= base_url('tasks/index.php?queue=scheduled') ?>" class="card" style="padding:1.1rem; text-decoration:none; border:2px solid <?= $queue === 'scheduled' ? 'var(--primary)' : 'transparent' ?>; background:<?= $queue === 'scheduled' ? 'var(--primary-subtle)' : '#fff' ?>;">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:0.75rem; font-weight:700; color:var(--primary); text-transform:uppercase;">Scheduled Followup</span>
-      <span class="badge badge-blue" style="font-size:0.85rem; font-weight:800;"><?= $countScheduled ?></span>
+<!-- 4 Lifecycle Stage Navigation Tabs -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:0.85rem; margin-bottom:1.5rem;">
+  
+  <!-- Stage 1 Tab: New / First Follow-Up -->
+  <a href="<?= base_url('tasks/index.php?stage=new_first') ?>" style="text-decoration:none; background:<?= ($stage === 'new_first') ? '#059669' : '#ecfdf5' ?>; color:<?= ($stage === 'new_first') ? '#fff' : '#064e3b' ?>; border:1px solid #a7f3d0; border-radius:12px; padding:1.1rem; display:flex; justify-content:space-between; align-items:center; transition:all 0.15s;">
+    <div>
+      <span style="font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; opacity:0.9;">Stage 1</span>
+      <div style="font-size:1.1rem; font-weight:800; margin-top:2px;">New / First Follow-Up</div>
+      <div style="font-size:0.75rem; opacity:0.85; margin-top:2px;">Initial Inbound Touchpoint</div>
     </div>
-    <div style="font-size:1.3rem; font-weight:800; color:var(--text-heading); margin-top:6px;">
-      Today's Calls
-    </div>
-    <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Appointments due today</div>
+    <span class="badge" style="background:<?= ($stage === 'new_first') ? '#fff' : '#059669' ?>; color:<?= ($stage === 'new_first') ? '#059669' : '#fff' ?>; font-size:1.1rem; font-weight:800; padding:4px 10px; border-radius:8px;">
+      <?= $countNewFirst ?>
+    </span>
   </a>
 
-  <!-- Queue 2: Pending Follow-ups (PDF 9.7.2) -->
-  <a href="<?= base_url('tasks/index.php?queue=pending_followup') ?>" class="card" style="padding:1.1rem; text-decoration:none; border:2px solid <?= $queue === 'pending_followup' ? 'var(--danger)' : 'transparent' ?>; background:<?= $queue === 'pending_followup' ? '#fee2e2' : '#fff' ?>;">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:0.75rem; font-weight:700; color:#b91c1c; text-transform:uppercase;">Pending Followup</span>
-      <span class="badge badge-red" style="font-size:0.85rem; font-weight:800;"><?= $countOverdue ?></span>
+  <!-- Stage 2 Tab: Scheduled Follow-Ups -->
+  <a href="<?= base_url('tasks/index.php?stage=scheduled') ?>" style="text-decoration:none; background:<?= ($stage === 'scheduled') ? '#2563eb' : '#eff6ff' ?>; color:<?= ($stage === 'scheduled') ? '#fff' : '#1e3a8a' ?>; border:1px solid #bfdbfe; border-radius:12px; padding:1.1rem; display:flex; justify-content:space-between; align-items:center; transition:all 0.15s;">
+    <div>
+      <span style="font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; opacity:0.9;">Stage 2</span>
+      <div style="font-size:1.1rem; font-weight:800; margin-top:2px;">Scheduled Follow-Ups</div>
+      <div style="font-size:0.75rem; opacity:0.85; margin-top:2px;">Dates & Reminder Alarms</div>
     </div>
-    <div style="font-size:1.3rem; font-weight:800; color:#b91c1c; margin-top:6px;">
-      Overdue Calls
-    </div>
-    <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Past due follow-ups</div>
+    <span class="badge" style="background:<?= ($stage === 'scheduled') ? '#fff' : '#2563eb' ?>; color:<?= ($stage === 'scheduled') ? '#2563eb' : '#fff' ?>; font-size:1.1rem; font-weight:800; padding:4px 10px; border-radius:8px;">
+      <?= $countScheduled ?>
+    </span>
   </a>
 
-  <!-- Queue 3: Today Leads (PDF 9.7.3) -->
-  <a href="<?= base_url('tasks/index.php?queue=today_leads') ?>" class="card" style="padding:1.1rem; text-decoration:none; border:2px solid <?= $queue === 'today_leads' ? 'var(--success)' : 'transparent' ?>; background:<?= $queue === 'today_leads' ? '#dcfce7' : '#fff' ?>;">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:0.75rem; font-weight:700; color:#15803d; text-transform:uppercase;">Today Leads</span>
-      <span class="badge badge-green" style="font-size:0.85rem; font-weight:800;"><?= $countTodayLeads ?></span>
+  <!-- Stage 3 Tab: Pending Follow-Ups Backlog -->
+  <a href="<?= base_url('tasks/index.php?stage=pending_backlog') ?>" style="text-decoration:none; background:<?= ($stage === 'pending_backlog') ? '#dc2626' : '#fef2f2' ?>; color:<?= ($stage === 'pending_backlog') ? '#fff' : '#7f1d1d' ?>; border:1px solid #fecaca; border-radius:12px; padding:1.1rem; display:flex; justify-content:space-between; align-items:center; transition:all 0.15s;">
+    <div>
+      <span style="font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; opacity:0.9;">Stage 3 &bull; Critical</span>
+      <div style="font-size:1.1rem; font-weight:800; margin-top:2px;">Pending Backlog</div>
+      <div style="font-size:0.75rem; opacity:0.85; margin-top:2px;">Daily Must-Clear Queue</div>
     </div>
-    <div style="font-size:1.3rem; font-weight:800; color:#15803d; margin-top:6px;">
-      Fresh Inbound
-    </div>
-    <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Assigned today (0 logs)</div>
+    <span class="badge" style="background:<?= ($stage === 'pending_backlog') ? '#fff' : '#dc2626' ?>; color:<?= ($stage === 'pending_backlog') ? '#dc2626' : '#fff' ?>; font-size:1.1rem; font-weight:800; padding:4px 10px; border-radius:8px;">
+      <?= $countPendingBacklog ?>
+    </span>
   </a>
 
-  <!-- Queue 4: Pending Leads (PDF 9.7.4) -->
-  <a href="<?= base_url('tasks/index.php?queue=pending_leads') ?>" class="card" style="padding:1.1rem; text-decoration:none; border:2px solid <?= $queue === 'pending_leads' ? '#b45309' : 'transparent' ?>; background:<?= $queue === 'pending_leads' ? '#fef3c7' : '#fff' ?>;">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:0.75rem; font-weight:700; color:#b45309; text-transform:uppercase;">Pending Leads</span>
-      <span class="badge badge-warning" style="font-size:0.85rem; font-weight:800;"><?= $countPendingLeads ?></span>
+  <!-- Stage 4 Tab: Long-Cycle Follow-Ups -->
+  <a href="<?= base_url('tasks/index.php?stage=long_cycle') ?>" style="text-decoration:none; background:<?= ($stage === 'long_cycle') ? '#a21caf' : '#fdf4ff' ?>; color:<?= ($stage === 'long_cycle') ? '#fff' : '#701a75' ?>; border:1px solid #f5d0fe; border-radius:12px; padding:1.1rem; display:flex; justify-content:space-between; align-items:center; transition:all 0.15s;">
+    <div>
+      <span style="font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; opacity:0.9;">Stage 4</span>
+      <div style="font-size:1.1rem; font-weight:800; margin-top:2px;">Long-Cycle Leads</div>
+      <div style="font-size:0.75rem; opacity:0.85; margin-top:2px;">Multi-Week Prospect Cycles</div>
     </div>
-    <div style="font-size:1.3rem; font-weight:800; color:#b45309; margin-top:6px;">
-      Uncontacted
-    </div>
-    <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Older leads with 0 logs</div>
+    <span class="badge" style="background:<?= ($stage === 'long_cycle') ? '#fff' : '#a21caf' ?>; color:<?= ($stage === 'long_cycle') ? '#a21caf' : '#fff' ?>; font-size:1.1rem; font-weight:800; padding:4px 10px; border-radius:8px;">
+      <?= $countLongCycle ?>
+    </span>
   </a>
 
-  <!-- Queue 5: Website/Social Media Leads (PDF 9.7.5) -->
-  <a href="<?= base_url('data/web_leads.php') ?>" class="card" style="padding:1.1rem; text-decoration:none; border:2px solid transparent; background:#f0f9ff;">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:0.75rem; font-weight:700; color:#0284c7; text-transform:uppercase;">Website/Social Leads</span>
-      <span class="badge badge-blue" style="font-size:0.85rem; font-weight:800;"><?= $countWebLeads ?></span>
-    </div>
-    <div style="font-size:1.3rem; font-weight:800; color:#0284c7; margin-top:6px;">
-      Social Media
-    </div>
-    <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Digital ads & web leads</div>
-  </a>
 </div>
 
-<!-- Active Queue Action Table -->
-<div class="card">
+<!-- Stage Items Table / Queue Grid -->
+<div class="card" style="border-radius:14px; overflow:hidden;">
+  <div style="padding:1.25rem 1.5rem; background:#f8fafc; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+    <div>
+      <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-heading); margin:0;">
+        <?php if ($stage === 'new_first'): ?>
+          <i class="fa-solid fa-sparkles" style="color:#059669;"></i> Stage 1: New / First Follow-Up Queue
+        <?php elseif ($stage === 'scheduled'): ?>
+          <i class="fa-solid fa-calendar-check" style="color:#2563eb;"></i> Stage 2: Scheduled Follow-Ups Due Today
+        <?php elseif ($stage === 'pending_backlog'): ?>
+          <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626;"></i> Stage 3: Critical Pending Follow-Ups Backlog
+        <?php else: ?>
+          <i class="fa-solid fa-hourglass-half" style="color:#a21caf;"></i> Stage 4: Long-Cycle Prolonged Prospect Tracker
+        <?php endif; ?>
+      </h3>
+      <span style="font-size:0.78rem; color:var(--text-muted);">
+        <?= count($records) ?> records waiting in this operational queue
+      </span>
+    </div>
+
+    <div>
+      <?php if ($stage === 'pending_backlog' && count($records) > 0): ?>
+        <span class="badge badge-danger" style="font-weight:700; font-size:0.75rem;">Clear backlog before end-of-day</span>
+      <?php endif; ?>
+    </div>
+  </div>
+
   <div class="table-responsive">
     <table class="data-table">
       <thead>
         <tr>
-          <th>Student Lead</th>
-          <th>Contact & Dial</th>
-          <th>Target Study</th>
+          <th>Record # & Lead</th>
+          <th>Business / Account</th>
+          <th>Phone (Cross-Check)</th>
+          <th>Region & Zone</th>
           <th>Prospectivity</th>
-          <?php if ($queue === 'scheduled'): ?>
-            <th>Scheduled Time</th>
-            <th>Milestone</th>
-          <?php elseif ($queue === 'pending_followup'): ?>
-            <th>Originally Due</th>
-            <th>Overdue Lag</th>
-          <?php elseif ($queue === 'today_leads'): ?>
-            <th>Assigned Time</th>
-            <th>Source</th>
-          <?php elseif ($queue === 'pending_leads'): ?>
-            <th>Assigned Date</th>
-            <th>Uncontacted Lag</th>
+          <th>Active Status</th>
+          <?php if ($stage === 'scheduled' || $stage === 'pending_backlog'): ?>
+            <th>Scheduled Alarm</th>
+            <th>Task Notes</th>
           <?php endif; ?>
-          <th style="text-align:right;">Immediate Action</th>
+          <th>Counselor</th>
+          <th style="text-align:right;">Execute Action</th>
         </tr>
       </thead>
       <tbody>
-        <?php if (empty($records)): 
-          $emptyMsg = match($queue) {
-            'scheduled' => "All scheduled calls for today are completed! Fantastic work staying on top of your student consultations.",
-            'pending_followup' => "Zero overdue calls! Your follow-up queue is completely up to date.",
-            'today_leads' => "All today's fresh inbound inquiries have been contacted. No pending new inquiries.",
-            'pending_leads' => "All previous leads have been contacted! No backlog of uncontacted inquiries.",
-            default => "No items currently pending in this operational queue."
-          };
-        ?>
+        <?php if (empty($records)): ?>
           <tr>
-            <td colspan="7" style="text-align:center; padding:3.5rem; color:var(--text-muted);">
+            <td colspan="10" style="text-align:center; padding:3.5rem; color:var(--text-muted);">
               <div style="width:56px; height:56px; border-radius:50%; background:#dcfce7; color:#15803d; display:inline-flex; align-items:center; justify-content:center; font-size:1.8rem; margin-bottom:0.75rem;">
-                <i class="fa-solid fa-circle-check"></i>
+                <i class="fa-solid fa-check"></i>
               </div>
-              <div style="font-size:1.15rem; font-weight:800; color:#166534; margin-bottom:0.35rem;">Queue Cleared! 🎉</div>
-              <p style="font-size:0.875rem; color:var(--text-muted); max-width:480px; margin:0 auto 1.25rem auto;"><?= $emptyMsg ?></p>
-              <div style="display:flex; justify-content:center; gap:0.5rem;">
-                <a href="<?= base_url('dashboard/index.php') ?>" class="btn btn-secondary btn-sm"><i class="fa-solid fa-table-columns"></i> Go to Cockpit</a>
-                <a href="<?= base_url('leads/index.php') ?>" class="btn btn-primary btn-sm"><i class="fa-solid fa-user-graduate"></i> View All Leads</a>
+              <div style="font-size:1.15rem; font-weight:800; color:var(--text-heading); margin-bottom:0.35rem;">
+                Queue is Clear!
               </div>
+              <p style="font-size:0.875rem; color:var(--text-muted); margin:0;">
+                No pending records currently awaiting action in this lifecycle stage.
+              </p>
             </td>
           </tr>
         <?php else: ?>
-          <?php foreach ($records as $row): 
-            $dialUrl = "tel:" . preg_replace('/[^0-9+]/', '', $row['phone']);
-            $waMsg = get_whatsapp_message($row['stage'] ?? 'ENQUIRY', $row['full_name'], $currentUser['name'] ?? 'UniCRM Admissions', $row['preferred_country'] ?? 'UK', $row['preferred_course'] ?? 'Higher Ed');
-            $waUrl = "https://wa.me/91" . normalize_phone($row['phone']) . "?text=" . urlencode($waMsg);
-          ?>
+          <?php foreach ($records as $r): ?>
             <tr>
+              <!-- Record # & Name -->
               <td>
-                <div style="font-family:monospace; font-size:0.72rem; font-weight:700; color:var(--primary);">
-                  <?= htmlspecialchars($row['lead_code']) ?>
+                <div style="font-family:monospace; font-size:0.75rem; font-weight:700; color:var(--primary); margin-bottom:2px;">
+                  <?= htmlspecialchars($r['lead_code']) ?>
                 </div>
-                <a href="<?= base_url('leads/view.php?id=' . $row['lead_id']) ?>" style="font-weight:700; color:var(--text-heading); text-decoration:none; font-size:0.92rem;">
-                  <?= htmlspecialchars($row['full_name']) ?>
+                <a href="<?= base_url('leads/view.php?id=' . $r['lead_id']) ?>" style="font-weight:700; color:var(--text-heading); text-decoration:none; font-size:0.92rem;">
+                  <?= htmlspecialchars($r['full_name']) ?>
                 </a>
-                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
-                  <?= htmlspecialchars($row['branch_name'] ?? 'Branch') ?> • <?= htmlspecialchars($row['counselor_name'] ?? 'Counselor') ?>
-                </div>
               </td>
+
+              <!-- Business / Account -->
+              <td style="font-size:0.85rem; font-weight:600; color:#334155;">
+                <?= htmlspecialchars($r['business_name'] ?: 'Individual Account') ?>
+              </td>
+
+              <!-- Phone & Verification -->
               <td>
-                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-                  <span style="font-family:monospace; font-weight:700; color:var(--text-heading); font-size:0.85rem;">
-                    <?= htmlspecialchars($row['phone']) ?>
-                  </span>
-                  <a href="<?= $waUrl ?>" target="_blank" class="btn btn-sm" style="background:#25d366; color:#fff; font-size:0.75rem; padding:2px 8px; border-radius:6px; font-weight:700; display:inline-flex; align-items:center; gap:4px;" title="WhatsApp Candidate">
-                    <i class="fa-brands fa-whatsapp"></i> Chat
-                  </a>
-                  <a href="<?= $dialUrl ?>" class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.75rem; border-radius:6px;" title="Direct Phone Call">
-                    <i class="fa-solid fa-phone" style="font-size:0.75rem; color:var(--primary);"></i>
-                  </a>
+                <div style="font-family:monospace; font-weight:800; font-size:0.88rem; color:var(--text-heading);">
+                  <?= htmlspecialchars($r['phone']) ?>
                 </div>
-                <?php if (!empty($row['email'])): ?>
-                  <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
-                    <?= htmlspecialchars($row['email']) ?>
-                  </div>
+                <?php if (!empty($r['is_phone_verified'])): ?>
+                  <span class="badge badge-success" style="font-size:0.65rem; padding:1px 5px;">✓ Verified</span>
+                <?php else: ?>
+                  <span class="badge badge-warning" style="font-size:0.65rem; padding:1px 5px;">Pending</span>
                 <?php endif; ?>
               </td>
+
+              <!-- Region & Zone -->
               <td>
-                <div style="font-weight:600; font-size:0.85rem; color:var(--text-heading);">
-                  <?= htmlspecialchars($row['preferred_country']) ?>
-                </div>
-                <div style="font-size:0.72rem; color:var(--text-muted);">
-                  <?= htmlspecialchars($row['preferred_course'] ?: 'General Program') ?>
+                <span class="badge" style="background:#334155; color:#fff; font-size:0.7rem; font-weight:700;">
+                  <?= htmlspecialchars($r['region_number'] ?? 'REG-01') ?>
+                </span>
+                <div style="font-size:0.75rem; font-weight:600; color:var(--text-heading); margin-top:2px;">
+                  <?= htmlspecialchars($r['main_region'] ?? 'Central Zone') ?>
                 </div>
               </td>
+
+              <!-- Prospectivity -->
               <td>
-                <?php $pTier = $row['prospectivity'] ?? $row['priority'] ?? 'Warm'; ?>
-                <span class="badge <?= ($pTier === 'Hot' || $pTier === 'High') ? 'badge-danger' : (($pTier === 'Cold' || $pTier === 'Low') ? 'badge-secondary' : 'badge-warning') ?>" style="font-size:0.75rem; font-weight:700;">
-                  <?= htmlspecialchars($pTier) ?>
+                <span class="badge <?= ($r['prospectivity'] === 'Hot') ? 'badge-danger' : (($r['prospectivity'] === 'Cold') ? 'badge-secondary' : 'badge-warning') ?>" style="font-size:0.72rem; font-weight:700;">
+                  <?= ($r['prospectivity'] === 'Hot') ? '🔥 Hot' : (($r['prospectivity'] === 'Cold') ? '💤 Cold' : '⚡ Warm') ?>
                 </span>
               </td>
 
-              <?php if ($queue === 'scheduled'): ?>
-                <td style="font-weight:700; font-size:0.85rem;">
-                  <i class="fa-regular fa-clock" style="color:var(--primary); margin-right:3px;"></i>
-                  <?= date('h:i A', strtotime($row['scheduled_time'] ?: '10:00:00')) ?>
-                </td>
+              <!-- Active Status -->
+              <td>
+                <span class="badge badge-primary" style="font-size:0.72rem; font-weight:700;">
+                  <?= htmlspecialchars($r['active_status'] ?? 'New Lead') ?>
+                </span>
+              </td>
+
+              <!-- Scheduled Alarms (if stage 2 or 3) -->
+              <?php if ($stage === 'scheduled' || $stage === 'pending_backlog'): ?>
                 <td>
-                  <span class="badge badge-secondary" style="font-size:0.72rem;">
-                    <?= htmlspecialchars($row['interaction_title'] ?: 'Consultation') ?>
-                  </span>
+                  <div style="font-weight:700; font-size:0.8rem; color:<?= ($stage === 'pending_backlog') ? '#dc2626' : 'var(--text-heading)' ?>;">
+                    <i class="fa-solid fa-clock"></i> <?= htmlspecialchars($r['scheduled_time'] ?? '10:00:00') ?>
+                  </div>
+                  <?php if (!empty($r['days_overdue'])): ?>
+                    <span class="badge badge-danger" style="font-size:0.65rem; padding:1px 5px;">
+                      <?= $r['days_overdue'] ?>d Overdue
+                    </span>
+                  <?php endif; ?>
                 </td>
-              <?php elseif ($queue === 'pending_followup'): ?>
-                <td style="font-size:0.825rem; font-weight:600;">
-                  <?= date('d M Y', strtotime($row['scheduled_date'])) ?>
-                </td>
-                <td>
-                  <span class="badge badge-danger" style="font-size:0.72rem; font-weight:700;">
-                    <?= (int)$row['days_overdue'] ?> days overdue
-                  </span>
-                </td>
-              <?php elseif ($queue === 'today_leads'): ?>
-                <td style="font-size:0.825rem; font-weight:600;">
-                  <?= date('h:i A', strtotime($row['assigned_at'])) ?>
-                </td>
-                <td>
-                  <span class="badge badge-secondary"><?= htmlspecialchars($row['source'] ?? 'Inbound') ?></span>
-                </td>
-              <?php elseif ($queue === 'pending_leads'): ?>
-                <td style="font-size:0.825rem; font-weight:600;">
-                  <?= date('d M Y', strtotime($row['assigned_at'])) ?>
-                </td>
-                <td>
-                  <span class="badge badge-warning" style="font-size:0.72rem; font-weight:700;">
-                    <?= (int)$row['days_uncontacted'] ?> days idle
-                  </span>
+                <td style="font-size:0.8rem; color:#475569; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                  <?= htmlspecialchars($r['task_note'] ?: $r['interaction_title'] ?: 'Scheduled interaction') ?>
                 </td>
               <?php endif; ?>
 
+              <!-- Counselor -->
+              <td style="font-size:0.825rem; font-weight:600;">
+                <?= htmlspecialchars($r['counselor_name'] ?? 'Unassigned') ?>
+              </td>
+
+              <!-- Execute Action -->
               <td style="text-align:right;">
-                <div style="display:flex; justify-content:flex-end; gap:0.4rem;">
-                  <button type="button" class="btn btn-primary btn-sm" onclick="openLogModal(<?= (int)$row['lead_id'] ?>, <?= htmlspecialchars(json_encode($row['full_name'])) ?>, <?= htmlspecialchars(json_encode($row['phone'])) ?>, <?= (int)($row['assigned_counselor_id'] ?: $currentUser['id']) ?>)">
-                    <i class="fa-solid fa-phone-volume"></i> Log Call
+                <div style="display:inline-flex; gap:4px; align-items:center;">
+                  <button type="button" class="btn btn-primary btn-sm" style="font-size:0.75rem; padding:3px 8px; font-weight:700;" onclick="openLogCallModal(<?= $r['lead_id'] ?>, '<?= htmlspecialchars(addslashes($r['full_name'])) ?>', '<?= htmlspecialchars($r['phone']) ?>')" title="Execute Call & Log Outcome">
+                    <i class="fa-solid fa-phone"></i> Call
                   </button>
-                  <a href="<?= base_url('leads/view.php?id=' . $row['lead_id']) ?>" class="btn btn-secondary btn-sm" title="View Dossier">
-                    <i class="fa-solid fa-eye"></i>
+                  <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:3px 8px;" onclick="openTopUpdateModal(<?= $r['lead_id'] ?>)" title="1-Click Update">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                  </button>
+                  <a href="<?= base_url('leads/view.php?id=' . $r['lead_id']) ?>" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:3px 8px;">
+                    Profile &rarr;
                   </a>
                 </div>
               </td>
@@ -378,125 +370,5 @@ include __DIR__ . '/../includes/header.php';
     </table>
   </div>
 </div>
-
-<!-- Modal for 1-Click Consultation Logging directly from task queues -->
-<div class="modal fade" id="logModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(12,36,60,0.5); align-items:center; justify-content:center;">
-  <div class="modal-dialog" style="background:#fff; border-radius:14px; max-width:520px; width:92%; margin:auto; box-shadow:0 20px 50px rgba(0,0,0,0.2); overflow:hidden;">
-    <form method="POST" action="<?= base_url('followups/add.php') ?>">
-      <?= csrf_field() ?>
-      <input type="hidden" name="lead_id" id="modal_lead_id" value="">
-      <input type="hidden" name="return_url" value="<?= base_url('tasks/index.php?queue=' . $queue) ?>">
-
-      <div class="modal-header" style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="font-size:1.15rem; font-weight:700; margin:0; color:var(--text-heading);">
-          <i class="fa-solid fa-phone-volume" style="color:var(--primary); margin-right:8px;"></i> Log Consultation Outcome
-        </h3>
-        <button type="button" onclick="closeLogModal()" style="border:none; background:none; font-size:1.4rem; cursor:pointer; color:var(--text-muted);">&times;</button>
-      </div>
-
-      <div class="modal-body" style="padding:1.5rem;">
-        <div style="background:var(--bg-subtle); border-radius:8px; padding:0.85rem; margin-bottom:1.25rem; font-size:0.85rem;">
-          Candidate: <strong id="modal_candidate_name">—</strong> • <span id="modal_candidate_phone">—</span>
-        </div>
-
-        <div class="form-group" style="margin-bottom:1rem;">
-          <label class="form-label">Interaction Title / Milestone <span style="color:red;">*</span></label>
-          <select name="interaction_title_id" id="modal_interaction_title" class="form-control" required onchange="onModalTitleChange(this)">
-            <option value="">Select Milestone...</option>
-            <?php foreach ($interactionTitles as $it): ?>
-              <option value="<?= $it['id'] ?>" data-max-days="<?= $it['max_duration_days'] ?>">
-                <?= htmlspecialchars($it['title']) ?> (Max: <?= $it['max_duration_days'] ?> days)
-              </option>
-            <?php endforeach; ?>
-          </select>
-          <small id="modal_hint" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:2px;">
-            Title enforces maximum allowable next follow-up interval.
-          </small>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
-          <div class="form-group">
-            <label class="form-label">Next Date <span style="color:red;">*</span></label>
-            <input type="date" name="next_followup_date" id="modal_next_date" class="form-control" required min="<?= date('Y-m-d') ?>" onchange="checkWorkload(this.value)">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Next Time</label>
-            <input type="time" name="next_followup_time" class="form-control" value="10:00">
-          </div>
-        </div>
-
-        <div id="modal_workload_box" style="display:none; background:#e0e7ff; border-radius:6px; padding:0.6rem 0.85rem; font-size:0.8rem; color:#3730a3; margin-bottom:1rem;">
-          <i class="fa-solid fa-chart-line"></i> Counselor workload on selected date: <strong id="modal_workload_val">0</strong> follow-ups scheduled.
-        </div>
-
-        <div class="form-group" style="margin-bottom:0.5rem;">
-          <label class="form-label">Consultation Notes & Next Steps</label>
-          <textarea name="notes" class="form-control" rows="3" placeholder="Candidate agreed to submit 12th marksheet and passport copy tomorrow..." required></textarea>
-        </div>
-      </div>
-
-      <div class="modal-footer" style="padding:1rem 1.5rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.5rem;">
-        <button type="button" onclick="closeLogModal()" class="btn btn-secondary btn-sm">Cancel</button>
-        <button type="submit" class="btn btn-primary btn-sm">
-          <i class="fa-solid fa-check"></i> Record Consultation & Clear Queue
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<script>
-let currentCounselorId = <?= (int)$currentUser['id'] ?>;
-
-function openLogModal(leadId, name, phone, counselorId) {
-  document.getElementById('modal_lead_id').value = leadId;
-  document.getElementById('modal_candidate_name').innerText = name;
-  document.getElementById('modal_candidate_phone').innerText = phone;
-  currentCounselorId = counselorId;
-  document.getElementById('logModal').style.display = 'flex';
-}
-
-function closeLogModal() {
-  document.getElementById('logModal').style.display = 'none';
-}
-
-function onModalTitleChange(sel) {
-  const opt = sel.options[sel.selectedIndex];
-  const maxDays = opt.getAttribute('data-max-days');
-  const dateInput = document.getElementById('modal_next_date');
-  const hint = document.getElementById('modal_hint');
-
-  if (maxDays) {
-    const today = new Date();
-    const maxDate = new Date();
-    maxDate.setDate(today.getDate() + parseInt(maxDays));
-
-    const yyyy = maxDate.getFullYear();
-    const mm = String(maxDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(maxDate.getDate()).padStart(2, '0');
-    const maxDateStr = `${yyyy}-${mm}-${dd}`;
-
-    dateInput.max = maxDateStr;
-    dateInput.value = maxDateStr;
-    hint.innerHTML = `<span style="color:var(--primary); font-weight:600;"><i class="fa-solid fa-circle-check"></i> Max interval allowed: ${maxDays} days (Latest: ${maxDate.toLocaleDateString('en-GB')})</span>`;
-    checkWorkload(maxDateStr);
-  }
-}
-
-function checkWorkload(dateVal) {
-  if (!dateVal) return;
-  fetch(`<?= base_url('tasks/workload_api.php') ?>?counselor_id=${currentCounselorId}&date=${dateVal}`)
-    .then(r => r.json())
-    .then(d => {
-      const box = document.getElementById('modal_workload_box');
-      if (d.success) {
-        document.getElementById('modal_workload_val').innerText = d.count;
-        box.style.display = 'block';
-      } else {
-        box.style.display = 'none';
-      }
-    }).catch(() => {});
-}
-</script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>
