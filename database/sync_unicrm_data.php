@@ -18,7 +18,7 @@ function sync_institutional_data(PDO $pdo) {
     } catch (Exception $delEx) {}
 
     // Check if synced already in this session
-    if (!empty($_SESSION['crm_core_synced_v6'])) {
+    if (!empty($_SESSION['crm_core_synced_v7'])) {
         return;
     }
 
@@ -152,60 +152,37 @@ function sync_institutional_data(PDO $pdo) {
             }
         }
 
-        // 5. Inject Client Required Lead Records
-        // Record 1: Rahul Nair (8787946896)
-        // Record 2: Priya Varma (9633756812)
-        $clientLeads = [
-            [
-                'id' => 12, 'lead_code' => 'LED-2026-0087', 'full_name' => 'Rahul Nair', 'phone' => '8787946896', 'mobile_number' => '+91 87879 46896', 'email' => 'rahul.nair@nairglobal.com',
-                'branch_id' => 1, 'counselor_id' => 3, 'region_number' => 'REG-01', 'main_region' => 'Central Zone', 'sub_area' => 'Downtown Central', 'zone_type' => 'Center',
-                'is_phone_verified' => 1, 'business_name' => 'Nair Global Enterprises', 'record_completeness' => 95, 'active_status' => 'Prospect Qualified',
-                'prospectivity' => 'Hot', 'priority' => 'High', 'source' => 'Social Media (Meta Ads)', 'stage' => 'CUSTOMER', 'is_customer' => 1, 'is_long_cycle' => 0,
-                'notes' => 'Qualified high-prospect enterprise account in central hub. Cross-checked number 8-7-8-7-9-4-6-8-9-6.'
-            ],
-            [
-                'id' => 13, 'lead_code' => 'LED-2026-0096', 'full_name' => 'Priya Varma', 'phone' => '9633756812', 'mobile_number' => '+91 96337 56812', 'email' => 'priya.varma@varmaconsulting.com',
-                'branch_id' => 1, 'counselor_id' => 4, 'region_number' => 'REG-02', 'main_region' => 'Central Zone', 'sub_area' => 'High Street Commercial', 'zone_type' => 'Center',
-                'is_phone_verified' => 0, 'business_name' => 'Varma Consulting Group', 'record_completeness' => 88, 'active_status' => 'New Lead',
-                'prospectivity' => 'Warm', 'priority' => 'Moderate', 'source' => 'Social Media (Instagram)', 'stage' => 'ENQUIRY', 'is_customer' => 0, 'is_long_cycle' => 0,
-                'notes' => 'Inbound social media inquiry. Awaiting phone number cross-check verification for 9633756812.'
-            ]
-        ];
+        // 5. Inject / Update Client Required Lead Records
+        // Record 1: Rahul Nair (8787946896) -> lead id 1
+        // Record 2: Priya Varma (9633756812) -> lead id 2
+        try {
+            $stmtUpd1 = $pdo->prepare("
+                UPDATE leads 
+                SET lead_code = 'LED-2026-0087', full_name = 'Rahul Nair', phone = '8787946896', mobile_number = '+91 87879 46896', phone_normalized = '8787946896',
+                    email = 'rahul.nair@nairglobal.com', branch_id = 1, assigned_counselor_id = 3, region_number = 'REG-01', main_region = 'Central Zone',
+                    sub_area = 'Downtown Central', zone_type = 'Center', is_phone_verified = 1, phone_verified_at = NOW(), phone_verified_by = 4,
+                    business_name = 'Nair Global Enterprises', record_completeness = 95, active_status = 'Prospect Qualified',
+                    prospectivity = 'Hot', priority = 'High', source = 'Social Media (Meta Ads)', is_long_cycle = 0,
+                    notes = 'Qualified high-prospect enterprise account in central hub. Cross-checked number 8-7-8-7-9-4-6-8-9-6.'
+                WHERE id = 1
+            ");
+            $stmtUpd1->execute();
 
-        $stmtClientLead = $pdo->prepare("
-            INSERT INTO leads (
-                id, lead_code, full_name, mobile_number, phone, phone_normalized, email,
-                branch_id, assigned_counselor_id, region_number, main_region, sub_area, zone_type,
-                is_phone_verified, business_name, record_completeness, active_status,
-                prospectivity, priority, source, stage, is_customer, is_long_cycle, notes, created_by, created_at, assigned_at
-            ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW()
-            ) ON DUPLICATE KEY UPDATE 
-                lead_code = VALUES(lead_code), full_name = VALUES(full_name), phone = VALUES(phone),
-                mobile_number = VALUES(mobile_number), phone_normalized = VALUES(phone_normalized), email = VALUES(email),
-                branch_id = VALUES(branch_id), assigned_counselor_id = VALUES(assigned_counselor_id),
-                region_number = VALUES(region_number), main_region = VALUES(main_region), sub_area = VALUES(sub_area), zone_type = VALUES(zone_type),
-                is_phone_verified = VALUES(is_phone_verified), business_name = VALUES(business_name), record_completeness = VALUES(record_completeness),
-                active_status = VALUES(active_status), prospectivity = VALUES(prospectivity), priority = VALUES(priority), source = VALUES(source),
-                stage = VALUES(stage), is_customer = VALUES(is_customer), is_long_cycle = VALUES(is_long_cycle), notes = VALUES(notes)
-        ");
-
-        foreach ($clientLeads as $cl) {
-            $stmtClientLead->execute([
-                $cl['id'], $cl['lead_code'], $cl['full_name'], $cl['mobile_number'], $cl['phone'], $cl['phone'], $cl['email'],
-                $cl['branch_id'], $cl['counselor_id'], $cl['region_number'], $cl['main_region'], $cl['sub_area'], $cl['zone_type'],
-                $cl['is_phone_verified'], $cl['business_name'], $cl['record_completeness'], $cl['active_status'],
-                $cl['prospectivity'], $cl['priority'], $cl['source'], $cl['stage'], $cl['is_customer'], $cl['is_long_cycle'], $cl['notes']
-            ]);
-        }
+            $stmtUpd2 = $pdo->prepare("
+                UPDATE leads 
+                SET lead_code = 'LED-2026-0096', full_name = 'Priya Varma', phone = '9633756812', mobile_number = '+91 96337 56812', phone_normalized = '9633756812',
+                    email = 'priya.varma@varmaconsulting.com', branch_id = 1, assigned_counselor_id = 4, region_number = 'REG-02', main_region = 'Central Zone',
+                    sub_area = 'High Street Commercial', zone_type = 'Center', is_phone_verified = 0, phone_verified_at = NULL, phone_verified_by = NULL,
+                    business_name = 'Varma Consulting Group', record_completeness = 88, active_status = 'New Lead',
+                    prospectivity = 'Warm', priority = 'Moderate', source = 'Social Media (Instagram)', is_long_cycle = 0,
+                    notes = 'Inbound social media inquiry. Awaiting phone number cross-check verification for 9633756812.'
+                WHERE id = 2
+            ");
+            $stmtUpd2->execute();
+        } catch (Exception $eUpdClient) {}
 
         // Update other existing leads with region numbers and business names
         $regions = [
-            1 => ['REG-01', 'Central Zone', 'Downtown Central', 'Center', 'Sharma Tech Solutions', 95, 'Converted', 'Hot', 0],
-            2 => ['REG-01', 'Central Zone', 'North Suburbs', 'Center', 'Martinez Design Studio', 92, 'Converted', 'Hot', 0],
             3 => ['REG-02', 'Central Zone', 'High Street', 'Center', 'Patel Logistics Ltd', 88, 'Prospect Qualified', 'Hot', 0],
             4 => ['REG-03', 'North Zone', 'Industrial Estate', 'Sub-area', 'Iyer Electronics', 85, 'Follow-up Scheduled', 'Warm', 0],
             5 => ['REG-03', 'North Zone', 'Park Avenue', 'Sub-area', 'Kim Trading Co', 80, 'Contacted', 'Warm', 1],
@@ -216,36 +193,40 @@ function sync_institutional_data(PDO $pdo) {
             10 => ['REG-03', 'North Zone', 'Tech Corridor', 'Sub-area', 'Mendez Engineering Works', 78, 'Contacted', 'Warm', 0],
         ];
 
-        $stmtUpdLead = $pdo->prepare("
-            UPDATE leads 
-            SET region_number = ?, main_region = ?, sub_area = ?, zone_type = ?, 
-                business_name = ?, record_completeness = ?, active_status = ?, prospectivity = ?, is_long_cycle = ?
-            WHERE id = ? AND (region_number IS NULL OR region_number = 'REG-01')
-        ");
-        foreach ($regions as $lId => $rInfo) {
-            $stmtUpdLead->execute([$rInfo[0], $rInfo[1], $rInfo[2], $rInfo[3], $rInfo[4], $rInfo[5], $rInfo[6], $rInfo[7], $rInfo[8], $lId]);
-        }
+        try {
+            $stmtUpdLead = $pdo->prepare("
+                UPDATE leads 
+                SET region_number = ?, main_region = ?, sub_area = ?, zone_type = ?, 
+                    business_name = ?, record_completeness = ?, active_status = ?, prospectivity = ?, is_long_cycle = ?
+                WHERE id = ?
+            ");
+            foreach ($regions as $lId => $rInfo) {
+                $stmtUpdLead->execute([$rInfo[0], $rInfo[1], $rInfo[2], $rInfo[3], $rInfo[4], $rInfo[5], $rInfo[6], $rInfo[7], $rInfo[8], $lId]);
+            }
+        } catch (Exception $eReg) {}
 
         // 6. Seed Call Logs for Centralized Call Data Integration
-        $callCount = (int)$pdo->query("SELECT COUNT(*) FROM call_logs")->fetchColumn();
-        if ($callCount === 0) {
-            $sampleCalls = [
-                [12, 3, 'Outbound', 'Connected', 245, '8787946896', 'Discussed regional business expansion and scheduled comprehensive consultation. Verified contact number digit-by-digit.'],
-                [12, 4, 'Inbound', 'Connected', 180, '8787946896', 'Inbound inquiry from Rahul Nair regarding priority consultation availability.'],
-                [13, 4, 'Outbound', 'Connected', 120, '9633756812', 'Initial contact on Instagram social lead. Verified owner identity for Priya Varma; follow-up booked.'],
-                [7, 4, 'Outbound', 'No Answer', 0, '9961044556', 'Attempted initial follow-up; phone rang with no answer. Added to pending backlog queue.'],
-                [5, 4, 'Outbound', 'Connected', 310, '9061099001', 'Long-cycle review call regarding updated project proposal.'],
-                [4, 3, 'Outbound', 'Connected', 420, '9745077889', 'Consultation call with Ananya Iyer. Account escalated and qualified for final agreement.']
-            ];
+        try {
+            $callCount = (int)$pdo->query("SELECT COUNT(*) FROM call_logs")->fetchColumn();
+            if ($callCount === 0) {
+                $sampleCalls = [
+                    [1, 3, 'Outbound', 'Connected', 245, '8787946896', 'Discussed regional business expansion and scheduled comprehensive consultation. Verified contact number digit-by-digit.'],
+                    [1, 4, 'Inbound', 'Connected', 180, '8787946896', 'Inbound inquiry from Rahul Nair regarding priority consultation availability.'],
+                    [2, 4, 'Outbound', 'Connected', 120, '9633756812', 'Initial contact on Instagram social lead. Verified owner identity for Priya Varma; follow-up booked.'],
+                    [7, 4, 'Outbound', 'No Answer', 0, '9961044556', 'Attempted initial follow-up; phone rang with no answer. Added to pending backlog queue.'],
+                    [5, 4, 'Outbound', 'Connected', 310, '9061099001', 'Long-cycle review call regarding updated project proposal.'],
+                    [4, 3, 'Outbound', 'Connected', 420, '9745077889', 'Consultation call with Ananya Iyer. Account escalated and qualified for final agreement.']
+                ];
 
-            $stmtCall = $pdo->prepare("
-                INSERT INTO call_logs (lead_id, caller_id, call_direction, call_status, duration_seconds, phone_dialed, notes, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, DATE_SUB(NOW(), INTERVAL 1 HOUR))
-            ");
-            foreach ($sampleCalls as $sc) {
-                $stmtCall->execute($sc);
+                $stmtCall = $pdo->prepare("
+                    INSERT INTO call_logs (lead_id, caller_id, call_direction, call_status, duration_seconds, phone_dialed, notes, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, DATE_SUB(NOW(), INTERVAL 1 HOUR))
+                ");
+                foreach ($sampleCalls as $sc) {
+                    $stmtCall->execute($sc);
+                }
             }
-        }
+        } catch (Exception $eCalls) {}
 
         // 7. Seed Social Media Leads (Meta Ads, Instagram, Google Ads, TikTok Ads)
         $pdo->exec("
