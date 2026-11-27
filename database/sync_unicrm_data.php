@@ -18,7 +18,7 @@ function sync_institutional_data(PDO $pdo) {
     } catch (Exception $delEx) {}
 
     // Check if synced already in this session
-    if (!empty($_SESSION['crm_core_synced_v7'])) {
+    if (!empty($_SESSION['crm_core_synced_v8'])) {
         return;
     }
 
@@ -47,6 +47,13 @@ function sync_institutional_data(PDO $pdo) {
                 } catch (Exception $e) {}
             }
         }
+
+        try {
+            $pdo->exec("ALTER TABLE leads MODIFY COLUMN prospectivity VARCHAR(50) DEFAULT 'Hot'");
+        } catch (Exception $eMod1) {}
+        try {
+            $pdo->exec("ALTER TABLE leads MODIFY COLUMN priority VARCHAR(50) DEFAULT 'High'");
+        } catch (Exception $eMod2) {}
 
         // Create call_logs table if not exists
         $pdo->exec("
@@ -167,7 +174,13 @@ function sync_institutional_data(PDO $pdo) {
                 WHERE id = 1
             ");
             $stmtUpd1->execute();
+        } catch (Exception $eUpd1) {
+            try {
+                $pdo->exec("UPDATE leads SET full_name = 'Rahul Nair', phone = '8787946896', mobile_number = '+91 87879 46896', phone_normalized = '8787946896', business_name = 'Nair Global Enterprises' WHERE id = 1");
+            } catch (Exception $eF1) {}
+        }
 
+        try {
             $stmtUpd2 = $pdo->prepare("
                 UPDATE leads 
                 SET lead_code = 'LED-2026-0096', full_name = 'Priya Varma', phone = '9633756812', mobile_number = '+91 96337 56812', phone_normalized = '9633756812',
@@ -179,7 +192,11 @@ function sync_institutional_data(PDO $pdo) {
                 WHERE id = 2
             ");
             $stmtUpd2->execute();
-        } catch (Exception $eUpdClient) {}
+        } catch (Exception $eUpd2) {
+            try {
+                $pdo->exec("UPDATE leads SET full_name = 'Priya Varma', phone = '9633756812', mobile_number = '+91 96337 56812', phone_normalized = '9633756812', business_name = 'Varma Consulting Group' WHERE id = 2");
+            } catch (Exception $eF2) {}
+        }
 
         // Update other existing leads with region numbers and business names
         $regions = [
